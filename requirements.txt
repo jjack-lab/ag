@@ -6,7 +6,7 @@ pydantic==2.10.6
 httpx==0.27.2
 
 numpy==1.24.3
-opencv-python==4.13.0.92
+opencv-python==4.9.0.80
 pillow==10.4.0
 PyYAML==6.0.2
 requests==2.32.3

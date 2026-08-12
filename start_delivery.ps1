@@ -71,6 +71,20 @@ if ($CheckOnly) {
     exit 0
 }
 
+if (Test-Path -LiteralPath $processStatePath -PathType Leaf) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $stopScriptPath
+    if ($LASTEXITCODE -ne 0) {
+        Stop-WithDiagnostic "Existing delivery process state could not be cleaned safely."
+    }
+}
+
+$occupied = @(Get-NetTCPConnection -LocalPort 8000,5173 -State Listen -ErrorAction SilentlyContinue)
+if ($occupied.Count -gt 0) {
+    $details = ($occupied | ForEach-Object { "$($_.LocalPort):PID $($_.OwningProcess)" }) -join ", "
+    Stop-WithDiagnostic "Refusing to start because delivery ports are occupied: $details"
+}
+
+$createdAt = (Get-Date).ToUniversalTime().ToString("o")
 $apiProcess = Start-Process `
     -FilePath $pythonPath `
     -ArgumentList @($apiPath) `
@@ -86,9 +100,10 @@ $webProcess = Start-Process `
     -PassThru
 
 $state = @{
+    project_root = $projectRoot
     api_pid = $apiProcess.Id
     web_pid = $webProcess.Id
-    created_at = (Get-Date).ToString("o")
+    created_at = $createdAt
 } | ConvertTo-Json
 $stateDir = Split-Path -Parent $processStatePath
 New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
@@ -101,6 +116,11 @@ New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
 $apiReady = $false
 $webReady = $false
 for ($attempt = 0; $attempt -lt 30; $attempt++) {
+    $apiProcess.Refresh()
+    $webProcess.Refresh()
+    if ($apiProcess.HasExited -or $webProcess.HasExited) {
+        break
+    }
     try {
         $health = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/health" -TimeoutSec 2
         $apiReady = $health.status -eq "ok"
@@ -119,9 +139,11 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
     Start-Sleep -Milliseconds 500
 }
 
-if (-not ($apiReady -and $webReady)) {
+$apiProcess.Refresh()
+$webProcess.Refresh()
+if ($apiProcess.HasExited -or $webProcess.HasExited -or -not ($apiReady -and $webReady)) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $stopScriptPath
-    Stop-WithDiagnostic "API or Web failed to become ready."
+    Stop-WithDiagnostic "API or Web failed to become ready from this start attempt."
 }
 
 Write-Host "API ready. PID: $($apiProcess.Id), URL: http://127.0.0.1:8000"

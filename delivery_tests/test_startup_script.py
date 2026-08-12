@@ -21,3 +21,14 @@ def test_startup_script_runs_real_preflight_and_records_processes():
     assert "node_modules\\.bin\\vite.cmd" in script
     assert "delivery-processes.json" in script
     assert "stop_delivery.ps1" in script
+
+def test_startup_and_stop_scripts_guard_process_ownership():
+    start = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
+    stop = (PROJECT_ROOT / "stop_delivery.ps1").read_text(encoding="utf-8")
+
+    assert "Get-NetTCPConnection" in start
+    assert ".HasExited" in start
+    assert "Refusing to start" in start
+    assert "CommandLine" in stop
+    assert "CreationDate" in stop
+    assert "projectRoot" in stop

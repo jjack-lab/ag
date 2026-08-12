@@ -28,11 +28,31 @@ if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) {
 }
 
 $state = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json
+if ([string]$state.project_root -ne $projectRoot) {
+    Write-Error "Process state belongs to another project; refusing to stop."
+    exit 1
+}
+
+$createdAt = [DateTimeOffset]::Parse([string]$state.created_at).UtcDateTime.AddSeconds(-5)
 $rootIds = @([int]$state.api_pid, [int]$state.web_pid)
-$ids = Get-DescendantProcessIds -RootIds $rootIds | Sort-Object -Descending
+$ownedRootIds = @()
+foreach ($id in $rootIds) {
+    $process = Get-CimInstance Win32_Process -Filter "ProcessId=$id" -ErrorAction SilentlyContinue
+    if (-not $process) {
+        continue
+    }
+    $commandLine = [string]$process.CommandLine
+    $creationDate = ([DateTime]$process.CreationDate).ToUniversalTime()
+    if ($commandLine -notlike "*$projectRoot*" -or $creationDate -lt $createdAt) {
+        Write-Error "PID $id is not owned by this delivery instance; refusing to stop."
+        exit 1
+    }
+    $ownedRootIds += $id
+}
+
+$ids = Get-DescendantProcessIds -RootIds $ownedRootIds | Sort-Object -Descending
 foreach ($id in $ids) {
-    $process = Get-Process -Id $id -ErrorAction SilentlyContinue
-    if ($process) {
+    if (Get-Process -Id $id -ErrorAction SilentlyContinue) {
         Stop-Process -Id $id -Force
     }
 }
