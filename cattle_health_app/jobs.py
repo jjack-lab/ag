@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import inspect
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime, timedelta
@@ -44,7 +45,15 @@ class VideoJobService:
         )
         self.repository.save_video_job(running)
         try:
-            result = self.processor.track_video(
+            track_video = self.processor.track_video
+
+            def update_progress(value):
+                progress = max(0.05, min(0.99, float(value)))
+                self.repository.save_video_job(
+                    replace(running, progress=progress, updated_at=now_iso())
+                )
+
+            arguments = (
                 running.source_path,
                 self.result_root / running.id,
                 conf,
@@ -52,6 +61,10 @@ class VideoJobService:
                 class_id,
                 tracker,
             )
+            if "progress_callback" in inspect.signature(track_video).parameters:
+                result = track_video(*arguments, progress_callback=update_progress)
+            else:
+                result = track_video(*arguments)
             completed = replace(
                 running,
                 status="completed",

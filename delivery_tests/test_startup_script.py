@@ -12,3 +12,12 @@ def test_startup_script_discovers_python_without_machine_specific_path():
     assert 'Join-Path $projectRoot ".venv\\Scripts\\python.exe"' in script
     assert "Get-Command python.exe" in script
 
+
+
+def test_startup_script_runs_real_preflight_and_records_processes():
+    script = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
+
+    assert "scripts\\preflight.py" in script
+    assert "node_modules\\.bin\\vite.cmd" in script
+    assert "delivery-processes.json" in script
+    assert "stop_delivery.ps1" in script

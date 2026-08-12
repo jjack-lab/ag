@@ -74,17 +74,35 @@ export function fetchAlerts(): Promise<AlertRecord[]> {
   return request("/api/alerts?status=open");
 }
 
-export function recognizeImage(file: File): Promise<ImageRecognitionResult> {
+export type RecognitionParameters = {
+  conf: number;
+  iou: number;
+  classId: number;
+  tracker: "bytetrack.yaml" | "botsort.yaml";
+};
+
+export function recognizeImage(
+  file: File,
+  parameters: RecognitionParameters,
+): Promise<ImageRecognitionResult> {
   const body = new FormData();
   body.append("file", file);
+  body.append("conf", String(parameters.conf));
+  body.append("iou", String(parameters.iou));
+  body.append("class_id", String(parameters.classId));
   return request("/api/recognition/image", { method: "POST", body });
 }
 
-export function createVideoJob(file: File): Promise<VideoJob> {
+export function createVideoJob(
+  file: File,
+  parameters: RecognitionParameters,
+): Promise<VideoJob> {
   const body = new FormData();
   body.append("file", file);
-  body.append("class_id", "1");
-  body.append("tracker", "bytetrack.yaml");
+  body.append("conf", String(parameters.conf));
+  body.append("iou", String(parameters.iou));
+  body.append("class_id", String(parameters.classId));
+  body.append("tracker", parameters.tracker);
   return request("/api/jobs/video", { method: "POST", body });
 }
 

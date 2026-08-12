@@ -192,10 +192,10 @@ def main():
         },
         "validations": validations,
         "automated_checks": {
-            "python_tests": "46 passed",
-            "frontend_tests": "7 passed",
-            "frontend_production_build": "passed",
-            "startup_preflight": "passed",
+            "note": (
+                "Run Python tests, frontend tests, frontend build, and startup "
+                "preflight separately; this record validates the media pipeline."
+            )
         },
         "limitations": [
             "This phase uses tracking-derived health rules; a trained temporal behavior classifier is not integrated yet.",

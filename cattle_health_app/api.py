@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import os
 from pathlib import Path
 from shutil import copyfileobj
 from typing import Optional
@@ -15,6 +16,10 @@ from cattle_health_app.jobs import VideoJobService
 from cattle_health_app.media_processor import LocalMediaProcessor
 from cattle_health_app.model_registry import resolve_detector_model
 from cattle_health_app.repository import SQLiteRepository
+
+
+MAX_UPLOAD_BYTES = int(os.environ.get("AGRINEBULA_MAX_UPLOAD_MB", "512")) * 1024 * 1024
+UPLOAD_CHUNK_BYTES = 1024 * 1024
 
 
 class ResolveAlertRequest(BaseModel):
@@ -181,5 +186,21 @@ def _validated_suffix(filename, allowed_suffixes):
 
 
 def _save_upload(file, destination):
-    with Path(destination).open("wb") as output:
-        copyfileobj(file.file, output)
+    destination = Path(destination)
+    written = 0
+    try:
+        with destination.open("wb") as output:
+            while True:
+                chunk = file.file.read(UPLOAD_CHUNK_BYTES)
+                if not chunk:
+                    break
+                written += len(chunk)
+                if written > MAX_UPLOAD_BYTES:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="Uploaded file is too large",
+                    )
+                output.write(chunk)
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise

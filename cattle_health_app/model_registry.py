@@ -10,6 +10,15 @@ class ModelNotFoundError(FileNotFoundError):
     """Raised when the packaged delivery detector cannot be resolved."""
 
 
+class ModelIntegrityError(ValueError):
+    """Raised when the packaged delivery detector has an unexpected hash."""
+
+
+EXPECTED_DELIVERY_MODEL_SHA256 = (
+    "46d734cba7553f31e89e739156f50e9a675b176f798c70159838497531771a64"
+)
+
+
 @dataclass(frozen=True)
 class ModelArtifact:
     name: str
@@ -47,8 +56,14 @@ def resolve_detector_model(
             f"YOLO11 detector weight is missing: {path}. "
             "Set AGRINEBULA_DETECTOR_MODEL or copy the delivery weight."
         )
+    fingerprint = sha256_file(path)
+    if not configured and fingerprint != EXPECTED_DELIVERY_MODEL_SHA256:
+        raise ModelIntegrityError(
+            "Packaged YOLO11 detector SHA-256 mismatch: "
+            f"expected {EXPECTED_DELIVERY_MODEL_SHA256}, got {fingerprint}."
+        )
     return ModelArtifact(
         name="yolo11-detector",
         path=path,
-        sha256=sha256_file(path),
+        sha256=fingerprint,
     )

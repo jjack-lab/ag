@@ -34,6 +34,12 @@ export default function RecognitionStudio() {
   const [result, setResult] = useState<StudioResult | null>(null);
   const [status, setStatus] = useState<"idle" | "running" | "error">("idle");
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
+  const [confidence, setConfidence] = useState(0.25);
+  const [iou, setIou] = useState(0.45);
+  const [classId, setClassId] = useState(-1);
+  const [tracker, setTracker] = useState<"bytetrack.yaml" | "botsort.yaml">(
+    "bytetrack.yaml",
+  );
   const runToken = useRef(0);
 
   useEffect(
@@ -74,7 +80,12 @@ export default function RecognitionStudio() {
 
     try {
       if (mode === "image") {
-        const imageResult = await recognizeImage(file);
+        const imageResult = await recognizeImage(file, {
+          conf: confidence,
+          iou,
+          classId,
+          tracker,
+        });
         if (runToken.current !== token) return;
         setResult({ kind: "image", data: imageResult });
         setStatus("idle");
@@ -82,7 +93,12 @@ export default function RecognitionStudio() {
         return;
       }
 
-      let job = await createVideoJob(file);
+      let job = await createVideoJob(file, {
+        conf: confidence,
+        iou,
+        classId: classId === -1 ? 1 : classId,
+        tracker,
+      });
       while (runToken.current === token) {
         setMessage(`视频追踪中，进度 ${Math.round(job.progress * 100)}%…`);
         if (job.status === "completed") {
@@ -173,6 +189,59 @@ export default function RecognitionStudio() {
             </small>
           </label>
 
+          <div className="recognition-parameters" aria-label="识别参数">
+            <label>
+              检测置信度
+              <input
+                aria-label="检测置信度"
+                type="number"
+                min="0.05"
+                max="0.95"
+                step="0.05"
+                value={confidence}
+                onChange={(event) => setConfidence(Number(event.target.value))}
+              />
+            </label>
+            <label>
+              重叠阈值
+              <input
+                aria-label="重叠阈值"
+                type="number"
+                min="0.05"
+                max="0.95"
+                step="0.05"
+                value={iou}
+                onChange={(event) => setIou(Number(event.target.value))}
+              />
+            </label>
+            <label>
+              识别类别
+              <select
+                aria-label="识别类别"
+                value={classId}
+                onChange={(event) => setClassId(Number(event.target.value))}
+              >
+                <option value={-1}>全部牲畜</option>
+                <option value={1}>牛</option>
+              </select>
+            </label>
+            {!isImage && (
+              <label>
+                跟踪算法
+                <select
+                  aria-label="跟踪算法"
+                  value={tracker}
+                  onChange={(event) =>
+                    setTracker(event.target.value as "bytetrack.yaml" | "botsort.yaml")
+                  }
+                >
+                  <option value="bytetrack.yaml">ByteTrack</option>
+                  <option value="botsort.yaml">BoT-SORT</option>
+                </select>
+              </label>
+            )}
+          </div>
+
           <div className={`recognition-message ${status}`} role="status">
             {status === "running" ? (
               <LoaderCircle className="spin" size={17} />
@@ -233,9 +302,19 @@ export default function RecognitionStudio() {
             >
               <FileText size={14} /> 健康报告
             </a>
+            <a href={resultMediaUrl(tracking.video_path)} download>
+              下载结果视频
+            </a>
             <a href={resultMediaUrl(tracking.trajectory_csv)} download>
               轨迹 CSV
             </a>
+            <a href={resultMediaUrl(tracking.alert_csv)} download>
+              告警 CSV
+            </a>
+            <a href={resultMediaUrl(tracking.health_summary_csv)} download>
+              健康汇总 CSV
+            </a>
+            <small>若浏览器无法直接播放结果视频，请使用“下载结果视频”。</small>
           </div>
         )}
       </div>

@@ -31,7 +31,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start_delivery.ps1
 - API 文档：<http://127.0.0.1:8000/docs>
 - 服务状态：<http://127.0.0.1:8000/api/health>
 
-启动命令会打印 API 和 Web 的 PID。结束服务时执行打印出的 `Stop-Process` 命令。
+结束服务：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\stop_delivery.ps1
+```
 
 ## 启动前检查
 
@@ -60,9 +64,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start_delivery.ps1 -CheckO
 3. 选择 ByteTrack 或 BoT-SORT。
 4. 提交任务并等待进度到达完成。
 5. 播放带 Track ID 的结果视频。
-6. 下载轨迹、告警、个体健康汇总和 HTML 报告。
+6. 下载结果视频、轨迹、告警、个体健康汇总和 HTML 报告。
 
-视频为后台任务。浏览器可继续查询任务进度，任务失败时 API 会保存失败状态和错误信息。
+当前Windows环境使用OpenCV `mp4v`生成结果视频。若浏览器不能直接播放，请点击“下载结果视频”，使用本地播放器查看。要保证浏览器内H.264播放，需要另行安装并配置兼容的FFmpeg/OpenH264编码器。
+
+视频为后台任务。浏览器会显示按已处理帧数计算的真实进度，任务失败时 API 会保存失败状态和错误信息。默认单个上传文件上限为512MB，可通过 `AGRINEBULA_MAX_UPLOAD_MB` 调整。
 
 ## 模型
 
@@ -99,7 +105,7 @@ Set-Location ..
 
 2026-08-12 已完成以下实际验证：
 
-- Python测试：46项通过；
+- Python测试：51项通过；
 - React测试：7项通过；
 - React生产构建：通过；
 - 一键启动：API和Web均可访问；

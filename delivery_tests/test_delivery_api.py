@@ -69,3 +69,16 @@ def test_models_endpoint_exposes_detector_hash(client):
 
     assert response.status_code == 200
     assert len(response.json()["detector"]["sha256"]) == 64
+
+
+def test_rejects_upload_larger_than_configured_limit(client, monkeypatch):
+    import cattle_health_app.api as api_module
+
+    monkeypatch.setattr(api_module, "MAX_UPLOAD_BYTES", 4)
+    response = client.post(
+        "/api/recognition/image",
+        files={"file": ("large.jpg", b"12345", "image/jpeg")},
+    )
+
+    assert response.status_code == 413
+    assert "too large" in response.json()["detail"].lower()

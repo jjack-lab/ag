@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Lock
 
 import cv2
 
@@ -17,11 +18,13 @@ class LocalMediaProcessor:
     def __init__(self, model_path: str | Path | None = None):
         self.model_path = resolve_detector_model(explicit_path=model_path).path
         self._model = None
+        self._inference_lock = Lock()
 
     def detect_image(self, source_path, result_path, conf, iou, class_id):
-        result = detect_image(
-            self._load_model(), source_path, conf, iou, class_id
-        )
+        with self._inference_lock:
+            result = detect_image(
+                self._load_model(), source_path, conf, iou, class_id
+            )
         result_path = Path(result_path)
         result_path.parent.mkdir(parents=True, exist_ok=True)
         if not cv2.imwrite(str(result_path), result.annotated_frame):
@@ -36,16 +39,19 @@ class LocalMediaProcessor:
         iou,
         class_id=1,
         tracker="bytetrack.yaml",
+        progress_callback=None,
     ):
-        return process_tracked_video(
-            self._load_model(),
-            source_path,
-            result_dir,
-            conf,
-            iou,
-            class_id,
-            tracker,
-        )
+        with self._inference_lock:
+            return process_tracked_video(
+                self._load_model(),
+                source_path,
+                result_dir,
+                conf,
+                iou,
+                class_id,
+                tracker,
+                progress_callback,
+            )
 
     def detect_video(self, source_path, result_dir, conf, iou, class_id):
         return self.track_video(source_path, result_dir, conf, iou, class_id)

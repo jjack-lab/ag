@@ -155,6 +155,10 @@ describe("AgriNebula application", () => {
       "src",
       "/media/results/job-1/cattle_tracked.mp4",
     );
+    expect(screen.getByLabelText("跟踪算法")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "下载结果视频" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "告警 CSV" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "健康汇总 CSV" })).toBeInTheDocument();
   });
 
   it("clears the selected file when switching recognition modes", async () => {

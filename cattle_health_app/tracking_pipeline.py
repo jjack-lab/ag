@@ -52,6 +52,7 @@ def process_tracked_video(
     iou: float,
     class_id: int = 1,
     tracker: str = "bytetrack.yaml",
+    progress_callback=None,
 ) -> TrackingVideoResult:
     source = Path(source_path)
     root = Path(output_dir)
@@ -64,6 +65,7 @@ def process_tracked_video(
     fps = capture.get(cv2.CAP_PROP_FPS) or 20.0
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frames = max(0, int(capture.get(cv2.CAP_PROP_FRAME_COUNT)))
     video_path = root / f"{source.stem}_tracked.mp4"
     video_writer = cv2.VideoWriter(
         str(video_path),
@@ -123,6 +125,8 @@ def process_tracked_video(
             monitor.update(frame_index, observations)
             video_writer.write(result.plot())
             frame_index += 1
+            if progress_callback and total_frames:
+                progress_callback(min(0.99, frame_index / total_frames))
     finally:
         capture.release()
         video_writer.release()
