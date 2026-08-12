@@ -192,7 +192,7 @@ def main():
         },
         "validations": validations,
         "automated_checks": {
-            "python_tests": "9 passed",
+            "python_tests": "46 passed",
             "frontend_tests": "7 passed",
             "frontend_production_build": "passed",
             "startup_preflight": "passed",
