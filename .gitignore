@@ -13,6 +13,7 @@ web/.vite/
 web/*.tsbuildinfo
 
 data/*.db
+data/verification/
 data/media/uploads/*
 !data/media/uploads/.gitkeep
 data/media/results/*
