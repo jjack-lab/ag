@@ -19,10 +19,13 @@ $pythonCandidates = @()
 if ($env:AGRINEBULA_PYTHON) {
     $pythonCandidates += $env:AGRINEBULA_PYTHON
 }
-$pythonCandidates += @(
-    "F:\deepl\anaconda1\envs\pytorch\python.exe",
-    (Join-Path $projectRoot ".venv\Scripts\python.exe")
-)
+$pythonCandidates += (Join-Path $projectRoot ".venv\Scripts\python.exe")
+
+$pathPython = Get-Command python.exe -ErrorAction SilentlyContinue
+if ($pathPython) {
+    $pythonCandidates += $pathPython.Source
+}
+
 $pythonPath = $pythonCandidates |
     Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) } |
     Select-Object -First 1
