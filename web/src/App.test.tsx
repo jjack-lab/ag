@@ -225,4 +225,23 @@ describe("AgriNebula application", () => {
     expect(screen.getByRole("heading", { name: "实时监控" })).toBeInTheDocument();
   });
 
+  it("toggles actionable alert details", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const alertButton = await screen.findByRole("button", {
+      name: /牛 7，持续低活动，中风险/,
+    });
+    await user.click(alertButton);
+
+    expect(screen.getByText("处置建议：现场复核")).toBeInTheDocument();
+    expect(screen.getByText("置信度 90%")).toBeInTheDocument();
+    expect(alertButton).toHaveAttribute("aria-expanded", "true");
+
+    await user.click(alertButton);
+
+    expect(screen.queryByText("处置建议：现场复核")).not.toBeInTheDocument();
+    expect(alertButton).toHaveAttribute("aria-expanded", "false");
+  });
+
 });

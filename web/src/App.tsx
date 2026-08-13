@@ -58,6 +58,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<WorkspaceView>("overview");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [dataError, setDataError] = useState(false);
   const reduceMotion = useReducedMotion();
   const entrance = reduceMotion
@@ -126,30 +127,39 @@ export default function App() {
     <div className="alert-list">
       {dataError && <p className="empty-alerts">数据暂不可用，请确认本地 API 已启动。</p>}
       {!dataError && alerts.length === 0 && <p className="empty-alerts">{emptyText}</p>}
-      {alerts.map((alert) => (
-        <button
-          type="button"
-          className="alert-row"
-          key={alert.id}
-          aria-label={`牛 ${alert.cattle_id}，${alert.reason}，${riskLabel[alert.level]}`}
-        >
-          <span className={`severity severity-${alert.level}`} />
-          <span className="cattle-avatar">{alert.cattle_id}</span>
-          <span className="alert-copy">
-            <strong>牛 {alert.cattle_id}</strong>
-            <small>{alert.reason}</small>
-          </span>
-          <span className="alert-meta">
-            <b>{riskLabel[alert.level]}</b>
-            <small>
-              {new Date(alert.occurred_at).toLocaleTimeString("zh-CN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </small>
-          </span>
-        </button>
-      ))}
+      {alerts.map((alert) => {
+        const expanded = selectedAlertId === alert.id;
+        return (
+          <div className="alert-item" key={alert.id}>
+            <button
+              type="button"
+              className="alert-row"
+              aria-label={`牛 ${alert.cattle_id}，${alert.reason}，${riskLabel[alert.level]}`}
+              aria-expanded={expanded}
+              onClick={() => setSelectedAlertId(expanded ? null : alert.id)}
+            >
+              <span className={`severity severity-${alert.level}`} />
+              <span className="cattle-avatar">{alert.cattle_id}</span>
+              <span className="alert-copy">
+                <strong>牛 {alert.cattle_id}</strong>
+                <small>{alert.reason}</small>
+              </span>
+              <span className="alert-meta">
+                <b>{riskLabel[alert.level]}</b>
+                <small>{new Date(alert.occurred_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</small>
+              </span>
+            </button>
+            {expanded && (
+              <div className="alert-details" role="region" aria-label={`牛 ${alert.cattle_id} 告警详情`}>
+                <strong>处置建议：{alert.suggestion}</strong>
+                <span>发生时间：{new Date(alert.occurred_at).toLocaleString("zh-CN")}</span>
+                <span>置信度 {Math.round(alert.confidence * 100)}%</span>
+                <small>该结果用于健康风险筛查，不替代兽医诊断。</small>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 
