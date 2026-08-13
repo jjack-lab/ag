@@ -51,3 +51,14 @@ def test_double_click_stop_wrapper_delegates_to_stop_script():
 
     assert "stop_delivery.ps1" in launcher
     assert "if errorlevel 1" in launcher.lower()
+
+
+def test_double_click_wrappers_are_cmd_safe_ascii():
+    for filename in ("启动项目.bat", "停止项目.bat"):
+        content = (PROJECT_ROOT / filename).read_bytes()
+        assert content.isascii()
+
+
+def test_stop_script_tolerates_process_exit_race():
+    stop = (PROJECT_ROOT / "stop_delivery.ps1").read_text(encoding="utf-8")
+    assert "Stop-Process -Id $id -Force -ErrorAction SilentlyContinue" in stop

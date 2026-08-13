@@ -53,7 +53,7 @@ foreach ($id in $rootIds) {
 $ids = Get-DescendantProcessIds -RootIds $ownedRootIds | Sort-Object -Descending
 foreach ($id in $ids) {
     if (Get-Process -Id $id -ErrorAction SilentlyContinue) {
-        Stop-Process -Id $id -Force
+        Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
     }
 }
 Remove-Item -LiteralPath $statePath -Force
