@@ -179,4 +179,50 @@ describe("AgriNebula application", () => {
 
     expect(screen.getByRole("button", { name: "开始视频识别" })).toBeInTheDocument();
   });
+  it("switches every operator navigation button to a focused view", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "实时监控" }));
+    expect(screen.getByRole("heading", { name: "实时监控" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "实时监控" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+
+    await user.click(screen.getByRole("button", { name: "健康告警" }));
+    expect(screen.getByRole("heading", { name: "全部健康告警" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "牛只档案" }));
+    expect(screen.getByRole("heading", { name: "牛只档案" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "数据分析" }));
+    expect(screen.getByRole("heading", { name: "数据分析" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "今日工作台" }));
+    expect(screen.getByRole("heading", { name: "今日牧场健康概览" })).toBeInTheDocument();
+  });
+
+  it("opens the full alerts view from 查看全部", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "查看全部" }));
+
+    expect(screen.getByRole("heading", { name: "全部健康告警" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "健康告警" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("opens the monitor view from the overview video action", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "开始视频识别" }));
+
+    expect(screen.getByRole("heading", { name: "实时监控" })).toBeInTheDocument();
+  });
+
 });
