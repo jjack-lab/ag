@@ -257,3 +257,41 @@ def test_video_directory_symlink_escape_is_rejected_before_scan_or_decode(tmp_pa
     monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread", lambda *args,**kwargs: (_ for _ in ()).throw(AssertionError("must not decode")))
     result=build_index(data,train,test,tmp_path/"out")
     assert result.accepted_count==0 and result.rejected_by_reason["invalid_video_path"]==1
+
+
+def test_conflict_rejections_preserve_each_actual_occurrence(tmp_path: Path):
+    data=tmp_path/"data"; _video(data,"clip")
+    train,test=data/"train.csv",data/"test.csv"
+    _ava(train,[_row("clip",label="2"),_row("clip",label="2"),_row("clip",label="3")])
+    _ava(test,[_row("clip",label="3")])
+    result=build_index(data,train,test,tmp_path/"out")
+    rows=_read_csv(tmp_path/"out"/"rejected.csv")
+    provenance=[(r["source_split"],int(r["row_number"])) for r in rows]
+    assert result.rejected_count==4
+    assert provenance==[("test",1),("train",1),("train",2),("train",3)]
+
+
+def test_raw_frames_root_symlink_escape_is_rejected_before_decode(tmp_path: Path, monkeypatch):
+    data=tmp_path/"data"; data.mkdir(); external=tmp_path/"external"; external.mkdir()
+    try: (data/"raw_frames").symlink_to(external,target_is_directory=True)
+    except OSError: pytest.skip("directory symlinks unavailable")
+    train,test=data/"train.csv",data/"test.csv"; _ava(train,[_row("clip")]); _ava(test,[])
+    monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread",lambda *a,**k: (_ for _ in ()).throw(AssertionError("must not decode")))
+    with pytest.raises(ValueError,match="raw_frames"):
+        build_index(data,train,test,tmp_path/"out")
+
+
+def test_streams_thousands_of_mostly_unique_rows_through_disk_spool(tmp_path: Path):
+    from cattle_health_app.behavior.cvb_index import _iter_annotations
+
+    data = tmp_path / "data"
+    _video(data, "clip")
+    train, test = data / "train.csv", data / "test.csv"
+    rows = [_row("clip", timestamp=f"{1 + index / 100000:.5f}") for index in range(2000)]
+    _ava(train, rows)
+    _ava(test, [])
+    iterator = _iter_annotations(train, "train")
+    assert iter(iterator) is iterator
+    iterator.close()
+    result = build_index(data, train, test, tmp_path / "out")
+    assert result.accepted_count == 2000

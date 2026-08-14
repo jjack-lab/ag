@@ -12,6 +12,7 @@ import math
 import os
 import re
 import shutil
+import sqlite3
 import tempfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -173,6 +174,27 @@ def _write_csv(path: Path, fieldnames: list[str], rows: Iterable[dict]) -> None:
         writer.writerows(rows)
 
 
+def _candidate_query() -> str:
+    return """
+        WITH ranked AS (
+          SELECT *, ROW_NUMBER() OVER (
+            PARTITION BY identity ORDER BY CASE source WHEN 'test' THEN 0 ELSE 1 END, row_number
+          ) AS rank
+          FROM occurrences
+          WHERE identity IN (
+            SELECT identity FROM occurrences GROUP BY identity HAVING COUNT(DISTINCT label_id) = 1
+          )
+        ) SELECT * FROM ranked WHERE rank = 1
+        ORDER BY source, video_id, timestamp, track_id, x1, y1, x2, y2, label_id
+    """
+
+
+def _annotation_from_record(record: sqlite3.Row) -> AvaAnnotation:
+    return AvaAnnotation(record["video_id"], record["timestamp"],
+                         (record["x1"], record["y1"], record["x2"], record["y2"]),
+                         record["label_id"], record["track_id"])
+
+
 def build_index(
     data_root: str | Path,
     train_ava: str | Path,
@@ -184,152 +206,148 @@ def build_index(
 ) -> IndexResult:
     data_root, train_ava, test_ava, output = map(Path, (data_root, train_ava, test_ava, output))
     data_root = data_root.resolve()
-    frames_root = (data_root / "raw_frames").resolve()
+    logical_frames_root = data_root / "raw_frames"
+    frames_root = logical_frames_root.resolve()
+    if frames_root != logical_frames_root or frames_root.parent != data_root:
+        raise ValueError("raw_frames root must not be a symlink, junction, or external reparse target")
     if output.exists() and not overwrite:
         raise FileExistsError(f"Output already exists: {output}")
-    rejected = []
-    # One compact representative and count per identity/label; each CSV is consumed once.
-    aggregates = defaultdict(dict)
-    for source_path, source_split in ((train_ava, "train"), (test_ava, "test")):
-        for annotation, source, row_number, row, error in _iter_annotations(source_path, source_split):
-            if annotation is None:
-                rejected.append((source, row_number, "invalid_annotation", row, error))
-                continue
-            labels = aggregates[_identity(annotation)]
-            record = labels.get(annotation.label_id)
-            if record is None:
-                labels[annotation.label_id] = [annotation, source, row_number, row, 1]
-            else:
-                record[4] += 1
-                if source == "test":
-                    record[1:4] = [source, row_number, row]
-
-    candidates = []
-    for labels in aggregates.values():
-        records = list(labels.values())
-        if len(records) > 1:
-            for annotation, source, row_number, row, count in records:
-                rejected.extend((source, row_number, "conflicting_labels", row, "same target has multiple labels") for _ in range(count))
-        else:
-            candidates.append(tuple(records[0][:4]))
-    del aggregates
-
-    test_groups = {group_id_for_video(item[0].video_id) for item in candidates if item[1] == "test"}
-    train_groups = [group_id_for_video(item[0].video_id) for item in candidates if item[1] == "train" and group_id_for_video(item[0].video_id) not in test_groups]
-    assigned = _assign_train_val(train_groups, seed)
-    validation_cache: dict[Path, str | None] = {}
-    video_cache: Dict[str, Tuple[Path | None, Mapping[int, Path], str | None]] = {}
-    clips = []
-    for annotation, source, row_number, row in sorted(candidates, key=lambda item: (item[1], item[0].video_id, item[0].timestamp_seconds, item[0].track_id, item[0].bbox, item[0].label_id)):
-        inventory = video_cache.get(annotation.video_id)
-        if inventory is None:
-            frame_dir = (frames_root / annotation.video_id).resolve()
-            if frame_dir.parent != frames_root:
-                inventory = (None, {}, "invalid_video_path")
-            else:
-                discovered = {}
-                if frame_dir.is_dir():
-                    for path in frame_dir.glob("img_*.jpg"):
-                        match = re.fullmatch(r"img_(\d{5})\.jpg", path.name)
-                        if match:
-                            discovered[int(match.group(1))] = path
-                inventory = (frame_dir, MappingProxyType(discovered), None)
-            video_cache[annotation.video_id] = inventory
-        frame_dir, frame_map, inventory_error = inventory
-        if inventory_error:
-            rejected.append((source, row_number, inventory_error, row, inventory_error))
-            continue
-        try:
-            if not frame_map:
-                raise ValueError("missing_frame")
-            numbers = select_frame_numbers(annotation.timestamp_seconds, frame_map.keys(), fps=fps)
-        except ValueError as exc:
-            reason = str(exc) if str(exc) in {"missing_frame", "insufficient_frames"} else "insufficient_frames"
-            rejected.append((source, row_number, reason, row, reason))
-            continue
-        original_paths = [frame_map.get(number, frame_dir / f"img_{number:05d}.jpg") for number in numbers]
-        safe_paths = []
-        bad_reason = None
-        for original in original_paths:
-            resolved = original.resolve()
-            if resolved.parent != frame_dir or frame_dir.parent != frames_root:
-                bad_reason = "frame_path_escape"
-                break
-            if resolved not in validation_cache:
-                if not resolved.is_file():
-                    validation_cache[resolved] = "missing_frame"
-                elif resolved.with_name(resolved.name + ".aria2").exists():
-                    validation_cache[resolved] = "partial_frame"
-                elif cv2.imread(str(resolved), cv2.IMREAD_COLOR) is None:
-                    validation_cache[resolved] = "undecodable_frame"
-                else:
-                    validation_cache[resolved] = None
-            if validation_cache[resolved]:
-                bad_reason = validation_cache[resolved]
-                break
-            safe_paths.append(resolved)
-        if bad_reason:
-            rejected.append((source, row_number, bad_reason, row, bad_reason))
-            continue
-        paths = safe_paths
-        group_id = group_id_for_video(annotation.video_id)
-        split = "test" if group_id in test_groups else assigned[group_id]
-        relative_paths = [path.resolve().relative_to(data_root).as_posix() for path in paths]
-        if any(".." in Path(path).parts for path in relative_paths):
-            raise ValueError("manifest frame path escapes data_root")
-        relative = tuple(relative_paths)
-        clips.append(IndexedClip(_sample_id(annotation), annotation.video_id, annotation.timestamp_seconds, annotation.bbox, annotation.label_id, annotation.track_id, group_id, relative, split))
-
-    groups_by_split = {split: {clip.group_id for clip in clips if clip.split == split} for split in ("train", "val", "test")}
-    leakage = any(groups_by_split[left] & groups_by_split[right] for left, right in (("train", "val"), ("train", "test"), ("val", "test")))
-    if leakage:
-        raise ValueError("group leakage between official test and training data")
-
     output.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.staging-", dir=output.parent))
+    database = staging / "index-spool.sqlite3"
+    connection = sqlite3.connect(str(database))
+    connection.row_factory = sqlite3.Row
     try:
-        fields = ["sample_id", "video_id", "timestamp_seconds", "x1", "y1", "x2", "y2", "label_id", "track_id", "group_id", "frame_paths"]
+        connection.executescript("""
+          CREATE TABLE occurrences(identity TEXT, video_id TEXT, timestamp REAL, x1 REAL, y1 REAL,
+            x2 REAL, y2 REAL, label_id INTEGER, track_id INTEGER, source TEXT, row_number INTEGER, raw_json TEXT);
+          CREATE INDEX occurrence_identity ON occurrences(identity);
+          CREATE TABLE rejected(source TEXT, row_number INTEGER, reason TEXT, raw_json TEXT, detail TEXT);
+          CREATE TABLE accepted(sample_id TEXT, video_id TEXT, timestamp REAL, x1 REAL, y1 REAL, x2 REAL, y2 REAL,
+            label_id INTEGER, track_id INTEGER, group_id TEXT, frame_paths TEXT, split TEXT);
+        """)
+        for source_path, source_split in ((train_ava, "train"), (test_ava, "test")):
+            for annotation, source, row_number, row, error in _iter_annotations(source_path, source_split):
+                raw_json = json.dumps(row, ensure_ascii=False)
+                if annotation is None:
+                    connection.execute("INSERT INTO rejected VALUES (?,?,?,?,?)",
+                                       (source, row_number, "invalid_annotation", raw_json, error))
+                    continue
+                identity = repr(_identity(annotation))
+                connection.execute("INSERT INTO occurrences VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (
+                    identity, annotation.video_id, annotation.timestamp_seconds, *annotation.bbox,
+                    annotation.label_id, annotation.track_id, source, row_number, raw_json))
+        connection.execute("""INSERT INTO rejected
+          SELECT source,row_number,'conflicting_labels',raw_json,'same target has multiple labels'
+          FROM occurrences WHERE identity IN (
+            SELECT identity FROM occurrences GROUP BY identity HAVING COUNT(DISTINCT label_id)>1)""")
+        connection.commit()
+
+        test_groups = set()
+        train_groups = set()
+        for row in connection.execute(_candidate_query()):
+            group = group_id_for_video(row["video_id"])
+            (test_groups if row["source"] == "test" else train_groups).add(group)
+        assigned = _assign_train_val(train_groups - test_groups, seed)
+        validation_cache: Dict[Path, str | None] = {}
+        video_cache: Dict[str, Tuple[Path | None, Mapping[int, Path], str | None]] = {}
+        for record in connection.execute(_candidate_query()):
+            annotation = _annotation_from_record(record)
+            source, row_number, raw_json = record["source"], record["row_number"], record["raw_json"]
+            inventory = video_cache.get(annotation.video_id)
+            if inventory is None:
+                frame_dir = (frames_root / annotation.video_id).resolve()
+                if frame_dir.parent != frames_root:
+                    inventory = (None, MappingProxyType({}), "invalid_video_path")
+                else:
+                    discovered = {}
+                    if frame_dir.is_dir():
+                        for path in frame_dir.glob("img_*.jpg"):
+                            match = re.fullmatch(r"img_(\d{5})\.jpg", path.name)
+                            if match:
+                                discovered[int(match.group(1))] = path
+                    inventory = (frame_dir, MappingProxyType(discovered), None)
+                video_cache[annotation.video_id] = inventory
+            frame_dir, frame_map, error = inventory
+            if error:
+                connection.execute("INSERT INTO rejected VALUES (?,?,?,?,?)", (source,row_number,error,raw_json,error))
+                continue
+            try:
+                if not frame_map:
+                    raise ValueError("missing_frame")
+                numbers = select_frame_numbers(annotation.timestamp_seconds, frame_map.keys(), fps=fps)
+            except ValueError as exc:
+                reason = str(exc) if str(exc) in {"missing_frame", "insufficient_frames"} else "insufficient_frames"
+                connection.execute("INSERT INTO rejected VALUES (?,?,?,?,?)", (source,row_number,reason,raw_json,reason))
+                continue
+            safe_paths = []
+            bad_reason = None
+            for number in numbers:
+                original = frame_map.get(number, frame_dir / f"img_{number:05d}.jpg")
+                resolved = original.resolve()
+                if resolved.parent != frame_dir or frame_dir.parent != frames_root:
+                    bad_reason = "frame_path_escape"
+                    break
+                if resolved not in validation_cache:
+                    if not resolved.is_file(): validation_cache[resolved] = "missing_frame"
+                    elif resolved.with_name(resolved.name + ".aria2").exists(): validation_cache[resolved] = "partial_frame"
+                    elif cv2.imread(str(resolved), cv2.IMREAD_COLOR) is None: validation_cache[resolved] = "undecodable_frame"
+                    else: validation_cache[resolved] = None
+                if validation_cache[resolved]:
+                    bad_reason = validation_cache[resolved]
+                    break
+                safe_paths.append(resolved)
+            if bad_reason:
+                connection.execute("INSERT INTO rejected VALUES (?,?,?,?,?)", (source,row_number,bad_reason,raw_json,bad_reason))
+                continue
+            group_id = group_id_for_video(annotation.video_id)
+            split = "test" if group_id in test_groups else assigned[group_id]
+            relative = tuple(path.relative_to(data_root).as_posix() for path in safe_paths)
+            if any(".." in Path(path).parts for path in relative):
+                raise ValueError("manifest frame path escapes data_root")
+            connection.execute("INSERT INTO accepted VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (
+                _sample_id(annotation), annotation.video_id, annotation.timestamp_seconds, *annotation.bbox,
+                annotation.label_id, annotation.track_id, group_id,
+                json.dumps(relative, ensure_ascii=False, separators=(",", ":")), split))
+        connection.commit()
+
+        groups_by_split = {split: {row[0] for row in connection.execute(
+            "SELECT DISTINCT group_id FROM accepted WHERE split=?", (split,))} for split in ("train","val","test")}
+        if any(groups_by_split[a] & groups_by_split[b] for a,b in (("train","val"),("train","test"),("val","test"))):
+            raise ValueError("group leakage")
+        fields = ["sample_id","video_id","timestamp_seconds","x1","y1","x2","y2","label_id","track_id","group_id","frame_paths"]
         split_counts = {}
-        for split in ("train", "val", "test"):
-            selected = sorted((clip for clip in clips if clip.split == split), key=lambda clip: clip.sample_id)
-            split_counts[split] = len(selected)
-            rows = [{
-                "sample_id": clip.sample_id, "video_id": clip.video_id, "timestamp_seconds": f"{clip.timestamp_seconds:g}",
-                "x1": f"{clip.bbox[0]:g}", "y1": f"{clip.bbox[1]:g}", "x2": f"{clip.bbox[2]:g}", "y2": f"{clip.bbox[3]:g}",
-                "label_id": clip.label_id, "track_id": clip.track_id, "group_id": clip.group_id,
-                "frame_paths": json.dumps(clip.frame_paths, ensure_ascii=False, separators=(",", ":")),
-            } for clip in selected]
-            _write_csv(staging / f"{split}.csv", fields, rows)
-        rejected_sorted = sorted(rejected, key=lambda item: (item[0], item[1], item[2], item[3]))
-        _write_csv(staging / "rejected.csv", ["source_split", "row_number", "reason", "row", "detail"], ({"source_split": source, "row_number": number, "reason": reason, "row": json.dumps(row, ensure_ascii=False), "detail": detail} for source, number, reason, row, detail in rejected_sorted))
-        reasons = dict(sorted(Counter(item[2] for item in rejected).items()))
-        class_counts = Counter(clip.label_id for clip in clips)
-        report = {
-            "accepted_count": len(clips), "rejected_count": len(rejected), "rejected_by_reason": reasons,
-            "per_split_counts": split_counts, "per_class_counts": {str(label): class_counts[label] for label in range(1, 13)},
-            "source_paths": {"data_root": str(data_root), "train_ava": str(train_ava), "test_ava": str(test_ava)},
-            "seed": seed, "frame_count": FRAME_COUNT, "fps": fps, "duration_seconds": DURATION_SECONDS,
-            "group_leakage": False,
-        }
-        (staging / "quality_report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        for split in ("train","val","test"):
+            split_counts[split] = connection.execute("SELECT COUNT(*) FROM accepted WHERE split=?",(split,)).fetchone()[0]
+            cursor = connection.execute("SELECT sample_id,video_id,timestamp AS timestamp_seconds,x1,y1,x2,y2,label_id,track_id,group_id,frame_paths FROM accepted WHERE split=? ORDER BY sample_id",(split,))
+            _write_csv(staging/f"{split}.csv", fields, (dict(row) for row in cursor))
+        rejected_count = connection.execute("SELECT COUNT(*) FROM rejected").fetchone()[0]
+        reasons = dict(connection.execute("SELECT reason,COUNT(*) FROM rejected GROUP BY reason ORDER BY reason"))
+        cursor = connection.execute("SELECT source,row_number,reason,raw_json,detail FROM rejected ORDER BY source,row_number,reason,raw_json")
+        _write_csv(staging/"rejected.csv", ["source_split","row_number","reason","row","detail"],
+                   ({"source_split":r["source"],"row_number":r["row_number"],"reason":r["reason"],"row":r["raw_json"],"detail":r["detail"]} for r in cursor))
+        accepted_count = sum(split_counts.values())
+        class_counts = dict(connection.execute("SELECT label_id,COUNT(*) FROM accepted GROUP BY label_id"))
+        report = {"accepted_count":accepted_count,"rejected_count":rejected_count,"rejected_by_reason":reasons,
+          "per_split_counts":split_counts,"per_class_counts":{str(i):class_counts.get(i,0) for i in range(1,13)},
+          "source_paths":{"data_root":str(data_root),"train_ava":str(train_ava),"test_ava":str(test_ava)},
+          "seed":seed,"frame_count":FRAME_COUNT,"fps":fps,"duration_seconds":DURATION_SECONDS,"group_leakage":False}
+        (staging/"quality_report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+        connection.close()
+        database.unlink()
         backup = None
         if output.exists():
-            backup = Path(tempfile.mkdtemp(prefix=f".{output.name}.backup-", dir=output.parent))
-            backup.rmdir()
-            os.replace(output, backup)
-        try:
-            os.replace(staging, output)
+            backup = Path(tempfile.mkdtemp(prefix=f".{output.name}.backup-",dir=output.parent)); backup.rmdir(); os.replace(output,backup)
+        try: os.replace(staging,output)
         except BaseException:
-            if backup is not None:
-                os.replace(backup, output)
+            if backup is not None: os.replace(backup,output)
             raise
-        if backup is not None:
-            shutil.rmtree(backup)
+        if backup is not None: shutil.rmtree(backup)
+        return IndexResult(accepted_count,rejected_count,reasons,split_counts,output)
     except BaseException:
-        shutil.rmtree(staging, ignore_errors=True)
+        connection.close()
+        shutil.rmtree(staging,ignore_errors=True)
         raise
-    return IndexResult(len(clips), len(rejected), dict(sorted(Counter(item[2] for item in rejected).items())), split_counts, output)
-
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
