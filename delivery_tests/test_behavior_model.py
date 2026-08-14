@@ -23,30 +23,47 @@ class TinyX3D(nn.Module):
 
 @pytest.fixture
 def tiny_builder(monkeypatch):
-    calls = []
+    built = TinyX3D()
+    calls = {"pretrained": [], "model": built}
 
     def builder(*, pretrained):
-        calls.append(pretrained)
-        torch.manual_seed(3)
-        return TinyX3D()
+        calls["pretrained"].append(pretrained)
+        return built
 
     monkeypatch.setattr(behavior_model, "_x3d_xs", builder)
     return calls
 
 
 def test_build_replaces_only_projection_and_forwards_pretrained(tiny_builder):
+    original = tiny_builder["model"]
+    old_projection = original.blocks[5].proj
+    before = {name: value.clone() for name, value in original.state_dict().items()}
     model = behavior_model.build_x3d(12, pretrained=True)
-    assert tiny_builder == [True]
-    assert model.blocks[5].proj.in_features == 4
-    assert model.blocks[5].proj.out_features == 12
-    assert torch.equal(model.backbone.weight, TinyX3D().backbone.weight) is False
+    assert model is original
+    assert tiny_builder["pretrained"] == [True]
+    assert model.blocks[5].proj is not old_projection
+    assert model.blocks[5].proj.weight.data_ptr() != old_projection.weight.data_ptr()
+    for name, value in model.state_dict().items():
+        if not name.startswith("blocks.5.proj."):
+            assert torch.equal(value, before[name]), name
     with torch.inference_mode():
         assert model(torch.zeros(2, 3, 2, 4, 4)).shape == (2, 12)
 
 
 def test_false_path_is_forwarded_without_download(tiny_builder):
     behavior_model.build_x3d(pretrained=False)
-    assert tiny_builder == [False]
+    assert tiny_builder["pretrained"] == [False]
+
+
+def test_real_x3d_full_input_contract_without_pretrained_download():
+    previous = torch.get_num_threads()
+    torch.set_num_threads(min(previous, 2))
+    try:
+        model = behavior_model.build_x3d(12, pretrained=False).eval()
+        with torch.inference_mode():
+            assert model(torch.zeros(1, 3, 16, 224, 224)).shape == (1, 12)
+    finally:
+        torch.set_num_threads(previous)
 
 
 @pytest.mark.parametrize("value", [0, -1, True, 1.5])
@@ -78,6 +95,22 @@ def test_checkpoint_round_trip_preserves_state_and_metadata(tmp_path, tiny_build
         assert torch.equal(value, source.state_dict()[key])
         assert torch.equal(value, loaded.model.state_dict()[key])
 
+
+
+def test_loaded_metadata_is_recursively_immutable(tmp_path, tiny_builder):
+    path = tmp_path / "model.pt"
+    model = behavior_model.build_x3d(pretrained=False)
+    behavior_model.save_behavior_checkpoint(
+        path, model, {"nested": {"items": [1, 2]}}, {"options": [{"x": 1}]}
+    )
+    metadata = behavior_model.load_behavior_checkpoint(path).metadata
+    with pytest.raises(TypeError):
+        metadata.metrics["nested"]["new"] = 3
+    with pytest.raises(TypeError):
+        metadata.metrics["nested"]["items"][0] = 9
+
+    with pytest.raises(TypeError):
+        metadata.training_config["options"][0]["x"] = 2
 
 def test_saved_payload_has_exact_schema(tmp_path, tiny_builder):
     path = tmp_path / "model.pt"
@@ -115,12 +148,45 @@ def test_invalid_payload_rejected_before_model_build(tmp_path, tiny_builder, cha
     change(payload)
     bad = tmp_path / "bad.pt"
     torch.save(payload, bad)
-    tiny_builder.clear()
+    tiny_builder["pretrained"].clear()
     with pytest.raises(ValueError, match=match):
         behavior_model.load_behavior_checkpoint(bad)
-    assert tiny_builder == []
+    assert tiny_builder["pretrained"] == []
 
 
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"nested": {1: "integer key"}},
+        {"nested": {"bad": {1, 2}}},
+        {"nested": {"bad": torch.tensor(1)}},
+        {"nested": {"bad": object()}},
+        {"nested": {"bad": float("nan")}},
+        {"nested": {"bad": float("inf")}},
+        {"nested": {"bad": float("-inf")}},
+    ],
+)
+def test_save_rejects_invalid_nested_json_metadata(tmp_path, tiny_builder, bad):
+    model = behavior_model.build_x3d(pretrained=False)
+    with pytest.raises(ValueError, match="JSON-compatible"):
+        behavior_model.save_behavior_checkpoint(tmp_path / "bad.pt", model, bad, {})
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [{"nested": {1: "bad"}}, {"nested": {"bad": {1}}}, {"nested": {"bad": float("nan")}}],
+)
+def test_load_rejects_invalid_nested_json_metadata_before_build(tmp_path, tiny_builder, bad):
+    path = tmp_path / "good.pt"
+    _save(path, tiny_builder)
+    payload = torch.load(path, map_location="cpu")
+    payload["metrics"] = bad
+    torch.save(payload, path)
+    tiny_builder["pretrained"].clear()
+    with pytest.raises(ValueError, match="JSON-compatible"):
+        behavior_model.load_behavior_checkpoint(path)
+    assert tiny_builder["pretrained"] == []
 @pytest.mark.parametrize("payload", [None, [], "bad"])
 def test_non_mapping_payload_rejected(tmp_path, payload):
     path = tmp_path / "bad.pt"
