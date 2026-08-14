@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Mapping
 
 
 @dataclass(frozen=True)
@@ -24,8 +26,11 @@ _ROWS = (
     (12, "running", "奔跑", False),
 )
 
-CVB_LABELS = {row[0]: BehaviorLabel(*row) for row in _ROWS}
-CVB_NAME_TO_ID = {item.name: item.id for item in CVB_LABELS.values()}
+_CVB_LABELS = {row[0]: BehaviorLabel(*row) for row in _ROWS}
+CVB_LABELS: Mapping[int, BehaviorLabel] = MappingProxyType(_CVB_LABELS)
+
+_CVB_NAME_TO_ID = {item.name: item.id for item in CVB_LABELS.values()}
+CVB_NAME_TO_ID: Mapping[str, int] = MappingProxyType(_CVB_NAME_TO_ID)
 
 
 def behavior_display(label_id: int) -> str:
