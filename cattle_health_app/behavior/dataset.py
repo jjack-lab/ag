@@ -18,6 +18,19 @@ from torch.utils.data import Dataset
 FRAME_COUNT = 16
 KINETICS_MEAN = (0.45, 0.45, 0.45)
 KINETICS_STD = (0.225, 0.225, 0.225)
+EXPECTED_INDEX_FIELDS = (
+    "sample_id",
+    "video_id",
+    "timestamp_seconds",
+    "x1",
+    "y1",
+    "x2",
+    "y2",
+    "label_id",
+    "track_id",
+    "group_id",
+    "frame_paths",
+)
 
 
 @dataclass(frozen=True)
@@ -27,6 +40,7 @@ class ClipSample:
     bbox: tuple[float, float, float, float]
     label_id: int
     video_id: str
+    timestamp_seconds: float
     track_id: int
     group_id: str
 
@@ -59,21 +73,35 @@ def _relative_frame_path(value: object) -> str:
 
 
 def load_index(manifest_path: str | Path) -> list[ClipSample]:
-    required = {"sample_id", "video_id", "x1", "y1", "x2", "y2", "label_id", "track_id", "group_id", "frame_paths"}
     samples = []
+    sample_ids: set[str] = set()
     try:
         handle = Path(manifest_path).open(newline="", encoding="utf-8-sig")
     except OSError as exc:
         raise ValueError(f"cannot read manifest: {manifest_path}") from exc
     with handle:
         reader = csv.DictReader(handle)
-        if reader.fieldnames is None or not required.issubset(reader.fieldnames):
+        if reader.fieldnames is None or tuple(reader.fieldnames) != EXPECTED_INDEX_FIELDS:
             raise ValueError("manifest has an invalid CSV schema")
         for row_number, row in enumerate(reader, 2):
             try:
-                sample_id = row["sample_id"]
-                if not sample_id:
-                    raise ValueError("sample_id is empty")
+                if None in row:
+                    raise ValueError("schema contains extra row values")
+                identifiers = {}
+                for field in ("sample_id", "video_id", "group_id"):
+                    value = row[field]
+                    if value is None or not value.strip():
+                        raise ValueError(f"{field} must be non-empty")
+                    identifiers[field] = value
+                sample_id = identifiers["sample_id"]
+                if sample_id in sample_ids:
+                    raise ValueError("sample_id must be unique")
+                try:
+                    timestamp = float(row["timestamp_seconds"])
+                except (TypeError, ValueError) as exc:
+                    raise ValueError("timestamp_seconds must be numeric") from exc
+                if not math.isfinite(timestamp) or timestamp <= 0:
+                    raise ValueError("timestamp_seconds must be finite and positive")
                 paths_obj = json.loads(row["frame_paths"])
                 if not isinstance(paths_obj, list) or len(paths_obj) != FRAME_COUNT:
                     raise ValueError("frame_paths must be a JSON array of exactly 16 paths")
@@ -81,10 +109,16 @@ def load_index(manifest_path: str | Path) -> list[ClipSample]:
                 if len(set(paths)) != FRAME_COUNT:
                     raise ValueError("frame paths must be unique")
                 bbox = expand_normalized_box(tuple(float(row[k]) for k in ("x1", "y1", "x2", "y2")), 0)
-                label_id, track_id = int(row["label_id"]), int(row["track_id"])
-                if not 1 <= label_id <= 12 or track_id < 0:
-                    raise ValueError("label_id or track_id is out of range")
-                samples.append(ClipSample(sample_id, paths, bbox, label_id, row["video_id"], track_id, row["group_id"]))
+                label_id = int(row["label_id"])
+                if not 1 <= label_id <= 12:
+                    raise ValueError("label_id is out of range")
+                track_id = int(row["track_id"])
+                if track_id < 0:
+                    raise ValueError("track_id is out of range")
+                samples.append(ClipSample(sample_id, paths, bbox, label_id,
+                                          identifiers["video_id"], timestamp, track_id,
+                                          identifiers["group_id"]))
+                sample_ids.add(sample_id)
             except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
                 raise ValueError(f"invalid manifest row {row_number}: {exc}") from exc
     return samples

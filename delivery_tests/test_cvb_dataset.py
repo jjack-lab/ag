@@ -9,6 +9,7 @@ import torch
 
 from cattle_health_app.behavior.dataset import (
     CvbClipDataset,
+    EXPECTED_INDEX_FIELDS,
     UnreadableClipError,
     expand_normalized_box,
     load_index,
@@ -40,6 +41,8 @@ def _manifest(tmp_path, **changes):
 
 def test_dataset_returns_normalized_cthw_clip(tmp_path):
     manifest, root, _ = _manifest(tmp_path)
+    sample = load_index(manifest)[0]
+    assert sample.timestamp_seconds == 2.0
     clip, target = CvbClipDataset(manifest, root)[0]
     assert clip.shape == (3, 16, 224, 224)
     assert clip.dtype == torch.float32 and torch.isfinite(clip).all()
@@ -91,6 +94,49 @@ def test_training_augmentation_is_clip_consistent(tmp_path):
 def test_load_index_rejects_invalid_rows(tmp_path, change):
     manifest, _, _ = _manifest(tmp_path, **change)
     with pytest.raises(ValueError): load_index(manifest)
+
+
+@pytest.mark.parametrize("timestamp", ["", "nan", "inf", "0", "-1", "not-a-number"])
+def test_load_index_rejects_invalid_timestamp_with_field_and_row(tmp_path, timestamp):
+    manifest, _, _ = _manifest(tmp_path, timestamp_seconds=timestamp)
+    with pytest.raises(ValueError, match=r"row 2.*timestamp_seconds"):
+        load_index(manifest)
+
+
+@pytest.mark.parametrize("field", ["sample_id", "video_id", "group_id"])
+def test_load_index_rejects_blank_identifiers(tmp_path, field):
+    manifest, _, _ = _manifest(tmp_path, **{field: "  "})
+    with pytest.raises(ValueError, match=rf"row 2.*{field}"):
+        load_index(manifest)
+
+
+def test_load_index_rejects_duplicate_sample_ids(tmp_path):
+    manifest, _, _ = _manifest(tmp_path)
+    with manifest.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    with manifest.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=FIELDS)
+        writer.writeheader()
+        writer.writerow(rows[0])
+        writer.writerow(rows[0])
+    with pytest.raises(ValueError, match=r"row 3.*sample_id"):
+        load_index(manifest)
+
+
+@pytest.mark.parametrize("headers", [
+    FIELDS[:-1],
+    FIELDS + ["extra"],
+    FIELDS[:-1] + ["sample_id", "frame_paths"],
+])
+def test_load_index_rejects_non_exact_schema(tmp_path, headers):
+    manifest, _, _ = _manifest(tmp_path)
+    manifest.write_text(",".join(headers) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="schema"):
+        load_index(manifest)
+
+
+def test_expected_schema_matches_task2_output():
+    assert list(EXPECTED_INDEX_FIELDS) == FIELDS
 
 
 def test_manifest_parsing_is_lazy_but_getitem_decodes(monkeypatch, tmp_path):
