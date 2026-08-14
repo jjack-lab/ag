@@ -187,6 +187,48 @@ def test_load_rejects_invalid_nested_json_metadata_before_build(tmp_path, tiny_b
     with pytest.raises(ValueError, match="JSON-compatible"):
         behavior_model.load_behavior_checkpoint(path)
     assert tiny_builder["pretrained"] == []
+
+@pytest.mark.parametrize("kind", ["dict", "list"])
+def test_save_rejects_cyclic_metadata_with_path(tmp_path, tiny_builder, kind):
+    model = behavior_model.build_x3d(pretrained=False)
+    if kind == "dict":
+        cyclic = {}
+        cyclic["self"] = cyclic
+    else:
+        cyclic = []
+        cyclic.append(cyclic)
+    with pytest.raises(ValueError, match=r"metrics.*cycle"):
+        behavior_model.save_behavior_checkpoint(
+            tmp_path / "cycle.pt", model, {"nested": cyclic}, {}
+        )
+
+
+def test_load_rejects_cyclic_metadata_before_model_build(tmp_path, tiny_builder, monkeypatch):
+    path = tmp_path / "model.pt"
+    _save(path, tiny_builder)
+    payload = torch.load(path, map_location="cpu")
+    cyclic = {}
+    cyclic["again"] = cyclic
+    payload["metrics"] = {"nested": cyclic}
+    monkeypatch.setattr(behavior_model, "_safe_torch_load", lambda path, device: payload)
+    tiny_builder["pretrained"].clear()
+    with pytest.raises(ValueError, match=r"metrics\.nested\.again.*cycle"):
+        behavior_model.load_behavior_checkpoint(path)
+    assert tiny_builder["pretrained"] == []
+
+
+def test_shared_acyclic_metadata_is_accepted(tmp_path, tiny_builder):
+    shared = {"values": [1, 2]}
+    metrics = {"left": shared, "right": shared}
+    path = tmp_path / "shared.pt"
+    model = behavior_model.build_x3d(pretrained=False)
+    behavior_model.save_behavior_checkpoint(path, model, metrics, {})
+    loaded = behavior_model.load_behavior_checkpoint(path)
+    assert loaded.metadata.metrics == {
+        "left": {"values": (1, 2)},
+        "right": {"values": (1, 2)},
+    }
+
 @pytest.mark.parametrize("payload", [None, [], "bad"])
 def test_non_mapping_payload_rejected(tmp_path, payload):
     path = tmp_path / "bad.pt"
