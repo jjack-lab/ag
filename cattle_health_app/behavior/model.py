@@ -11,6 +11,7 @@ from __future__ import annotations
 import inspect
 import math
 import os
+import pickle
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -214,7 +215,7 @@ def _validate_payload(payload: Any) -> BehaviorCheckpointMetadata:
     )
 
 
-def _safe_torch_load(path: Path, device: Union[str, torch.device]) -> Any:
+def _safe_torch_load(path: Path, device: torch.device) -> Any:
     parameters = inspect.signature(torch.load).parameters
     if "weights_only" not in parameters:
         raise RuntimeError(
@@ -223,11 +224,27 @@ def _safe_torch_load(path: Path, device: Union[str, torch.device]) -> Any:
         )
     try:
         return torch.load(path, map_location=device, weights_only=True)
-    except Exception as error:
+    except (pickle.UnpicklingError, EOFError, RuntimeError, ValueError) as error:
         raise ValueError(
             "could not safely load checkpoint; payload may contain non JSON-compatible "
             f"metadata or invalid tensor data: {error}"
         ) from error
+
+
+def _validate_device(device: Union[str, torch.device]) -> torch.device:
+    try:
+        validated = torch.device(device)
+    except (TypeError, ValueError, RuntimeError) as error:
+        raise ValueError(f"invalid behavior model device {device!r}: {error}") from error
+    if validated.type == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA device requested but CUDA is unavailable")
+        if validated.index is not None and validated.index >= torch.cuda.device_count():
+            raise RuntimeError(
+                f"CUDA device index {validated.index} is unavailable; "
+                f"only {torch.cuda.device_count()} device(s) detected"
+            )
+    return validated
 
 
 def load_behavior_checkpoint(
@@ -239,13 +256,14 @@ def load_behavior_checkpoint(
         raise FileNotFoundError(checkpoint_path)
     if not checkpoint_path.is_file():
         raise ValueError(f"checkpoint path is not a regular file: {checkpoint_path}")
-    payload = _safe_torch_load(checkpoint_path, device)
+    validated_device = _validate_device(device)
+    payload = _safe_torch_load(checkpoint_path, torch.device("cpu"))
     metadata = _validate_payload(payload)
     model = build_x3d(num_classes=len(LABEL_ORDER), pretrained=False)
     try:
         model.load_state_dict(payload["state_dict"], strict=True)
     except RuntimeError as error:
         raise ValueError(f"checkpoint state_dict is incompatible: {error}") from error
-    model.to(device)
+    model.to(validated_device)
     model.eval()
     return LoadedBehaviorCheckpoint(model=model, metadata=metadata)
