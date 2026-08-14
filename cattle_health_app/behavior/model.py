@@ -9,14 +9,13 @@ crossing that trust boundary.
 from __future__ import annotations
 
 import inspect
-import json
+import math
 import os
 import tempfile
-from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Mapping, Tuple, Union
 
 import torch
 from torch import nn
@@ -39,6 +38,8 @@ CHECKPOINT_FIELDS = frozenset(
 )
 PathLike = Union[str, os.PathLike]
 
+JSONScalar = Union[None, bool, int, float, str]
+FrozenJSON = Union[JSONScalar, Tuple["FrozenJSON", ...], Mapping[str, "FrozenJSON"]]
 
 @dataclass(frozen=True)
 class BehaviorCheckpointMetadata:
@@ -48,8 +49,8 @@ class BehaviorCheckpointMetadata:
     input_frames: int
     input_size: int
     model_version: str
-    metrics: Mapping[str, Any]
-    training_config: Mapping[str, Any]
+    metrics: Mapping[str, FrozenJSON]
+    training_config: Mapping[str, FrozenJSON]
 
 
 @dataclass(frozen=True)
@@ -79,15 +80,39 @@ def build_x3d(num_classes: int = 12, pretrained: bool = True) -> nn.Module:
     return model
 
 
-def _json_mapping(value: Mapping[str, Any], field: str) -> Dict[str, Any]:
+def _validate_json(value: Any, field: str, path: str) -> Any:
+    if value is None or isinstance(value, (bool, str)):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, float):
+        if math.isfinite(value):
+            return value
+        raise ValueError(f"{field} must contain JSON-compatible finite numbers at {path}")
+    if isinstance(value, Mapping):
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError(f"{field} must contain JSON-compatible string keys at {path}")
+            result[key] = _validate_json(item, field, f"{path}.{key}")
+        return result
+    if isinstance(value, (list, tuple)):
+        return [_validate_json(item, field, f"{path}[{index}]") for index, item in enumerate(value)]
+    raise ValueError(f"{field} must contain JSON-compatible values at {path}")
+
+
+def _json_mapping(value: Any, field: str) -> Dict[str, Any]:
     if not isinstance(value, Mapping):
         raise ValueError(f"{field} must be a mapping")
-    result = dict(value)
-    try:
-        json.dumps(result, allow_nan=False)
-    except (TypeError, ValueError) as error:
-        raise ValueError(f"{field} must contain JSON-compatible values") from error
-    return result
+    return _validate_json(value, field, field)
+
+
+def _freeze_json(value: Any) -> FrozenJSON:
+    if isinstance(value, Mapping):
+        return MappingProxyType({key: _freeze_json(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json(item) for item in value)
+    return value
 
 
 def _cpu_state_dict(model: nn.Module) -> Dict[str, torch.Tensor]:
@@ -169,7 +194,7 @@ def _validate_payload(payload: Any) -> BehaviorCheckpointMetadata:
         raise ValueError("state_dict must map string names to tensors")
     return BehaviorCheckpointMetadata(
         FORMAT_VERSION, ARCHITECTURE, LABEL_ORDER, INPUT_FRAMES, INPUT_SIZE,
-        version, MappingProxyType(metrics), MappingProxyType(config),
+        version, _freeze_json(metrics), _freeze_json(config),
     )
 
 
@@ -183,7 +208,10 @@ def _safe_torch_load(path: Path, device: Union[str, torch.device]) -> Any:
     try:
         return torch.load(path, map_location=device, weights_only=True)
     except Exception as error:
-        raise ValueError(f"could not safely load checkpoint: {error}") from error
+        raise ValueError(
+            "could not safely load checkpoint; payload may contain non JSON-compatible "
+            f"metadata or invalid tensor data: {error}"
+        ) from error
 
 
 def load_behavior_checkpoint(
