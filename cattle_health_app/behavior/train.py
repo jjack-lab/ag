@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Dataset, Subset
 from .dataset import CvbClipDataset
 from .model import build_x3d, load_behavior_checkpoint, save_behavior_checkpoint
 
@@ -60,11 +60,34 @@ def compute_metrics(y_true,y_pred,class_count=12):
         per.append({'class_id':i,'precision':precision,'recall':recall,'f1':f1,'support':support})
     return {'accuracy':sum(cm[i][i] for i in range(class_count))/len(true),'macro_f1':sum(v['f1'] for v in per)/class_count,'per_class':per,'confusion_matrix':cm}
 
+class EpochSeededDataset(Dataset):
+    """Derive augmentation RNG from seed, epoch and sample index across worker counts."""
+    def __init__(self,dataset,seed): self.dataset=dataset; self.seed=seed; self.epoch=0
+    @property
+    def samples(self): return self.dataset.samples
+    def __len__(self): return len(self.dataset)
+    def set_epoch(self,epoch): self.epoch=int(epoch)
+    def __getitem__(self,index):
+        augmentation=getattr(self.dataset,'_augmentation_rng',None)
+        if augmentation is None: return self.dataset[index]
+        derived=(self.seed*1000003+self.epoch*9176+int(index))%(2**63-1)
+        self.dataset._augmentation_rng=lambda: random.Random(derived)
+        try: return self.dataset[index]
+        finally: self.dataset._augmentation_rng=augmentation
+
+
+def _set_loader_epoch(loader,epoch,seed):
+    generator=getattr(loader,'generator',None)
+    if generator is not None: generator.manual_seed(seed+epoch)
+    dataset=getattr(loader,'dataset',None)
+    while isinstance(dataset,Subset): dataset=dataset.dataset
+    setter=getattr(dataset,'set_epoch',None)
+    if setter is not None: setter(epoch)
 def make_loaders(index_root,source_data_root,config,mode='train'):
     if mode not in ('train','evaluate'): raise ValueError("mode must be 'train' or 'evaluate'")
     generator=torch.Generator().manual_seed(config.seed); result={}
     for split in (('train','val','test') if mode=='train' else ('val','test')):
-        dataset=CvbClipDataset(Path(index_root)/f'{split}.csv',source_data_root,training=split=='train',seed=config.seed)
+        dataset=EpochSeededDataset(CvbClipDataset(Path(index_root)/f'{split}.csv',source_data_root,training=split=='train',seed=config.seed),config.seed)
         result[split]=DataLoader(dataset,batch_size=config.batch_size,shuffle=split=='train',num_workers=config.workers,worker_init_fn=_seed_worker,generator=generator)
     return result
 
@@ -75,16 +98,19 @@ def _scaler(enabled):
 def train_epoch(model,loader,optimizer,device,config,class_weights=None,scheduler=None,scaler=None,max_steps=None):
     device=torch.device(device); amp=bool(config.amp and device.type=='cuda'); scaler=scaler or _scaler(amp)
     model.train(); criterion=nn.CrossEntropyLoss(weight=None if class_weights is None else class_weights.to(device)); optimizer.zero_grad(set_to_none=True)
-    total=0.; count=0; true=[]; pred=[]; steps=0; pending=[]
+    total=0.; count=0; true=[]; pred=[]; steps=0; group_samples=0
     for index,(inputs,targets) in enumerate(loader):
         inputs,targets=inputs.to(device),targets.to(device)
         with torch.amp.autocast(device_type=device.type,enabled=amp): logits=model(inputs); loss=criterion(logits,targets)
         if not torch.isfinite(loss): raise FloatingPointError('non-finite training loss')
-        size=targets.numel(); pending.append((loss,size)); total+=float(loss.detach())*size; count+=size; true.extend(targets.cpu().tolist()); pred.extend(logits.detach().argmax(1).cpu().tolist())
-        boundary=len(pending)==config.accumulation_steps or index+1==len(loader)
+        size=targets.numel(); scaler.scale(loss*size).backward(); group_samples+=size; total+=float(loss.detach())*size; count+=size; true.extend(targets.cpu().tolist()); pred.extend(logits.detach().argmax(1).cpu().tolist())
+        boundary=(index+1)%config.accumulation_steps==0 or index+1==len(loader)
         if boundary:
-            group_samples=sum(size for _,size in pending); combined=sum(loss*size/group_samples for loss,size in pending); scaler.scale(combined).backward(); pending.clear()
-            scaler.unscale_(optimizer); nn.utils.clip_grad_norm_(model.parameters(),5.0); scaler.step(optimizer); scaler.update(); optimizer.zero_grad(set_to_none=True); steps+=1
+            scaler.unscale_(optimizer)
+            for parameter in model.parameters():
+                if parameter.grad is not None: parameter.grad.div_(group_samples)
+            group_samples=0
+            nn.utils.clip_grad_norm_(model.parameters(),5.0); scaler.step(optimizer); scaler.update(); optimizer.zero_grad(set_to_none=True); steps+=1
             if scheduler is not None: scheduler.step()
             if max_steps is not None and steps>=max_steps: break
     if not count: raise ValueError('loader must not be empty')
@@ -149,7 +175,7 @@ def load_training_state(path,model,optimizer,scheduler,scaler,expected_config=No
     rng=payload['rng']
     if not isinstance(payload['model'],dict) or not all(isinstance(k,str) and isinstance(v,torch.Tensor) and torch.isfinite(v).all() for k,v in payload['model'].items()): raise ValueError('invalid model state')
     if not all(isinstance(payload[k],dict) and _valid_state_tree(payload[k]) for k in ('optimizer','scheduler','scaler')) or not _valid_state_tree(payload['history']) or not _valid_state_tree(payload['config']): raise ValueError('invalid component state')
-    if not isinstance(rng,dict) or not isinstance(rng.get('python'),tuple) or len(rng['python'])!=3 or not isinstance(rng['python'][1],tuple) or not math.isfinite(rng.get('numpy_cached_gaussian',float('nan'))) or not isinstance(rng.get('torch'),torch.Tensor) or rng['torch'].dtype!=torch.uint8 or not isinstance(rng.get('numpy_state'),list) or len(rng['numpy_state'])!=624 or not 0<=rng.get('numpy_pos',-1)<=624 or rng.get('numpy_has_gauss') not in (0,1) or rng['torch'].shape!=torch.get_rng_state().shape or not isinstance(rng.get('cuda'),list) or len(rng['cuda'])!=(torch.cuda.device_count() if torch.cuda.is_available() else 0) or any(v.dtype!=torch.uint8 or v.ndim!=1 for v in rng['cuda']): raise ValueError('invalid RNG state')
+    if not isinstance(rng,dict) or not isinstance(rng.get('python'),tuple) or len(rng['python'])!=3 or type(rng['python'][0]) is not int or not isinstance(rng['python'][1],tuple) or len(rng['python'][1])!=625 or not (rng['python'][2] is None or isinstance(rng['python'][2],float) and math.isfinite(rng['python'][2])) or not math.isfinite(rng.get('numpy_cached_gaussian',float('nan'))) or not isinstance(rng.get('torch'),torch.Tensor) or rng['torch'].dtype!=torch.uint8 or not isinstance(rng.get('numpy_state'),list) or len(rng['numpy_state'])!=624 or not 0<=rng.get('numpy_pos',-1)<=624 or rng.get('numpy_has_gauss') not in (0,1) or rng['torch'].shape!=torch.get_rng_state().shape or not isinstance(rng.get('cuda'),list) or len(rng['cuda'])!=(torch.cuda.device_count() if torch.cuda.is_available() else 0) or any(v.dtype!=torch.uint8 or v.ndim!=1 for v in rng['cuda']) or (torch.cuda.is_available() and any(v.shape!=current.shape for v,current in zip(rng['cuda'],torch.cuda.get_rng_state_all()))): raise ValueError('invalid RNG state')
     import copy
     snapshots=copy.deepcopy((model.state_dict(),optimizer.state_dict(),scheduler.state_dict(),scaler.state_dict(),random.getstate(),np.random.get_state(),torch.get_rng_state(),torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []))
     try:
@@ -230,8 +256,7 @@ def run_training(model,loaders,output_root,config,device='cpu',resume=None,evalu
     last_metrics=None
     for epoch in range(start,config.epochs):
         if frozen and epoch>=config.freeze_backbone_epochs: set_backbone_frozen(model,False); frozen=False
-        generator=getattr(loaders['train'],'generator',None)
-        if generator is not None: generator.manual_seed(config.seed+epoch)
+        _set_loader_epoch(loaders['train'],epoch,config.seed)
         trained=train_fn(model,loaders['train'],optimizer,device,config,weights,scaler=scaler)
         validation=evaluate_fn(model,loaders['val'],device,weights); last_metrics=validation.metrics
         row={'epoch':epoch,'train_loss':trained.loss,'val_loss':validation.loss,'val_accuracy':validation.metrics['accuracy'],'val_macro_f1':validation.metrics['macro_f1'],'learning_rate':optimizer.param_groups[0]['lr']}; history.append(row)

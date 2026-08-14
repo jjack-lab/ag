@@ -214,3 +214,41 @@ def test_powershell_script_has_formal_parameters_and_no_literal_chinese_path():
     text=(training.Path(__file__).parents[1]/'scripts'/'train_cvb_behavior.ps1').read_text(encoding='utf-8')
     assert 'param(' in text and '[Parameter(Mandatory=$true)]' in text and '$projectRoot' in text
     assert '$Checkpoint' in text and '$Resume' in text and 'F:\\new大创' not in text
+
+def test_each_microbatch_backward_finishes_before_next_forward():
+    state={'forward':0,'backward':0}
+    class Observe(torch.autograd.Function):
+        @staticmethod
+        def forward(ctx,value): state['forward']+=1; return value
+        @staticmethod
+        def backward(ctx,gradient): state['backward']+=1; return gradient
+    class Model(nn.Module):
+        def __init__(self): super().__init__(); self.linear=nn.Linear(2,2)
+        def forward(self,x):
+            assert state['backward']==state['forward']
+            return Observe.apply(self.linear(x))
+    model=Model(); loader=DataLoader(TensorDataset(torch.randn(4,2),torch.tensor([0,1,0,1])),batch_size=1)
+    training.train_epoch(model,loader,torch.optim.SGD(model.parameters(),.1),'cpu',training.TrainingConfig(accumulation_steps=4,amp=False))
+    assert state=={'forward':4,'backward':4}
+
+def test_real_getitem_augmentation_is_epoch_index_deterministic(tmp_path):
+    import cv2
+    from cattle_health_app.behavior.dataset import ClipSample, CvbClipDataset
+    paths=[]
+    for index in range(16):
+        path=tmp_path/f'{index}.png'; image=np.arange(12*12*3,dtype=np.uint8).reshape(12,12,3); image=(image+index).astype(np.uint8); assert cv2.imwrite(str(path),image); paths.append(path.name)
+    sample=ClipSample('s',tuple(paths),(.1,.1,.9,.9),1,'v',1.,0,'g')
+    dataset=CvbClipDataset.__new__(CvbClipDataset); dataset.samples=[sample]; dataset.data_root=tmp_path; dataset.training=True; dataset.context=.15; dataset.size=16; dataset._injected_rng=None; dataset.seed=3; dataset._worker_rng=None; dataset._worker_rng_key=None
+    continuous=training.EpochSeededDataset(dataset,23); continuous.set_epoch(1); expected=continuous[0][0]
+    resumed=training.EpochSeededDataset(dataset,23); resumed.set_epoch(1); actual=resumed[0][0]
+    assert torch.equal(expected,actual)
+
+def test_real_getitem_epoch_changes_augmentation(tmp_path):
+    import cv2
+    from cattle_health_app.behavior.dataset import ClipSample, CvbClipDataset
+    paths=[]
+    for index in range(16):
+        path=tmp_path/f'{index}.png'; assert cv2.imwrite(str(path),np.full((10,12,3),30+index,dtype=np.uint8)); paths.append(path.name)
+    dataset=CvbClipDataset.__new__(CvbClipDataset); dataset.samples=[ClipSample('s',tuple(paths),(.1,.1,.9,.9),1,'v',1.,0,'g')]; dataset.data_root=tmp_path; dataset.training=True; dataset.context=.15; dataset.size=16; dataset._injected_rng=None; dataset.seed=3; dataset._worker_rng=None; dataset._worker_rng_key=None
+    wrapped=training.EpochSeededDataset(dataset,23); wrapped.set_epoch(0); first=wrapped[0][0]; wrapped.set_epoch(1); second=wrapped[0][0]
+    assert not torch.equal(first,second)
