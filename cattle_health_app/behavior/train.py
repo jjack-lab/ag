@@ -109,7 +109,7 @@ def train_epoch(model,loader,optimizer,device,config,class_weights=None,schedule
             scaler.unscale_(optimizer)
             for parameter in model.parameters():
                 if parameter.grad is not None: parameter.grad.div_(group_denominator)
-            group_samples=0
+            group_denominator=0.0
             nn.utils.clip_grad_norm_(model.parameters(),5.0); scaler.step(optimizer); scaler.update(); optimizer.zero_grad(set_to_none=True); steps+=1
             if scheduler is not None: scheduler.step()
             if max_steps is not None and steps>=max_steps: break

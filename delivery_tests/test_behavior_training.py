@@ -264,3 +264,22 @@ def test_weighted_partial_accumulation_matches_large_batches():
 
 def test_unweighted_partial_equivalence_remains_covered():
     test_partial_accumulation_matches_equivalent_large_batches()
+
+@pytest.mark.parametrize('weights',[None,torch.tensor([1.,10.])],ids=['unweighted','nonuniform-weighted'])
+def test_multiple_accumulation_groups_match_independent_torch_reference(weights):
+    training.seed_everything(47)
+    inputs=torch.randn(5,2)*.1; targets=torch.tensor([0,1,1,0,1]); initial=nn.Linear(2,2).state_dict()
+    actual=nn.Linear(2,2); actual.load_state_dict(initial); actual_optimizer=torch.optim.SGD(actual.parameters(),.05)
+    result=training.train_epoch(actual,DataLoader(TensorDataset(inputs,targets),batch_size=1,shuffle=False),actual_optimizer,'cpu',training.TrainingConfig(accumulation_steps=4,amp=False),weights)
+
+    reference=nn.Linear(2,2); reference.load_state_dict(initial); reference_optimizer=torch.optim.SGD(reference.parameters(),.05)
+    for indices in (slice(0,4),slice(4,5)):
+        reference_optimizer.zero_grad(set_to_none=True)
+        loss=torch.nn.functional.cross_entropy(reference(inputs[indices]),targets[indices],weight=weights,reduction='mean')
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(reference.parameters(),5.)
+        reference_optimizer.step()
+
+    assert result.optimizer_steps==2
+    for actual_parameter,reference_parameter in zip(actual.parameters(),reference.parameters()):
+        assert torch.allclose(actual_parameter,reference_parameter,atol=1e-7)
