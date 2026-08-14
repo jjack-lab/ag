@@ -13,11 +13,13 @@ from typing import Sequence
 import cv2
 import numpy as np
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, get_worker_info
 
 FRAME_COUNT = 16
 KINETICS_MEAN = (0.45, 0.45, 0.45)
 KINETICS_STD = (0.225, 0.225, 0.225)
+_KINETICS_MEAN_TENSOR = torch.tensor(KINETICS_MEAN, dtype=torch.float32).view(3, 1, 1, 1)
+_KINETICS_STD_TENSOR = torch.tensor(KINETICS_STD, dtype=torch.float32).view(3, 1, 1, 1)
 EXPECTED_INDEX_FIELDS = (
     "sample_id",
     "video_id",
@@ -129,7 +131,7 @@ def _letterbox(image: np.ndarray, size: int) -> np.ndarray:
     scale = min(size / width, size / height)
     new_width, new_height = max(1, round(width * scale)), max(1, round(height * scale))
     resized = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
-    canvas = np.zeros((size, size, 3), dtype=np.uint8)
+    canvas = np.zeros((size, size, 3), dtype=image.dtype)
     left, top = (size - new_width) // 2, (size - new_height) // 2
     canvas[top:top + new_height, left:left + new_width] = resized
     return canvas
@@ -148,9 +150,10 @@ def preprocess_clip_bgr(
     saturation = rng.uniform(0.9, 1.1) if training else 1.0
     output = []
     for frame in frames:
-        if not isinstance(frame, np.ndarray) or frame.ndim != 3 or frame.shape[2] != 3 or frame.size == 0:
-            raise ValueError("frames must be non-empty HxWx3 arrays")
-        image = _letterbox(frame, size)
+        if (not isinstance(frame, np.ndarray) or frame.dtype != np.uint8 or
+                frame.ndim != 3 or frame.shape[2] != 3 or frame.size == 0):
+            raise ValueError("frames must be non-empty uint8 HxWx3 arrays")
+        image = frame
         if flip:
             image = cv2.flip(image, 1)
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
@@ -159,12 +162,10 @@ def preprocess_clip_bgr(
             gray = rgb.mean(axis=2, keepdims=True)
             rgb = gray + (rgb - gray) * saturation
             rgb = np.clip(rgb * brightness, 0.0, 1.0)
-        output.append(rgb)
+        output.append(_letterbox(rgb, size))
     array = np.stack(output, axis=0)
     tensor = torch.from_numpy(array).permute(3, 0, 1, 2).contiguous()
-    mean = torch.tensor(KINETICS_MEAN, dtype=torch.float32).view(3, 1, 1, 1)
-    std = torch.tensor(KINETICS_STD, dtype=torch.float32).view(3, 1, 1, 1)
-    return (tensor - mean) / std
+    return (tensor - _KINETICS_MEAN_TENSOR) / _KINETICS_STD_TENSOR
 
 
 def evaluation_transform(frames: Sequence[np.ndarray], size: int = 224) -> torch.Tensor:
@@ -178,12 +179,31 @@ def training_transform(frames: Sequence[np.ndarray], size: int = 224, rng=None) 
 class CvbClipDataset(Dataset):
     """Dataset returning normalized ``(C,T,H,W)`` clips and zero-based labels."""
 
-    def __init__(self, manifest_path, data_root, training=False, context=0.15, size=224, rng=None):
+    def __init__(self, manifest_path, data_root, training=False, context=0.15, size=224,
+                 rng=None, seed=None):
         self.samples = load_index(manifest_path)
         self.data_root = Path(data_root).resolve(strict=True)
         if not self.data_root.is_dir():
             raise ValueError("data_root must be a directory")
-        self.training, self.context, self.size, self.rng = bool(training), context, size, rng
+        self.training, self.context, self.size = bool(training), context, size
+        self._injected_rng, self.seed = rng, seed
+        self._worker_rng = None
+        self._worker_rng_key = None
+
+    def _augmentation_rng(self):
+        worker = get_worker_info()
+        if worker is None and self._injected_rng is not None:
+            return self._injected_rng
+        if worker is None:
+            key = ("main", self.seed if self.seed is not None else torch.initial_seed())
+            rng_seed = key[1]
+        else:
+            key = ("worker", worker.id, worker.seed)
+            rng_seed = worker.seed
+        if self._worker_rng is None or self._worker_rng_key != key:
+            self._worker_rng = random.Random(rng_seed)
+            self._worker_rng_key = key
+        return self._worker_rng
 
     def __len__(self):
         return len(self.samples)
@@ -199,7 +219,11 @@ class CvbClipDataset(Dataset):
                 resolved.relative_to(self.data_root)
             except (OSError, ValueError) as exc:
                 raise UnreadableClipError(f"sample {sample.sample_id}: unreadable frame {relative}") from exc
-            image = cv2.imread(str(resolved), cv2.IMREAD_COLOR)
+            try:
+                image = cv2.imread(str(resolved), cv2.IMREAD_COLOR)
+            except Exception as exc:
+                raise UnreadableClipError(
+                    f"sample {sample.sample_id}: unreadable frame {relative}") from exc
             if image is None or image.ndim != 3 or image.shape[2] != 3 or image.shape[0] < 1 or image.shape[1] < 1:
                 raise UnreadableClipError(f"sample {sample.sample_id}: unreadable frame {relative}")
             height, width = image.shape[:2]
@@ -211,5 +235,5 @@ class CvbClipDataset(Dataset):
             if crop.size == 0:
                 raise UnreadableClipError(f"sample {sample.sample_id}: invalid crop for {relative}")
             crops.append(crop)
-        clip = preprocess_clip_bgr(crops, self.size, self.training, self.rng)
+        clip = preprocess_clip_bgr(crops, self.size, self.training, self._augmentation_rng())
         return clip, sample.label_id - 1
