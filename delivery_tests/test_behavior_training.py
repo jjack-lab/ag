@@ -167,3 +167,50 @@ def test_incompatible_resume_rejected_before_any_state_or_rng_mutation(tmp_path)
 
 def test_training_config_rejects_legacy_lr_keyword():
     with pytest.raises(TypeError): training.TrainingConfig(lr=.1)
+
+def test_partial_accumulation_matches_equivalent_large_batches():
+    training.seed_everything(4); initial=nn.Linear(2,2).state_dict(); x=torch.randn(5,2); y=torch.tensor([0,1,0,1,1])
+    micro=nn.Linear(2,2); micro.load_state_dict(initial); large=nn.Linear(2,2); large.load_state_dict(initial)
+    config=training.TrainingConfig(accumulation_steps=4,amp=False)
+    training.train_epoch(micro,DataLoader(TensorDataset(x,y),batch_size=1,shuffle=False),torch.optim.SGD(micro.parameters(),.1),'cpu',config)
+    training.train_epoch(large,DataLoader(TensorDataset(x,y),batch_sampler=[[0,1,2,3],[4]]),torch.optim.SGD(large.parameters(),.1),'cpu',training.TrainingConfig(accumulation_steps=1,amp=False))
+    assert all(torch.allclose(a,b,atol=1e-7) for a,b in zip(micro.parameters(),large.parameters()))
+
+def test_final_artifacts_use_best_epoch_metrics(tmp_path,monkeypatch):
+    scores=iter([.8,.2]); captured=[]
+    monkeypatch.setattr(training,'save_behavior_checkpoint',lambda *a,**k:None); monkeypatch.setattr(training,'save_training_state',lambda *a,**k:None); monkeypatch.setattr(training,'_write_csv',lambda *a,**k:None); monkeypatch.setattr(training,'write_artifacts',lambda root,history,metrics:captured.append(metrics['macro_f1']))
+    training.run_training(nn.Sequential(nn.Linear(2,2)),{'train':[0],'val':[0]},tmp_path,training.TrainingConfig(epochs=2,freeze_backbone_epochs=0),train_fn=lambda *a,**k:_epoch(0),evaluate_fn=lambda *a,**k:_epoch(next(scores)))
+    assert captured==[.8]
+
+def test_resume_rejects_changed_epochs_before_restore(tmp_path):
+    source=nn.Linear(1,1); opt=torch.optim.AdamW(source.parameters()); sched=torch.optim.lr_scheduler.CosineAnnealingLR(opt,2); scaler=training._scaler(False)
+    training.save_training_state(tmp_path/'x.pt',0,source,opt,sched,scaler,.1,0,[],training.TrainingConfig(epochs=2))
+    with pytest.raises(ValueError,match='epochs'): training.load_training_state(tmp_path/'x.pt',source,opt,sched,scaler,training.TrainingConfig(epochs=3))
+
+@pytest.mark.parametrize('mutate',[lambda p:p.update(best_f1=float('nan')),lambda p:p['rng'].update(torch=torch.zeros(2)),lambda p:p['rng'].update(numpy_pos=999)])
+def test_semantically_malformed_state_rejected(tmp_path,mutate):
+    model=nn.Linear(1,1); opt=torch.optim.AdamW(model.parameters()); sched=torch.optim.lr_scheduler.CosineAnnealingLR(opt,2); scaler=training._scaler(False)
+    training.save_training_state(tmp_path/'x.pt',0,model,opt,sched,scaler,.1,0,[],training.TrainingConfig()); payload=torch.load(tmp_path/'x.pt',weights_only=True); mutate(payload); torch.save(payload,tmp_path/'x.pt')
+    with pytest.raises(ValueError): training.load_training_state(tmp_path/'x.pt',model,opt,sched,scaler)
+
+def test_epoch_generator_sequence_is_resume_equivalent(tmp_path,monkeypatch):
+    dataset=TensorDataset(torch.zeros(1,2),torch.zeros(1,dtype=torch.long)); loader=DataLoader(dataset,generator=torch.Generator())
+    monkeypatch.setattr(training,'save_behavior_checkpoint',lambda *a,**k:None); monkeypatch.setattr(training,'save_training_state',lambda *a,**k:None); monkeypatch.setattr(training,'write_artifacts',lambda *a,**k:None); monkeypatch.setattr(training,'_write_csv',lambda *a,**k:None)
+    full=[]; config=training.TrainingConfig(epochs=3,seed=17,freeze_backbone_epochs=0)
+    training.run_training(nn.Linear(2,2),{'train':loader,'val':[0]},tmp_path,config,train_fn=lambda *a,**k:(full.append(loader.generator.initial_seed()) or _epoch(0)),evaluate_fn=lambda *a,**k:_epoch(.5))
+    resumed=[]; monkeypatch.setattr(training,'load_training_state',lambda *a,**k:{'epoch':0,'best_f1':.5,'patience':0,'history':[{'epoch':0}],'config':training.asdict(config)})
+    training.run_training(nn.Linear(2,2),{'train':loader,'val':[0]},tmp_path,config,resume='x',train_fn=lambda *a,**k:(resumed.append(loader.generator.initial_seed()) or _epoch(0)),evaluate_fn=lambda *a,**k:_epoch(.4))
+    assert full==[17,18,19] and resumed==full[1:]
+
+def test_atomic_png_failure_cleans_temp_and_preserves_destination(tmp_path):
+    destination=tmp_path/'plot.png'; destination.write_bytes(b'old')
+    class Figure:
+        def savefig(self,path,format):
+            path.write_bytes(b'partial'); raise RuntimeError('render failed')
+    with pytest.raises(RuntimeError): training._atomic_figure(Figure(),destination)
+    assert destination.read_bytes()==b'old' and list(tmp_path.iterdir())==[destination]
+
+def test_powershell_script_has_formal_parameters_and_no_literal_chinese_path():
+    text=(training.Path(__file__).parents[1]/'scripts'/'train_cvb_behavior.ps1').read_text(encoding='utf-8')
+    assert 'param(' in text and '[Parameter(Mandatory=$true)]' in text and '$projectRoot' in text
+    assert '$Checkpoint' in text and '$Resume' in text and 'F:\\new大创' not in text

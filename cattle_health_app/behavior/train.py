@@ -75,22 +75,20 @@ def _scaler(enabled):
 def train_epoch(model,loader,optimizer,device,config,class_weights=None,scheduler=None,scaler=None,max_steps=None):
     device=torch.device(device); amp=bool(config.amp and device.type=='cuda'); scaler=scaler or _scaler(amp)
     model.train(); criterion=nn.CrossEntropyLoss(weight=None if class_weights is None else class_weights.to(device)); optimizer.zero_grad(set_to_none=True)
-    total=0.; count=0; true=[]; pred=[]; steps=0
+    total=0.; count=0; true=[]; pred=[]; steps=0; pending=[]
     for index,(inputs,targets) in enumerate(loader):
         inputs,targets=inputs.to(device),targets.to(device)
-        with torch.amp.autocast(device_type=device.type,enabled=amp):
-            logits=model(inputs); loss=criterion(logits,targets)
+        with torch.amp.autocast(device_type=device.type,enabled=amp): logits=model(inputs); loss=criterion(logits,targets)
         if not torch.isfinite(loss): raise FloatingPointError('non-finite training loss')
-        scaler.scale(loss/config.accumulation_steps).backward()
-        total+=float(loss.detach())*targets.numel(); count+=targets.numel(); true.extend(targets.cpu().tolist()); pred.extend(logits.detach().argmax(1).cpu().tolist())
-        boundary=(index+1)%config.accumulation_steps==0 or index+1==len(loader)
+        size=targets.numel(); pending.append((loss,size)); total+=float(loss.detach())*size; count+=size; true.extend(targets.cpu().tolist()); pred.extend(logits.detach().argmax(1).cpu().tolist())
+        boundary=len(pending)==config.accumulation_steps or index+1==len(loader)
         if boundary:
+            group_samples=sum(size for _,size in pending); combined=sum(loss*size/group_samples for loss,size in pending); scaler.scale(combined).backward(); pending.clear()
             scaler.unscale_(optimizer); nn.utils.clip_grad_norm_(model.parameters(),5.0); scaler.step(optimizer); scaler.update(); optimizer.zero_grad(set_to_none=True); steps+=1
             if scheduler is not None: scheduler.step()
             if max_steps is not None and steps>=max_steps: break
     if not count: raise ValueError('loader must not be empty')
-    metrics=compute_metrics(true,pred,logits.shape[1])
-    return EpochResult(total/count,true,pred,metrics,steps)
+    metrics=compute_metrics(true,pred,logits.shape[1]); return EpochResult(total/count,true,pred,metrics,steps)
 
 @torch.inference_mode()
 def evaluate(model,loader,device,class_weights=None):
@@ -146,12 +144,12 @@ def load_training_state(path,model,optimizer,scheduler,scaler,expected_config=No
     if isinstance(saved_config,dict) and 'lr' in saved_config and 'learning_rate' not in saved_config: saved_config=dict(saved_config); saved_config['learning_rate']=saved_config.pop('lr'); payload['config']=saved_config
     if expected_config is not None:
         current=asdict(expected_config); incompatible=[key for key in current if key!='epochs' and saved_config.get(key)!=current[key]]
-        if incompatible or current['epochs']<=payload['epoch']: raise ValueError('incompatible resume configuration: '+str(incompatible or ['epochs']))
-    if type(payload['epoch']) is not int or payload['epoch']<0 or type(payload['patience']) is not int or payload['patience']<0 or not isinstance(payload['history'],list) or not isinstance(payload['config'],dict): raise ValueError('invalid training checkpoint field types')
+        if saved_config.get('epochs')!=current['epochs'] or incompatible or current['epochs']<=payload['epoch']: raise ValueError('incompatible resume configuration: '+str((['epochs'] if saved_config.get('epochs')!=current['epochs'] else [])+incompatible))
+    if type(payload['epoch']) is not int or payload['epoch']<0 or type(payload['patience']) is not int or payload['patience']<0 or not isinstance(payload['history'],list) or not isinstance(payload['config'],dict) or not isinstance(payload['best_f1'],(int,float)) or not math.isfinite(payload['best_f1']) or not -1<=payload['best_f1']<=1: raise ValueError('invalid training checkpoint field types')
     rng=payload['rng']
     if not isinstance(payload['model'],dict) or not all(isinstance(k,str) and isinstance(v,torch.Tensor) and torch.isfinite(v).all() for k,v in payload['model'].items()): raise ValueError('invalid model state')
     if not all(isinstance(payload[k],dict) and _valid_state_tree(payload[k]) for k in ('optimizer','scheduler','scaler')) or not _valid_state_tree(payload['history']) or not _valid_state_tree(payload['config']): raise ValueError('invalid component state')
-    if not isinstance(rng,dict) or not isinstance(rng.get('torch'),torch.Tensor) or rng['torch'].dtype!=torch.uint8 or not isinstance(rng.get('numpy_state'),list) or len(rng['numpy_state'])!=624 or not isinstance(rng.get('cuda'),list): raise ValueError('invalid RNG state')
+    if not isinstance(rng,dict) or not isinstance(rng.get('python'),tuple) or len(rng['python'])!=3 or not isinstance(rng['python'][1],tuple) or not math.isfinite(rng.get('numpy_cached_gaussian',float('nan'))) or not isinstance(rng.get('torch'),torch.Tensor) or rng['torch'].dtype!=torch.uint8 or not isinstance(rng.get('numpy_state'),list) or len(rng['numpy_state'])!=624 or not 0<=rng.get('numpy_pos',-1)<=624 or rng.get('numpy_has_gauss') not in (0,1) or rng['torch'].shape!=torch.get_rng_state().shape or not isinstance(rng.get('cuda'),list) or len(rng['cuda'])!=(torch.cuda.device_count() if torch.cuda.is_available() else 0) or any(v.dtype!=torch.uint8 or v.ndim!=1 for v in rng['cuda']): raise ValueError('invalid RNG state')
     import copy
     snapshots=copy.deepcopy((model.state_dict(),optimizer.state_dict(),scheduler.state_dict(),scaler.state_dict(),random.getstate(),np.random.get_state(),torch.get_rng_state(),torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []))
     try:
@@ -186,11 +184,19 @@ def _write_csv(path,rows,fieldnames):
     finally:
         if temporary.exists(): temporary.unlink()
 
+def _atomic_figure(figure,path):
+    destination=Path(path); handle=tempfile.NamedTemporaryFile(dir=destination.parent,prefix='.'+destination.name,suffix='.png',delete=False); temporary=Path(handle.name); handle.close()
+    try:
+        figure.savefig(temporary,format='png')
+        with temporary.open('r+b') as stream: os.fsync(stream.fileno())
+        os.replace(temporary,destination)
+    finally:
+        if temporary.exists(): temporary.unlink()
 def _plot_artifacts(output,history,metrics):
     import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
     output=Path(output); epochs=[r['epoch'] for r in history]
-    figure,axes=plt.subplots(1,2,figsize=(10,4)); axes[0].plot(epochs,[r['train_loss'] for r in history],label='train'); axes[0].plot(epochs,[r['val_loss'] for r in history],label='val'); axes[0].legend(); axes[0].set_title('Loss'); axes[1].plot(epochs,[r['val_macro_f1'] for r in history],label='Macro-F1'); axes[1].plot(epochs,[r.get('learning_rate',0.0) for r in history],label='Learning rate'); axes[1].legend(); axes[1].set_title('Validation Macro-F1 / LR'); figure.tight_layout(); figure.savefig(output/'training_curves.png'); plt.close(figure)
-    figure,axis=plt.subplots(figsize=(8,7)); axis.imshow(metrics['confusion_matrix'],cmap='Blues'); axis.set_xlabel('Predicted'); axis.set_ylabel('True'); figure.tight_layout(); figure.savefig(output/'confusion_matrix.png'); plt.close(figure)
+    figure,axes=plt.subplots(1,2,figsize=(10,4)); axes[0].plot(epochs,[r['train_loss'] for r in history],label='train'); axes[0].plot(epochs,[r['val_loss'] for r in history],label='val'); axes[0].legend(); axes[0].set_title('Loss'); axes[1].plot(epochs,[r['val_macro_f1'] for r in history],label='Macro-F1'); axes[1].plot(epochs,[r.get('learning_rate',0.0) for r in history],label='Learning rate'); axes[1].legend(); axes[1].set_title('Validation Macro-F1 / LR'); figure.tight_layout(); _atomic_figure(figure,output/'training_curves.png'); plt.close(figure)
+    figure,axis=plt.subplots(figsize=(8,7)); axis.imshow(metrics['confusion_matrix'],cmap='Blues'); axis.set_xlabel('Predicted'); axis.set_ylabel('True'); figure.tight_layout(); _atomic_figure(figure,output/'confusion_matrix.png'); plt.close(figure)
 
 def write_artifacts(output_root,history,metrics):
     output=Path(output_root); output.mkdir(parents=True,exist_ok=True)
@@ -214,7 +220,7 @@ def run_training(model,loaders,output_root,config,device='cpu',resume=None,evalu
     optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate,weight_decay=config.weight_decay)
     scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=max(1,config.epochs)); scaler=_scaler(config.amp and device.type=='cuda')
     counts=_class_counts(loaders['train']); weights=make_class_weights(counts) if counts is not None else None
-    start=0; best=-1.; stale=0; history=[]; frozen=config.freeze_backbone_epochs>0
+    start=0; best=-1.; best_metrics=None; stale=0; history=[]; frozen=config.freeze_backbone_epochs>0
     if frozen: set_backbone_frozen(model,True)
     if resume:
         state=load_training_state(resume,model,optimizer,scheduler,scaler,config)
@@ -224,19 +230,23 @@ def run_training(model,loaders,output_root,config,device='cpu',resume=None,evalu
     last_metrics=None
     for epoch in range(start,config.epochs):
         if frozen and epoch>=config.freeze_backbone_epochs: set_backbone_frozen(model,False); frozen=False
+        generator=getattr(loaders['train'],'generator',None)
+        if generator is not None: generator.manual_seed(config.seed+epoch)
         trained=train_fn(model,loaders['train'],optimizer,device,config,weights,scaler=scaler)
         validation=evaluate_fn(model,loaders['val'],device,weights); last_metrics=validation.metrics
         row={'epoch':epoch,'train_loss':trained.loss,'val_loss':validation.loss,'val_accuracy':validation.metrics['accuracy'],'val_macro_f1':validation.metrics['macro_f1'],'learning_rate':optimizer.param_groups[0]['lr']}; history.append(row)
         improved=validation.metrics['macro_f1']>best
         if improved:
-            best=validation.metrics['macro_f1']; stale=0
+            best=validation.metrics['macro_f1']; best_metrics=validation.metrics; stale=0
             save_behavior_checkpoint(output/'best.pt',model,validation.metrics,asdict(config))
         else: stale+=1
         scheduler.step(); save_training_state(output/'last.pt',epoch,model,optimizer,scheduler,scaler,best,stale,history,config)
         _write_csv(output/'history.csv',history,['epoch','train_loss','val_loss','val_accuracy','val_macro_f1','learning_rate'])
         if stale>=config.patience: break
     if last_metrics is None: raise ValueError('resume checkpoint is already beyond configured epochs')
-    write_artifacts(output,history,last_metrics); return {'history':history,'metrics':last_metrics,'best_f1':best,'epochs_completed':len(history)}
+    if best_metrics is None and (output/'best.pt').is_file():
+        best_model=load_behavior_checkpoint(output/'best.pt',device).model; best_metrics=evaluate_fn(best_model,loaders['val'],device,weights).metrics
+    write_artifacts(output,history,best_metrics or last_metrics); return {'history':history,'metrics':last_metrics,'best_f1':best,'epochs_completed':len(history)}
 
 def run_evaluation(checkpoint,loader,output_root,device='cpu'):
     loaded=load_behavior_checkpoint(checkpoint,device); result=evaluate(loaded.model,loader,device); write_artifacts(output_root,[],result.metrics); return result
