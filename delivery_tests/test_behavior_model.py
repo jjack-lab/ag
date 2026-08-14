@@ -258,6 +258,105 @@ def test_missing_directory_and_corrupt_paths_are_clear(tmp_path):
         behavior_model.load_behavior_checkpoint(bad)
 
 
+def test_load_deserializes_on_cpu_and_moves_model_once(tmp_path, tiny_builder, monkeypatch):
+    path = tmp_path / "model.pt"
+    _save(path, tiny_builder)
+    payload = torch.load(path, map_location="cpu")
+    load_locations = []
+
+    def safe_load(checkpoint_path, device):
+        load_locations.append(device)
+        return payload
+
+    class TrackingTiny(TinyX3D):
+        def __init__(self):
+            super().__init__()
+            self.blocks[5].proj = nn.Linear(4, 12)
+            self.moves = []
+
+        def to(self, device):
+            self.moves.append(device)
+            return super().to(device)
+
+    tracking = TrackingTiny()
+    monkeypatch.setattr(behavior_model, "_safe_torch_load", safe_load)
+    monkeypatch.setattr(behavior_model, "build_x3d", lambda **kwargs: tracking)
+    loaded = behavior_model.load_behavior_checkpoint(path, device="cpu")
+    assert loaded.model is tracking
+    assert load_locations == [torch.device("cpu")]
+    assert tracking.moves == [torch.device("cpu")]
+
+
+
+def test_safe_loader_forwards_cpu_map_location_and_restricted_mode(tmp_path, monkeypatch):
+    path = tmp_path / "model.pt"
+    path.write_bytes(b"placeholder")
+    calls = []
+
+    def fake_load(checkpoint_path, *, map_location, weights_only):
+        calls.append((checkpoint_path, {"map_location": map_location, "weights_only": weights_only}))
+        return {}
+
+    monkeypatch.setattr(behavior_model.torch, "load", fake_load)
+    behavior_model._safe_torch_load(path, torch.device("cpu"))
+    assert calls == [
+        (path, {"map_location": torch.device("cpu"), "weights_only": True})
+    ]
+
+
+def test_safe_loader_preserves_filesystem_errors(tmp_path, monkeypatch):
+    path = tmp_path / "denied.pt"
+    def denied(checkpoint_path, *, map_location, weights_only):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(behavior_model.torch, "load", denied)
+    with pytest.raises(PermissionError, match="denied"):
+        behavior_model._safe_torch_load(path, torch.device("cpu"))
+@pytest.mark.parametrize("device", ["not-a-device", "cuda:not-an-index"])
+
+def test_invalid_device_rejected_before_load_or_build(tmp_path, monkeypatch, device):
+    path = tmp_path / "model.pt"
+    path.write_bytes(b"placeholder")
+    monkeypatch.setattr(
+        behavior_model, "_safe_torch_load", lambda *args: pytest.fail("checkpoint was loaded")
+    )
+    monkeypatch.setattr(
+        behavior_model, "build_x3d", lambda **kwargs: pytest.fail("model was built")
+    )
+    with pytest.raises(ValueError, match="device"):
+        behavior_model.load_behavior_checkpoint(path, device=device)
+
+
+def test_unavailable_cuda_rejected_before_load_or_build(tmp_path, monkeypatch):
+    path = tmp_path / "model.pt"
+    path.write_bytes(b"placeholder")
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(
+        behavior_model, "_safe_torch_load", lambda *args: pytest.fail("checkpoint was loaded")
+    )
+    monkeypatch.setattr(
+        behavior_model, "build_x3d", lambda **kwargs: pytest.fail("model was built")
+    )
+    with pytest.raises(RuntimeError, match="CUDA.*unavailable"):
+        behavior_model.load_behavior_checkpoint(path, device="cuda")
+
+
+@pytest.mark.parametrize("phase", ["save", "fsync"])
+def test_atomic_save_stage_failures_preserve_destination_and_cleanup(
+    tmp_path, tiny_builder, monkeypatch, phase
+):
+    path = tmp_path / "model.pt"
+    path.write_bytes(b"original")
+    model = behavior_model.build_x3d(pretrained=False)
+    if phase == "save":
+        monkeypatch.setattr(behavior_model.torch, "save", lambda *args: (_ for _ in ()).throw(OSError("save failed")))
+    else:
+        monkeypatch.setattr(behavior_model.os, "fsync", lambda *args: (_ for _ in ()).throw(OSError("fsync failed")))
+    with pytest.raises(OSError, match="failed"):
+        behavior_model.save_behavior_checkpoint(path, model, {}, {})
+    assert path.read_bytes() == b"original"
+    assert list(tmp_path.glob(".*.tmp")) == []
+
 def test_failed_replace_preserves_destination_and_cleans_temp(tmp_path, tiny_builder, monkeypatch):
     path = tmp_path / "model.pt"
     path.write_bytes(b"original")

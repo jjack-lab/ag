@@ -18,7 +18,7 @@ scipy==1.10.1
 
 # CUDA builds may require installing PyTorch from the official PyTorch index.
 torch==2.0.0
-torchvision==0.15.0
+torchvision==0.15.1
 pytorchvideo==0.1.5
 fvcore==0.1.5.post20221221
 iopath==0.1.10
