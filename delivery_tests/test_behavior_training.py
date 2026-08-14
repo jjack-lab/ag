@@ -106,6 +106,39 @@ def test_smoke_exactly_two_steps_and_evidence(tmp_path):
     assert evidence['optimizer_steps']==2 and evidence['reload_success'] and (tmp_path/'smoke_metrics.json').is_file()
 
 def test_cli_requires_checkpoint_and_resume_scope():
-    base=['--index-root','i','--source-data-root','s','--output-root','o','--model-root','m']
+    base=['--index-root','i','--source-data-root','s','--output-root','o']
     with pytest.raises(SystemExit,match='checkpoint'): training.main(['--mode','evaluate']+base)
     with pytest.raises(SystemExit,match='resume'): training.main(['--mode','smoke','--resume','x']+base)
+
+def test_learning_rate_name_and_cli_alias():
+    assert training.TrainingConfig().learning_rate == 3e-4
+    args=training.build_parser().parse_args(['--mode','train','--index-root','i','--source-data-root','s','--output-root','o','--learning-rate','.01'])
+    assert args.learning_rate == .01
+
+def test_smoke_loaders_cover_classes_deterministically():
+    class Samples(TensorDataset):
+        def __init__(self):
+            super().__init__(torch.arange(48).float().view(24,2),torch.tensor(list(range(12))*2)); self.samples=[type('S',(),{'label_id':i+1})() for i in list(range(12))*2]
+    source={s:DataLoader(Samples(),batch_size=4) for s in ('train','val','test')}
+    a=training.make_smoke_loaders(source,training.TrainingConfig(workers=0)); b=training.make_smoke_loaders(source,training.TrainingConfig(workers=0))
+    for split in source:
+        labels=[source[split].dataset.samples[i].label_id for i in a[split].dataset.indices]
+        assert set(labels)==set(range(1,13)) and a[split].dataset.indices==b[split].dataset.indices
+
+def test_history_records_learning_rate(tmp_path,monkeypatch):
+    monkeypatch.setattr(training,'save_behavior_checkpoint',lambda *a,**k:None); monkeypatch.setattr(training,'save_training_state',lambda *a,**k:None); monkeypatch.setattr(training,'write_artifacts',lambda *a:None)
+    result=training.run_training(nn.Sequential(nn.Linear(2,2)),{'train':[0],'val':[0]},tmp_path,training.TrainingConfig(epochs=1,freeze_backbone_epochs=0),train_fn=lambda *a,**k:_epoch(0),evaluate_fn=lambda *a,**k:_epoch(.5))
+    assert result['history'][0]['learning_rate']==pytest.approx(3e-4)
+
+def test_resume_rejects_incompatible_config(tmp_path,monkeypatch):
+    config=training.TrainingConfig(epochs=2,freeze_backbone_epochs=0)
+    monkeypatch.setattr(training,'load_training_state',lambda *a:{'epoch':0,'best_f1':.1,'patience':0,'history':[],'config':{**training.asdict(config),'seed':2}})
+    with pytest.raises(ValueError,match='incompatible'): training.run_training(nn.Sequential(nn.Linear(2,2)),{'train':[0],'val':[0]},tmp_path,config,resume='x')
+
+def test_late_corrupt_state_does_not_mutate_targets(tmp_path):
+    import copy
+    model=nn.Linear(2,2); optimizer=torch.optim.AdamW(model.parameters()); scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,2); scaler=training._scaler(False)
+    training.save_training_state(tmp_path/'x.pt',0,model,optimizer,scheduler,scaler,.1,0,[],training.TrainingConfig()); payload=torch.load(tmp_path/'x.pt',weights_only=True); payload['rng']['torch']='bad'; torch.save(payload,tmp_path/'x.pt')
+    before=copy.deepcopy(model.state_dict()); opt_before=copy.deepcopy(optimizer.state_dict())
+    with pytest.raises(ValueError): training.load_training_state(tmp_path/'x.pt',model,optimizer,scheduler,scaler)
+    assert all(torch.equal(before[k],v) for k,v in model.state_dict().items()) and optimizer.state_dict()==opt_before
