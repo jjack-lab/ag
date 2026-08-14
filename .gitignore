@@ -30,3 +30,4 @@ outputs/acceptance/*
 # The delivery model is copied explicitly during setup and verified by SHA-256.
 models/detection/*.pt
 
+.worktrees/
