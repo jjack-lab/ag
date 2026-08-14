@@ -15,7 +15,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, Mapping, Tuple, Union
+from typing import Any, Dict, Mapping, Optional, Set, Tuple, Union
 
 import torch
 from torch import nn
@@ -80,7 +80,11 @@ def build_x3d(num_classes: int = 12, pretrained: bool = True) -> nn.Module:
     return model
 
 
-def _validate_json(value: Any, field: str, path: str) -> Any:
+def _validate_json(
+    value: Any, field: str, path: str, active: Optional[Set[int]] = None
+) -> Any:
+    if active is None:
+        active = set()
     if value is None or isinstance(value, (bool, str)):
         return value
     if isinstance(value, int) and not isinstance(value, bool):
@@ -89,15 +93,27 @@ def _validate_json(value: Any, field: str, path: str) -> Any:
         if math.isfinite(value):
             return value
         raise ValueError(f"{field} must contain JSON-compatible finite numbers at {path}")
-    if isinstance(value, Mapping):
-        result = {}
-        for key, item in value.items():
-            if not isinstance(key, str):
-                raise ValueError(f"{field} must contain JSON-compatible string keys at {path}")
-            result[key] = _validate_json(item, field, f"{path}.{key}")
-        return result
-    if isinstance(value, (list, tuple)):
-        return [_validate_json(item, field, f"{path}[{index}]") for index, item in enumerate(value)]
+    if isinstance(value, (Mapping, list, tuple)):
+        identity = id(value)
+        if identity in active:
+            raise ValueError(f"{field} metadata at {path} contains a cycle")
+        active.add(identity)
+        try:
+            if isinstance(value, Mapping):
+                result = {}
+                for key, item in value.items():
+                    if not isinstance(key, str):
+                        raise ValueError(
+                            f"{field} must contain JSON-compatible string keys at {path}"
+                        )
+                    result[key] = _validate_json(item, field, f"{path}.{key}", active)
+                return result
+            return [
+                _validate_json(item, field, f"{path}[{index}]", active)
+                for index, item in enumerate(value)
+            ]
+        finally:
+            active.remove(identity)
     raise ValueError(f"{field} must contain JSON-compatible values at {path}")
 
 
