@@ -1,11 +1,13 @@
 import csv
 import json
+import random
 from pathlib import Path
 
 import cv2
 import numpy as np
 import pytest
 import torch
+from torch.utils.data import DataLoader
 
 from cattle_health_app.behavior.dataset import (
     CvbClipDataset,
@@ -13,6 +15,7 @@ from cattle_health_app.behavior.dataset import (
     UnreadableClipError,
     expand_normalized_box,
     load_index,
+    training_transform,
 )
 
 
@@ -80,6 +83,46 @@ def test_training_augmentation_is_clip_consistent(tmp_path):
     clip, _ = CvbClipDataset(manifest, root, training=True, rng=_NoFlipJitterRng())[0]
     for t in range(1, 16):
         assert torch.equal(clip[:, 0], clip[:, t])
+
+
+def test_transform_rejects_non_uint8_frames():
+    frames = [np.zeros((10, 20, 3), dtype=np.float32) for _ in range(16)]
+    with pytest.raises(ValueError, match="uint8"):
+        training_transform(frames, rng=_NoFlipJitterRng())
+
+
+def test_training_jitter_keeps_letterbox_padding_black():
+    frames = [np.full((20, 100, 3), 127, dtype=np.uint8) for _ in range(16)]
+    clip = training_transform(frames, rng=_NoFlipJitterRng())
+    image = clip[:, 0] * .225 + .45
+    assert torch.equal(image[:, 0], torch.zeros_like(image[:, 0]))
+
+
+def _repeat_manifest_rows(manifest, count):
+    with manifest.open(newline="", encoding="utf-8") as f:
+        row = next(csv.DictReader(f))
+    with manifest.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=FIELDS)
+        writer.writeheader()
+        for index in range(count):
+            writer.writerow({**row, "sample_id": f"sample-{index}"})
+
+
+def _multiworker_clips(manifest, root, seed):
+    loader = DataLoader(CvbClipDataset(manifest, root, training=True, rng=random.Random(99)), batch_size=1,
+                        num_workers=2, generator=torch.Generator().manual_seed(seed))
+    return [clip.squeeze(0) for clip, _ in loader]
+
+
+def test_multiworker_augmentation_is_reproducible_with_distinct_worker_streams(tmp_path):
+    manifest, root, _ = _manifest(tmp_path)
+    _repeat_manifest_rows(manifest, 6)
+    first = _multiworker_clips(manifest, root, 1234)
+    second = _multiworker_clips(manifest, root, 1234)
+    assert all(torch.equal(left, right) for left, right in zip(first, second))
+    assert len({clip.numpy().tobytes() for clip in first}) > 1
+    worker_pairs = zip(first[::2], first[1::2])
+    assert all(not torch.equal(left, right) for left, right in worker_pairs)
 
 
 @pytest.mark.parametrize("change", [
@@ -159,6 +202,15 @@ def test_missing_and_undecodable_frames_report_sample_and_path(tmp_path):
     missing.write_bytes(b"not a jpeg")
     with pytest.raises(UnreadableClipError, match=r"sample-1.*img_00003"):
         CvbClipDataset(manifest, root)[0]
+
+
+def test_cv2_decode_exception_is_wrapped(monkeypatch, tmp_path):
+    manifest, root, _ = _manifest(tmp_path)
+    error = cv2.error("decode failed")
+    monkeypatch.setattr(cv2, "imread", lambda *_: (_ for _ in ()).throw(error))
+    with pytest.raises(UnreadableClipError, match=r"sample-1.*img_00000") as caught:
+        CvbClipDataset(manifest, root)[0]
+    assert caught.value.__cause__ is error
 
 
 def test_symlink_escape_rejected_before_decode(monkeypatch, tmp_path):
