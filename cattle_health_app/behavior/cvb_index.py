@@ -17,7 +17,8 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-from typing import Iterable, Sequence
+from types import MappingProxyType
+from typing import Dict, Iterable, Iterator, Mapping, Sequence, Tuple
 
 import cv2
 
@@ -63,11 +64,13 @@ class IndexResult:
 def parse_ava_row(row: Sequence[str]) -> AvaAnnotation:
     if len(row) != 8:
         raise ValueError("AVA row must contain exactly 8 columns")
-    video_id = row[0].strip()
+    video_id = row[0]
     if not video_id:
         raise ValueError("video_id must not be empty")
-    if video_id in {".", ".."} or "/" in video_id or "\\" in video_id or Path(video_id).name != video_id:
-        raise ValueError("video_id must be a single filename component")
+    basename = video_id.split(".", 1)[0].upper()
+    if (not _SAFE_VIDEO_ID.fullmatch(video_id) or video_id.endswith((".", " "))
+            or basename in _RESERVED_WINDOWS_NAMES):
+        raise ValueError("video_id is not a safe Windows filename")
     try:
         timestamp = float(row[1])
         bbox = tuple(float(value) for value in row[2:6])
@@ -87,6 +90,10 @@ def parse_ava_row(row: Sequence[str]) -> AvaAnnotation:
     if track_id < 0:
         raise ValueError("track_id must be nonnegative")
     return AvaAnnotation(video_id, timestamp, bbox, label_id, track_id)
+
+
+_SAFE_VIDEO_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.+\-]*$")
+_RESERVED_WINDOWS_NAMES = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
 
 
 _GROUP_PATTERN = re.compile(
@@ -110,7 +117,8 @@ def select_frame_numbers(
     duration_seconds: float = DURATION_SECONDS,
 ) -> list[int]:
     available = sorted(set(available_numbers))
-    if fps <= 0 or frame_count <= 0 or duration_seconds <= 0:
+    if (not math.isfinite(fps) or fps <= 0 or frame_count < 2
+            or not math.isfinite(duration_seconds) or duration_seconds <= 0):
         raise ValueError("fps, frame_count, and duration_seconds must be positive")
     if len(available) < frame_count:
         raise ValueError("insufficient_frames")
@@ -127,9 +135,8 @@ def select_frame_numbers(
     return numbers
 
 
-def _read_annotations(path: Path, source_split: str):
-    parsed = []
-    rejected = []
+def _iter_annotations(path: Path, source_split: str) -> Iterator[Tuple[AvaAnnotation | None, str, int, list[str], str | None]]:
+    """Yield each CSV row once; callers aggregate without retaining source lists."""
     with path.open(newline="", encoding="utf-8-sig") as handle:
         for row_number, row in enumerate(csv.reader(handle), 1):
             if not row:
@@ -137,11 +144,9 @@ def _read_annotations(path: Path, source_split: str):
             try:
                 annotation = parse_ava_row(row)
             except ValueError as exc:
-                rejected.append((source_split, row_number, "invalid_annotation", row, str(exc)))
+                yield None, source_split, row_number, row, str(exc)
             else:
-                parsed.append((annotation, source_split, row_number, row))
-    return parsed, rejected
-
+                yield annotation, source_split, row_number, row, None
 
 def _identity(annotation: AvaAnnotation):
     return (annotation.video_id, annotation.timestamp_seconds, annotation.track_id, annotation.bbox)
@@ -182,65 +187,91 @@ def build_index(
     frames_root = (data_root / "raw_frames").resolve()
     if output.exists() and not overwrite:
         raise FileExistsError(f"Output already exists: {output}")
-    train_rows, rejected = _read_annotations(train_ava, "train")
-    test_rows, test_rejected = _read_annotations(test_ava, "test")
-    rejected.extend(test_rejected)
-    all_rows = train_rows + test_rows
+    rejected = []
+    # One compact representative and count per identity/label; each CSV is consumed once.
+    aggregates = defaultdict(dict)
+    for source_path, source_split in ((train_ava, "train"), (test_ava, "test")):
+        for annotation, source, row_number, row, error in _iter_annotations(source_path, source_split):
+            if annotation is None:
+                rejected.append((source, row_number, "invalid_annotation", row, error))
+                continue
+            labels = aggregates[_identity(annotation)]
+            record = labels.get(annotation.label_id)
+            if record is None:
+                labels[annotation.label_id] = [annotation, source, row_number, row, 1]
+            else:
+                record[4] += 1
+                if source == "test":
+                    record[1:4] = [source, row_number, row]
 
-    by_identity = defaultdict(list)
-    for item in all_rows:
-        by_identity[_identity(item[0])].append(item)
     candidates = []
-    for items in by_identity.values():
-        if len({item[0].label_id for item in items}) > 1:
-            for annotation, source, row_number, row in items:
-                rejected.append((source, row_number, "conflicting_labels", row, "same target has multiple labels"))
-            continue
-        # Exact duplicate rows collapse to one sample.
-        candidates.append(next((item for item in items if item[1] == "test"), items[0]))
+    for labels in aggregates.values():
+        records = list(labels.values())
+        if len(records) > 1:
+            for annotation, source, row_number, row, count in records:
+                rejected.extend((source, row_number, "conflicting_labels", row, "same target has multiple labels") for _ in range(count))
+        else:
+            candidates.append(tuple(records[0][:4]))
+    del aggregates
 
     test_groups = {group_id_for_video(item[0].video_id) for item in candidates if item[1] == "test"}
     train_groups = [group_id_for_video(item[0].video_id) for item in candidates if item[1] == "train" and group_id_for_video(item[0].video_id) not in test_groups]
     assigned = _assign_train_val(train_groups, seed)
     validation_cache: dict[Path, str | None] = {}
+    video_cache: Dict[str, Tuple[Path | None, Mapping[int, Path], str | None]] = {}
     clips = []
     for annotation, source, row_number, row in sorted(candidates, key=lambda item: (item[1], item[0].video_id, item[0].timestamp_seconds, item[0].track_id, item[0].bbox, item[0].label_id)):
-        frame_dir = (frames_root / annotation.video_id).resolve()
-        if frame_dir.parent != frames_root:
-            rejected.append((source, row_number, "invalid_video_path", row, "video frame directory escapes raw_frames"))
+        inventory = video_cache.get(annotation.video_id)
+        if inventory is None:
+            frame_dir = (frames_root / annotation.video_id).resolve()
+            if frame_dir.parent != frames_root:
+                inventory = (None, {}, "invalid_video_path")
+            else:
+                discovered = {}
+                if frame_dir.is_dir():
+                    for path in frame_dir.glob("img_*.jpg"):
+                        match = re.fullmatch(r"img_(\d{5})\.jpg", path.name)
+                        if match:
+                            discovered[int(match.group(1))] = path
+                inventory = (frame_dir, MappingProxyType(discovered), None)
+            video_cache[annotation.video_id] = inventory
+        frame_dir, frame_map, inventory_error = inventory
+        if inventory_error:
+            rejected.append((source, row_number, inventory_error, row, inventory_error))
             continue
-        existing = []
-        if frame_dir.is_dir():
-            for path in frame_dir.glob("img_*.jpg"):
-                match = re.fullmatch(r"img_(\d{5})\.jpg", path.name)
-                if match:
-                    existing.append(int(match.group(1)))
         try:
-            if not existing:
+            if not frame_map:
                 raise ValueError("missing_frame")
-            numbers = select_frame_numbers(annotation.timestamp_seconds, existing, fps=fps)
+            numbers = select_frame_numbers(annotation.timestamp_seconds, frame_map.keys(), fps=fps)
         except ValueError as exc:
             reason = str(exc) if str(exc) in {"missing_frame", "insufficient_frames"} else "insufficient_frames"
             rejected.append((source, row_number, reason, row, reason))
             continue
-        paths = [frame_dir / f"img_{number:05d}.jpg" for number in numbers]
+        original_paths = [frame_map.get(number, frame_dir / f"img_{number:05d}.jpg") for number in numbers]
+        safe_paths = []
         bad_reason = None
-        for path in paths:
-            if path not in validation_cache:
-                if not path.is_file():
-                    validation_cache[path] = "missing_frame"
-                elif path.with_name(path.name + ".aria2").exists():
-                    validation_cache[path] = "partial_frame"
-                elif cv2.imread(str(path), cv2.IMREAD_COLOR) is None:
-                    validation_cache[path] = "undecodable_frame"
-                else:
-                    validation_cache[path] = None
-            if validation_cache[path]:
-                bad_reason = validation_cache[path]
+        for original in original_paths:
+            resolved = original.resolve()
+            if resolved.parent != frame_dir or frame_dir.parent != frames_root:
+                bad_reason = "frame_path_escape"
                 break
+            if resolved not in validation_cache:
+                if not resolved.is_file():
+                    validation_cache[resolved] = "missing_frame"
+                elif resolved.with_name(resolved.name + ".aria2").exists():
+                    validation_cache[resolved] = "partial_frame"
+                elif cv2.imread(str(resolved), cv2.IMREAD_COLOR) is None:
+                    validation_cache[resolved] = "undecodable_frame"
+                else:
+                    validation_cache[resolved] = None
+            if validation_cache[resolved]:
+                bad_reason = validation_cache[resolved]
+                break
+            safe_paths.append(resolved)
         if bad_reason:
             rejected.append((source, row_number, bad_reason, row, bad_reason))
             continue
+        paths = safe_paths
         group_id = group_id_for_video(annotation.video_id)
         split = "test" if group_id in test_groups else assigned[group_id]
         relative_paths = [path.resolve().relative_to(data_root).as_posix() for path in paths]

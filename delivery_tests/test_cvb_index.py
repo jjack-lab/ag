@@ -203,3 +203,57 @@ def test_build_blocks_traversal_without_decoding_outside_images(tmp_path: Path, 
     result = build_index(data, train, test, tmp_path / ("out-" + str(abs(hash(video_id)))))
     assert result.accepted_count == 0
     assert result.rejected_by_reason == {"invalid_annotation": 1}
+
+
+@pytest.mark.parametrize("video_id", ["=bad", "+bad", "-bad", "@bad", " bad", "bad ", "bad.", "CON", "con.txt", "PRN", "AUX.jpg", "NUL", "COM1", "com9.txt", "LPT1", "lpt9.csv", "ébad", "bad\x00id"])
+def test_parse_rejects_unsafe_windows_video_ids(video_id: str):
+    with pytest.raises(ValueError, match="video_id"):
+        parse_ava_row(_row(video_id))
+
+
+@pytest.mark.parametrize("fps,frame_count,duration", [(0,16,2),(-1,16,2),(float("nan"),16,2),(float("inf"),16,2),(30,0,2),(30,1,2),(30,-1,2),(30,16,0),(30,16,-1),(30,16,float("nan")),(30,16,float("inf"))])
+def test_sampling_rejects_invalid_parameters(fps, frame_count, duration):
+    with pytest.raises(ValueError):
+        select_frame_numbers(1, range(1, 91), fps=fps, frame_count=frame_count, duration_seconds=duration)
+
+
+def test_same_video_directory_is_scanned_once_for_many_rows(tmp_path: Path, monkeypatch):
+    data=tmp_path/"data"; _video(data,"clip")
+    train,test=data/"train.csv",data/"test.csv"
+    _ava(train, [_row("clip") for _ in range(3000)]); _ava(test,[])
+    real_glob=Path.glob; scans=0
+    def counted(self, pattern):
+        nonlocal scans
+        if self.name=="clip" and pattern=="img_*.jpg": scans+=1
+        return real_glob(self,pattern)
+    monkeypatch.setattr(Path,"glob",counted)
+    result=build_index(data,train,test,tmp_path/"out")
+    assert result.accepted_count==1 and scans==1
+
+
+def test_selected_frame_symlink_escape_is_rejected_before_decode(tmp_path: Path, monkeypatch):
+    data=tmp_path/"data"; _video(data,"clip")
+    external=tmp_path/"external.jpg"; _jpeg(external)
+    selected=data/"raw_frames"/"clip"/"img_00001.jpg"; selected.unlink()
+    try: selected.symlink_to(external)
+    except OSError: pytest.skip("symlinks unavailable")
+    train,test=data/"train.csv",data/"test.csv"; _ava(train,[_row("clip")]); _ava(test,[])
+    def spy(path,*args,**kwargs):
+        assert Path(path).resolve()!=external.resolve()
+        return cv2.imread(path,*args,**kwargs)
+    monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread",spy)
+    result=build_index(data,train,test,tmp_path/"out")
+    assert result.accepted_count==0 and result.rejected_by_reason["frame_path_escape"]==1
+
+
+def test_video_directory_symlink_escape_is_rejected_before_scan_or_decode(tmp_path: Path, monkeypatch):
+    data=tmp_path/"data"; frames=data/"raw_frames"; frames.mkdir(parents=True)
+    external=tmp_path/"external_frames"; _video(tmp_path,"seed")
+    (tmp_path/"raw_frames"/"seed").rename(external)
+    link=frames/"escape"
+    try: link.symlink_to(external, target_is_directory=True)
+    except OSError: pytest.skip("directory symlinks unavailable")
+    train,test=data/"train.csv",data/"test.csv"; _ava(train,[_row("escape")]); _ava(test,[])
+    monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread", lambda *args,**kwargs: (_ for _ in ()).throw(AssertionError("must not decode")))
+    result=build_index(data,train,test,tmp_path/"out")
+    assert result.accepted_count==0 and result.rejected_by_reason["invalid_video_path"]==1
