@@ -12,11 +12,9 @@ from .model import build_x3d, load_behavior_checkpoint, save_behavior_checkpoint
 
 @dataclass(frozen=True)
 class TrainingConfig:
-    epochs:int=30; batch_size:int=4; accumulation_steps:int=4; lr:float=3e-4
+    epochs:int=30; batch_size:int=4; accumulation_steps:int=4; learning_rate:float=3e-4
     weight_decay:float=1e-4; patience:int=6; workers:int=2; seed:int=20260814
     amp:bool=True; freeze_backbone_epochs:int=2
-    @property
-    def learning_rate(self): return self.lr
     def __post_init__(self):
         for name in ('epochs','batch_size','accumulation_steps','patience'):
             if type(getattr(self,name)) is not int or getattr(self,name)<=0: raise ValueError(f'{name} must be a positive integer')
@@ -24,7 +22,7 @@ class TrainingConfig:
         if type(self.seed) is not int or self.seed<0: raise ValueError('seed must be a nonnegative integer')
         if type(self.amp) is not bool: raise ValueError('amp must be boolean')
         if type(self.freeze_backbone_epochs) is not int or not 0<=self.freeze_backbone_epochs<=self.epochs: raise ValueError('freeze_backbone_epochs must be in [0, epochs]')
-        if isinstance(self.lr,bool) or not math.isfinite(self.lr) or self.lr<=0: raise ValueError('lr must be finite and positive')
+        if isinstance(self.learning_rate,bool) or not math.isfinite(self.learning_rate) or self.learning_rate<=0: raise ValueError('learning_rate must be finite and positive')
         if isinstance(self.weight_decay,bool) or not math.isfinite(self.weight_decay) or self.weight_decay<0: raise ValueError('weight_decay must be finite and nonnegative')
 
 @dataclass(frozen=True)
@@ -134,22 +132,35 @@ def _safe_load(path):
     if 'weights_only' not in inspect.signature(torch.load).parameters: raise RuntimeError('safe checkpoint loading requires weights_only support')
     return torch.load(Path(path),map_location='cpu',weights_only=True)
 
-def load_training_state(path,model,optimizer,scheduler,scaler):
+def _valid_state_tree(value):
+    if value is None or isinstance(value,(bool,str,int)): return True
+    if isinstance(value,float): return math.isfinite(value)
+    if isinstance(value,torch.Tensor): return bool(torch.isfinite(value).all())
+    if isinstance(value,dict): return all(isinstance(k,(str,int)) and _valid_state_tree(v) for k,v in value.items())
+    if isinstance(value,(list,tuple)): return all(_valid_state_tree(v) for v in value)
+    return False
+def load_training_state(path,model,optimizer,scheduler,scaler,expected_config=None):
     payload=_safe_load(path); required={'schema','epoch','model','optimizer','scheduler','scaler','best_f1','patience','history','config','rng'}
     if not isinstance(payload,dict) or set(payload)!=required or payload['schema']!=1: raise ValueError('invalid training checkpoint schema')
+    saved_config=payload.get('config')
+    if isinstance(saved_config,dict) and 'lr' in saved_config and 'learning_rate' not in saved_config: saved_config=dict(saved_config); saved_config['learning_rate']=saved_config.pop('lr'); payload['config']=saved_config
+    if expected_config is not None:
+        current=asdict(expected_config); incompatible=[key for key in current if key!='epochs' and saved_config.get(key)!=current[key]]
+        if incompatible or current['epochs']<=payload['epoch']: raise ValueError('incompatible resume configuration: '+str(incompatible or ['epochs']))
     if type(payload['epoch']) is not int or payload['epoch']<0 or type(payload['patience']) is not int or payload['patience']<0 or not isinstance(payload['history'],list) or not isinstance(payload['config'],dict): raise ValueError('invalid training checkpoint field types')
     rng=payload['rng']
     if not isinstance(payload['model'],dict) or not all(isinstance(k,str) and isinstance(v,torch.Tensor) and torch.isfinite(v).all() for k,v in payload['model'].items()): raise ValueError('invalid model state')
-    if not all(isinstance(payload[k],dict) for k in ('optimizer','scheduler','scaler')): raise ValueError('invalid component state')
+    if not all(isinstance(payload[k],dict) and _valid_state_tree(payload[k]) for k in ('optimizer','scheduler','scaler')) or not _valid_state_tree(payload['history']) or not _valid_state_tree(payload['config']): raise ValueError('invalid component state')
     if not isinstance(rng,dict) or not isinstance(rng.get('torch'),torch.Tensor) or rng['torch'].dtype!=torch.uint8 or not isinstance(rng.get('numpy_state'),list) or len(rng['numpy_state'])!=624 or not isinstance(rng.get('cuda'),list): raise ValueError('invalid RNG state')
     import copy
-    snapshots=copy.deepcopy((model.state_dict(),optimizer.state_dict(),scheduler.state_dict(),scaler.state_dict(),random.getstate(),np.random.get_state(),torch.get_rng_state()))
+    snapshots=copy.deepcopy((model.state_dict(),optimizer.state_dict(),scheduler.state_dict(),scaler.state_dict(),random.getstate(),np.random.get_state(),torch.get_rng_state(),torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []))
     try:
         model.load_state_dict(payload['model']); optimizer.load_state_dict(payload['optimizer']); scheduler.load_state_dict(payload['scheduler']); scaler.load_state_dict(payload['scaler'])
         random.setstate(tuple(rng['python'])); np.random.set_state(('MT19937',np.asarray(rng['numpy_state'],dtype=np.uint32),rng['numpy_pos'],rng['numpy_has_gauss'],rng['numpy_cached_gaussian'])); torch.set_rng_state(rng['torch'])
         if torch.cuda.is_available() and rng['cuda']: torch.cuda.set_rng_state_all(rng['cuda'])
     except Exception as exc:
-        model.load_state_dict(snapshots[0]); optimizer.load_state_dict(snapshots[1]); scheduler.load_state_dict(snapshots[2]); scaler.load_state_dict(snapshots[3]); random.setstate(snapshots[4]); np.random.set_state(snapshots[5]); torch.set_rng_state(snapshots[6])
+        model.load_state_dict(snapshots[0]); optimizer.load_state_dict(snapshots[1]); scheduler.load_state_dict(snapshots[2]); scaler.load_state_dict(snapshots[3]); random.setstate(snapshots[4]); np.random.set_state(snapshots[5]); torch.set_rng_state(snapshots[6]);
+        if torch.cuda.is_available(): torch.cuda.set_rng_state_all(snapshots[7])
         raise ValueError(f'invalid training checkpoint state: {exc}') from exc
     return payload
 
@@ -200,16 +211,13 @@ def _class_counts(loader):
 def run_training(model,loaders,output_root,config,device='cpu',resume=None,evaluate_fn=evaluate,train_fn=train_epoch):
     if not {'train','val'}<=set(loaders): raise ValueError('training requires train and val loaders')
     output=Path(output_root); output.mkdir(parents=True,exist_ok=True); device=torch.device(device); model.to(device)
-    optimizer=torch.optim.AdamW(model.parameters(),lr=config.lr,weight_decay=config.weight_decay)
+    optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate,weight_decay=config.weight_decay)
     scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=max(1,config.epochs)); scaler=_scaler(config.amp and device.type=='cuda')
     counts=_class_counts(loaders['train']); weights=make_class_weights(counts) if counts is not None else None
     start=0; best=-1.; stale=0; history=[]; frozen=config.freeze_backbone_epochs>0
     if frozen: set_backbone_frozen(model,True)
     if resume:
-        state=load_training_state(resume,model,optimizer,scheduler,scaler)
-        current=asdict(config); saved_config=state.get('config',current)
-        incompatible=[key for key in current if key!='epochs' and saved_config.get(key)!=current[key]]
-        if incompatible or config.epochs<=state['epoch']: raise ValueError('incompatible resume configuration: '+str(incompatible or ['epochs']))
+        state=load_training_state(resume,model,optimizer,scheduler,scaler,config)
         start=state['epoch']+1; best=state['best_f1']; stale=state['patience']; history=list(state['history'])
         frozen=start<config.freeze_backbone_epochs
         if config.freeze_backbone_epochs>0: set_backbone_frozen(model,frozen)
@@ -250,9 +258,13 @@ def make_smoke_loaders(loaders,config):
         result[split]=DataLoader(Subset(source.dataset,indices),batch_size=config.batch_size,shuffle=False,num_workers=config.workers,worker_init_fn=_seed_worker,generator=generator)
     return result
 def run_smoke(model,loader,output_root,config,device='cpu'):
-    output=Path(output_root); output.mkdir(parents=True,exist_ok=True); model.to(device); optimizer=torch.optim.AdamW(model.parameters(),lr=config.lr); before=torch.cuda.max_memory_allocated(device) if torch.device(device).type=='cuda' else 0
+    output=Path(output_root); output.mkdir(parents=True,exist_ok=True); model.to(device); optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate); before=torch.cuda.max_memory_allocated(device) if torch.device(device).type=='cuda' else 0
     result=train_epoch(model,loader,optimizer,device,config,max_steps=2);
-    if result.optimizer_steps != 2: raise ValueError('smoke data must provide exactly two optimizer steps'); state=output/'smoke_state.pt'; scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,1); scaler=_scaler(False); save_training_state(state,0,model,optimizer,scheduler,scaler,-1,0,[],config); load_training_state(state,model,optimizer,scheduler,scaler)
+    if result.optimizer_steps != 2:
+        raise ValueError('smoke data must provide exactly two optimizer steps')
+    state=output/'smoke_state.pt'; scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,1); scaler=_scaler(False)
+    save_training_state(state,0,model,optimizer,scheduler,scaler,-1,0,[],config)
+    load_training_state(state,model,optimizer,scheduler,scaler)
     first=next(iter(loader))[0]; evidence={'device':str(device),'python':platform.python_version(),'torch':torch.__version__,'cuda':torch.version.cuda,'gpu':torch.cuda.get_device_name(device) if torch.device(device).type=='cuda' else None,'input_shape':list(first.shape),'loss':result.loss,'optimizer_steps':result.optimizer_steps,'peak_vram_mb':(torch.cuda.max_memory_allocated(device)-before)/1048576 if torch.device(device).type=='cuda' else 0.0,'reload_success':True}; _write_json(output/'smoke_metrics.json',evidence); return evidence
 
 def build_parser():

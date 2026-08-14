@@ -6,7 +6,7 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 import cattle_health_app.behavior.train as training
 
-@pytest.mark.parametrize('kwargs',[{'epochs':0},{'batch_size':0},{'accumulation_steps':0},{'lr':0},{'weight_decay':-1},{'patience':0},{'workers':-1},{'seed':-1},{'amp':1},{'freeze_backbone_epochs':31}])
+@pytest.mark.parametrize('kwargs',[{'epochs':0},{'batch_size':0},{'accumulation_steps':0},{'learning_rate':0},{'weight_decay':-1},{'patience':0},{'workers':-1},{'seed':-1},{'amp':1},{'freeze_backbone_epochs':31}])
 def test_config_rejects_invalid_values(kwargs):
     with pytest.raises(ValueError): training.TrainingConfig(**kwargs)
 
@@ -132,7 +132,7 @@ def test_history_records_learning_rate(tmp_path,monkeypatch):
 
 def test_resume_rejects_incompatible_config(tmp_path,monkeypatch):
     config=training.TrainingConfig(epochs=2,freeze_backbone_epochs=0)
-    monkeypatch.setattr(training,'load_training_state',lambda *a:{'epoch':0,'best_f1':.1,'patience':0,'history':[],'config':{**training.asdict(config),'seed':2}})
+    monkeypatch.setattr(training,'load_training_state',lambda *a:(_ for _ in ()).throw(ValueError('incompatible resume configuration')))
     with pytest.raises(ValueError,match='incompatible'): training.run_training(nn.Sequential(nn.Linear(2,2)),{'train':[0],'val':[0]},tmp_path,config,resume='x')
 
 def test_late_corrupt_state_does_not_mutate_targets(tmp_path):
@@ -142,3 +142,28 @@ def test_late_corrupt_state_does_not_mutate_targets(tmp_path):
     before=copy.deepcopy(model.state_dict()); opt_before=copy.deepcopy(optimizer.state_dict())
     with pytest.raises(ValueError): training.load_training_state(tmp_path/'x.pt',model,optimizer,scheduler,scaler)
     assert all(torch.equal(before[k],v) for k,v in model.state_dict().items()) and optimizer.state_dict()==opt_before
+
+def test_smoke_persists_and_reloads_real_state(tmp_path,monkeypatch):
+    calls=[]; original_save=training.save_training_state; original_load=training.load_training_state
+    monkeypatch.setattr(training,'save_training_state',lambda *a,**k:(calls.append('save'),original_save(*a,**k))[1])
+    monkeypatch.setattr(training,'load_training_state',lambda *a,**k:(calls.append('load'),original_load(*a,**k))[1])
+    loader=DataLoader(TensorDataset(torch.randn(4,2),torch.tensor([0,1,0,1])),batch_size=1)
+    evidence=training.run_smoke(Counting(),loader,tmp_path,training.TrainingConfig(accumulation_steps=1,workers=0),'cpu')
+    assert calls==['save','load'] and (tmp_path/'smoke_state.pt').is_file() and evidence['reload_success'] is True
+
+def test_learning_rate_is_checkpoint_dataclass_field():
+    config=training.TrainingConfig(learning_rate=.02)
+    assert training.asdict(config)['learning_rate']==.02 and 'lr' not in training.asdict(config)
+
+def test_incompatible_resume_rejected_before_any_state_or_rng_mutation(tmp_path):
+    import copy, random
+    source=nn.Linear(2,2); source_opt=torch.optim.AdamW(source.parameters()); source_sched=torch.optim.lr_scheduler.CosineAnnealingLR(source_opt,2); source_scaler=training._scaler(False)
+    training.save_training_state(tmp_path/'last.pt',0,source,source_opt,source_sched,source_scaler,.1,0,[],training.TrainingConfig(seed=1))
+    target=nn.Linear(2,2); before=copy.deepcopy(target.state_dict()); training.seed_everything(9); expected=(random.random(),np.random.rand(),torch.rand(1)); training.seed_everything(9)
+    with pytest.raises(ValueError,match='incompatible'):
+        training.run_training(target,{'train':[0],'val':[0]},tmp_path,training.TrainingConfig(epochs=2,seed=2,freeze_backbone_epochs=0),resume=tmp_path/'last.pt')
+    actual=(random.random(),np.random.rand(),torch.rand(1))
+    assert all(torch.equal(before[k],v) for k,v in target.state_dict().items()) and expected[0]==actual[0] and expected[1]==actual[1] and torch.equal(expected[2],actual[2])
+
+def test_training_config_rejects_legacy_lr_keyword():
+    with pytest.raises(TypeError): training.TrainingConfig(lr=.1)
