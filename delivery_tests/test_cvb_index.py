@@ -179,3 +179,27 @@ def test_failed_overwrite_restores_previous_output(tmp_path: Path, monkeypatch):
         build_index(data, train, test, output, overwrite=True)
     assert marker.read_text(encoding="utf-8") == "old"
 
+
+
+@pytest.mark.parametrize("video_id", [".", "..", "../outside", "..\\outside", "a/b", "a\\b"])
+def test_parse_rejects_video_path_components(video_id: str):
+    with pytest.raises(ValueError, match="video_id"):
+        parse_ava_row(_row(video_id))
+
+
+@pytest.mark.parametrize("video_id", ["../../outside", "..\\..\\outside"])
+def test_build_blocks_traversal_without_decoding_outside_images(tmp_path: Path, monkeypatch, video_id: str):
+    data = tmp_path / "data"
+    outside = tmp_path / "outside"
+    _video(tmp_path, "outside")
+    train, test = data / "train.csv", data / "test.csv"
+    _ava(train, [_row(video_id)])
+    _ava(test, [])
+
+    def unexpected_decode(*args, **kwargs):
+        raise AssertionError("decoder must not read a traversal target")
+
+    monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread", unexpected_decode)
+    result = build_index(data, train, test, tmp_path / ("out-" + str(abs(hash(video_id)))))
+    assert result.accepted_count == 0
+    assert result.rejected_by_reason == {"invalid_annotation": 1}

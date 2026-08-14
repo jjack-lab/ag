@@ -66,6 +66,8 @@ def parse_ava_row(row: Sequence[str]) -> AvaAnnotation:
     video_id = row[0].strip()
     if not video_id:
         raise ValueError("video_id must not be empty")
+    if video_id in {".", ".."} or "/" in video_id or "\\" in video_id or Path(video_id).name != video_id:
+        raise ValueError("video_id must be a single filename component")
     try:
         timestamp = float(row[1])
         bbox = tuple(float(value) for value in row[2:6])
@@ -176,6 +178,8 @@ def build_index(
     fps: float = DEFAULT_FPS,
 ) -> IndexResult:
     data_root, train_ava, test_ava, output = map(Path, (data_root, train_ava, test_ava, output))
+    data_root = data_root.resolve()
+    frames_root = (data_root / "raw_frames").resolve()
     if output.exists() and not overwrite:
         raise FileExistsError(f"Output already exists: {output}")
     train_rows, rejected = _read_annotations(train_ava, "train")
@@ -201,7 +205,10 @@ def build_index(
     validation_cache: dict[Path, str | None] = {}
     clips = []
     for annotation, source, row_number, row in sorted(candidates, key=lambda item: (item[1], item[0].video_id, item[0].timestamp_seconds, item[0].track_id, item[0].bbox, item[0].label_id)):
-        frame_dir = data_root / "raw_frames" / annotation.video_id
+        frame_dir = (frames_root / annotation.video_id).resolve()
+        if frame_dir.parent != frames_root:
+            rejected.append((source, row_number, "invalid_video_path", row, "video frame directory escapes raw_frames"))
+            continue
         existing = []
         if frame_dir.is_dir():
             for path in frame_dir.glob("img_*.jpg"):
@@ -236,7 +243,10 @@ def build_index(
             continue
         group_id = group_id_for_video(annotation.video_id)
         split = "test" if group_id in test_groups else assigned[group_id]
-        relative = tuple(path.relative_to(data_root).as_posix() for path in paths)
+        relative_paths = [path.resolve().relative_to(data_root).as_posix() for path in paths]
+        if any(".." in Path(path).parts for path in relative_paths):
+            raise ValueError("manifest frame path escapes data_root")
+        relative = tuple(relative_paths)
         clips.append(IndexedClip(_sample_id(annotation), annotation.video_id, annotation.timestamp_seconds, annotation.bbox, annotation.label_id, annotation.track_id, group_id, relative, split))
 
     groups_by_split = {split: {clip.group_id for clip in clips if clip.split == split} for split in ("train", "val", "test")}
@@ -305,9 +315,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-
-
-
 
