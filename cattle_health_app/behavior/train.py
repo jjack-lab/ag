@@ -97,34 +97,34 @@ def _scaler(enabled):
 
 def train_epoch(model,loader,optimizer,device,config,class_weights=None,scheduler=None,scaler=None,max_steps=None):
     device=torch.device(device); amp=bool(config.amp and device.type=='cuda'); scaler=scaler or _scaler(amp)
-    model.train(); criterion=nn.CrossEntropyLoss(weight=None if class_weights is None else class_weights.to(device)); optimizer.zero_grad(set_to_none=True)
-    total=0.; count=0; true=[]; pred=[]; steps=0; group_samples=0
+    model.train(); weights=None if class_weights is None else class_weights.to(device); criterion=nn.CrossEntropyLoss(weight=weights,reduction='sum'); optimizer.zero_grad(set_to_none=True)
+    total=0.; denominator=0.; count=0; true=[]; pred=[]; steps=0; group_denominator=0.
     for index,(inputs,targets) in enumerate(loader):
         inputs,targets=inputs.to(device),targets.to(device)
         with torch.amp.autocast(device_type=device.type,enabled=amp): logits=model(inputs); loss=criterion(logits,targets)
         if not torch.isfinite(loss): raise FloatingPointError('non-finite training loss')
-        size=targets.numel(); scaler.scale(loss*size).backward(); group_samples+=size; total+=float(loss.detach())*size; count+=size; true.extend(targets.cpu().tolist()); pred.extend(logits.detach().argmax(1).cpu().tolist())
+        size=targets.numel(); batch_denominator=float(weights[targets].sum()) if weights is not None else float(size); scaler.scale(loss).backward(); group_denominator+=batch_denominator; total+=float(loss.detach()); denominator+=batch_denominator; count+=size; true.extend(targets.cpu().tolist()); pred.extend(logits.detach().argmax(1).cpu().tolist())
         boundary=(index+1)%config.accumulation_steps==0 or index+1==len(loader)
         if boundary:
             scaler.unscale_(optimizer)
             for parameter in model.parameters():
-                if parameter.grad is not None: parameter.grad.div_(group_samples)
+                if parameter.grad is not None: parameter.grad.div_(group_denominator)
             group_samples=0
             nn.utils.clip_grad_norm_(model.parameters(),5.0); scaler.step(optimizer); scaler.update(); optimizer.zero_grad(set_to_none=True); steps+=1
             if scheduler is not None: scheduler.step()
             if max_steps is not None and steps>=max_steps: break
     if not count: raise ValueError('loader must not be empty')
-    metrics=compute_metrics(true,pred,logits.shape[1]); return EpochResult(total/count,true,pred,metrics,steps)
+    metrics=compute_metrics(true,pred,logits.shape[1]); return EpochResult(total/denominator,true,pred,metrics,steps)
 
 @torch.inference_mode()
 def evaluate(model,loader,device,class_weights=None):
-    device=torch.device(device); model.eval(); criterion=nn.CrossEntropyLoss(weight=None if class_weights is None else class_weights.to(device)); total=0.; count=0; true=[]; pred=[]; classes=None
+    device=torch.device(device); model.eval(); weights=None if class_weights is None else class_weights.to(device); criterion=nn.CrossEntropyLoss(weight=weights,reduction='sum'); total=0.; denominator=0.; count=0; true=[]; pred=[]; classes=None
     for inputs,targets in loader:
         logits=model(inputs.to(device)); targets=targets.to(device); loss=criterion(logits,targets)
         if not torch.isfinite(loss): raise FloatingPointError('non-finite evaluation loss')
-        total+=float(loss)*targets.numel(); count+=targets.numel(); classes=logits.shape[1]; true.extend(targets.cpu().tolist()); pred.extend(logits.argmax(1).cpu().tolist())
+        batch_denominator=float(weights[targets].sum()) if weights is not None else float(targets.numel()); total+=float(loss); denominator+=batch_denominator; count+=targets.numel(); classes=logits.shape[1]; true.extend(targets.cpu().tolist()); pred.extend(logits.argmax(1).cpu().tolist())
     if not count: raise ValueError('loader must not be empty')
-    return EpochResult(total/count,true,pred,compute_metrics(true,pred,classes),0)
+    return EpochResult(total/denominator,true,pred,compute_metrics(true,pred,classes),0)
 
 def find_classifier(model):
     blocks=getattr(model,'blocks',None)

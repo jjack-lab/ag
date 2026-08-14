@@ -252,3 +252,15 @@ def test_real_getitem_epoch_changes_augmentation(tmp_path):
     dataset=CvbClipDataset.__new__(CvbClipDataset); dataset.samples=[ClipSample('s',tuple(paths),(.1,.1,.9,.9),1,'v',1.,0,'g')]; dataset.data_root=tmp_path; dataset.training=True; dataset.context=.15; dataset.size=16; dataset._injected_rng=None; dataset.seed=3; dataset._worker_rng=None; dataset._worker_rng_key=None
     wrapped=training.EpochSeededDataset(dataset,23); wrapped.set_epoch(0); first=wrapped[0][0]; wrapped.set_epoch(1); second=wrapped[0][0]
     assert not torch.equal(first,second)
+
+def test_weighted_partial_accumulation_matches_large_batches():
+    training.seed_everything(31); initial=nn.Linear(2,2).state_dict(); x=torch.randn(5,2); y=torch.tensor([0,1,1,0,1]); weights=torch.tensor([1.,10.])
+    micro=nn.Linear(2,2); micro.load_state_dict(initial); large=nn.Linear(2,2); large.load_state_dict(initial)
+    expected=torch.nn.functional.cross_entropy(micro(x),y,weight=weights).item()
+    micro_result=training.train_epoch(micro,DataLoader(TensorDataset(x,y),batch_size=1,shuffle=False),torch.optim.SGD(micro.parameters(),.1),'cpu',training.TrainingConfig(accumulation_steps=8,amp=False),weights)
+    large_result=training.train_epoch(large,DataLoader(TensorDataset(x,y),batch_sampler=[[0,1,2,3,4]]),torch.optim.SGD(large.parameters(),.1),'cpu',training.TrainingConfig(accumulation_steps=1,amp=False),weights)
+    assert all(torch.allclose(a,b,atol=1e-7) for a,b in zip(micro.parameters(),large.parameters()))
+    assert micro_result.loss==pytest.approx(expected)
+
+def test_unweighted_partial_equivalence_remains_covered():
+    test_partial_accumulation_matches_equivalent_large_batches()
