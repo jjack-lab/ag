@@ -73,3 +73,39 @@ def test_make_loaders_split_and_shuffle(monkeypatch):
         def __init__(self,path,root,training,seed): seen.append((str(path),root,training,seed)); super().__init__(torch.randn(2,1),torch.zeros(2,dtype=torch.long))
     monkeypatch.setattr(training,'CvbClipDataset',DS); loaders=training.make_loaders('idx','data',training.TrainingConfig(workers=0),'train')
     assert set(loaders)=={'train','val','test'} and seen[0][2] is True and all(not x[2] for x in seen[1:])
+
+def _epoch(score,loss=1.0):
+    metrics={'accuracy':score,'macro_f1':score,'per_class':[{'class_id':i,'precision':0.,'recall':0.,'f1':0.,'support':0} for i in range(2)],'confusion_matrix':[[0,0],[0,0]]}
+    return training.EpochResult(loss,[0],[0],metrics,1)
+
+def test_run_training_strict_best_last_and_early_stop(tmp_path,monkeypatch):
+    scores=iter([.8,.7,.6]); saved=[]
+    monkeypatch.setattr(training,'save_behavior_checkpoint',lambda path,*args,**kwargs:saved.append(path.name))
+    monkeypatch.setattr(training,'write_artifacts',lambda *args:None)
+    monkeypatch.setattr(training,'save_training_state',lambda path,epoch,*args:saved.append((path.name,epoch)))
+    model=nn.Sequential(nn.Linear(2,2)); loaders={'train':[0],'val':[0]}; config=training.TrainingConfig(epochs=5,patience=2,freeze_backbone_epochs=0)
+    result=training.run_training(model,loaders,tmp_path,config,train_fn=lambda *a,**k:_epoch(0),evaluate_fn=lambda *a,**k:_epoch(next(scores)))
+    assert result['epochs_completed']==3 and saved.count('best.pt')==1 and [x for x in saved if isinstance(x,tuple)]==[('last.pt',0),('last.pt',1),('last.pt',2)]
+
+def test_resume_starts_next_epoch_and_preserves_better_best(tmp_path,monkeypatch):
+    model=nn.Sequential(nn.Linear(2,2)); config=training.TrainingConfig(epochs=3,freeze_backbone_epochs=0); saved=[]
+    monkeypatch.setattr(training,'load_training_state',lambda *a:{'epoch':1,'best_f1':.9,'patience':0,'history':[{'epoch':0},{'epoch':1}]})
+    monkeypatch.setattr(training,'save_behavior_checkpoint',lambda *a,**k:saved.append('best'))
+    monkeypatch.setattr(training,'save_training_state',lambda *a,**k:None); monkeypatch.setattr(training,'write_artifacts',lambda *a:None); monkeypatch.setattr(training,'_write_csv',lambda *a:None)
+    result=training.run_training(model,{'train':[0],'val':[0]},tmp_path,config,resume='last.pt',train_fn=lambda *a,**k:_epoch(0),evaluate_fn=lambda *a,**k:_epoch(.8))
+    assert len(result['history'])==3 and not saved and result['best_f1']==.9
+
+def test_write_artifacts_creates_required_files(tmp_path):
+    history=[{'epoch':0,'train_loss':1.,'val_loss':1.,'val_accuracy':.5,'val_macro_f1':.4}]; metrics=_epoch(.4).metrics
+    training.write_artifacts(tmp_path,history,metrics)
+    assert {'history.csv','metrics.json','classification_report.csv','confusion_matrix.csv','confusion_matrix.png','training_curves.png'} <= {p.name for p in tmp_path.iterdir()}
+
+def test_smoke_exactly_two_steps_and_evidence(tmp_path):
+    model=Counting(); loader=DataLoader(TensorDataset(torch.randn(5,2),torch.tensor([0,1,0,1,0])),batch_size=1)
+    evidence=training.run_smoke(model,loader,tmp_path,training.TrainingConfig(accumulation_steps=1,workers=0),'cpu')
+    assert evidence['optimizer_steps']==2 and evidence['reload_success'] and (tmp_path/'smoke_metrics.json').is_file()
+
+def test_cli_requires_checkpoint_and_resume_scope():
+    base=['--index-root','i','--source-data-root','s','--output-root','o','--model-root','m']
+    with pytest.raises(SystemExit,match='checkpoint'): training.main(['--mode','evaluate']+base)
+    with pytest.raises(SystemExit,match='resume'): training.main(['--mode','smoke','--resume','x']+base)

@@ -1,6 +1,6 @@
 """Reproducible core training primitives for CVB behavior classification."""
 from __future__ import annotations
-import inspect, math, os, random, tempfile
+import argparse, csv, inspect, json, math, os, platform, random, tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import numpy as np
@@ -8,6 +8,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from .dataset import CvbClipDataset
+from .model import build_x3d, load_behavior_checkpoint, save_behavior_checkpoint
 
 @dataclass(frozen=True)
 class TrainingConfig:
@@ -139,3 +140,101 @@ def load_training_state(path,model,optimizer,scheduler,scaler):
     rng=payload['rng']; random.setstate(tuple(rng['python'])); np.random.set_state(('MT19937',np.asarray(rng['numpy_state'],dtype=np.uint32),rng['numpy_pos'],rng['numpy_has_gauss'],rng['numpy_cached_gaussian'])); torch.set_rng_state(rng['torch'])
     if torch.cuda.is_available() and rng['cuda']: torch.cuda.set_rng_state_all(rng['cuda'])
     return payload
+
+
+def _atomic_text(path, text):
+    destination=Path(path); destination.parent.mkdir(parents=True,exist_ok=True)
+    handle=tempfile.NamedTemporaryFile('w',encoding='utf-8',newline='',dir=destination.parent,prefix='.'+destination.name,suffix='.tmp',delete=False); temporary=Path(handle.name)
+    try:
+        with handle: handle.write(text); handle.flush(); os.fsync(handle.fileno())
+        os.replace(temporary,destination)
+    finally:
+        if temporary.exists(): temporary.unlink()
+
+def _write_json(path,value): _atomic_text(path,json.dumps(value,ensure_ascii=False,indent=2,allow_nan=False))
+
+def _write_csv(path,rows,fieldnames):
+    destination=Path(path); destination.parent.mkdir(parents=True,exist_ok=True)
+    handle=tempfile.NamedTemporaryFile('w',encoding='utf-8-sig',newline='',dir=destination.parent,prefix='.'+destination.name,suffix='.tmp',delete=False); temporary=Path(handle.name)
+    try:
+        with handle:
+            writer=csv.DictWriter(handle,fieldnames=fieldnames); writer.writeheader(); writer.writerows(rows); handle.flush(); os.fsync(handle.fileno())
+        os.replace(temporary,destination)
+    finally:
+        if temporary.exists(): temporary.unlink()
+
+def _plot_artifacts(output,history,metrics):
+    import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
+    output=Path(output); epochs=[r['epoch'] for r in history]
+    figure,axes=plt.subplots(1,2,figsize=(10,4)); axes[0].plot(epochs,[r['train_loss'] for r in history],label='train'); axes[0].plot(epochs,[r['val_loss'] for r in history],label='val'); axes[0].legend(); axes[0].set_title('Loss'); axes[1].plot(epochs,[r['val_macro_f1'] for r in history]); axes[1].set_title('Validation Macro-F1'); figure.tight_layout(); figure.savefig(output/'training_curves.png'); plt.close(figure)
+    figure,axis=plt.subplots(figsize=(8,7)); axis.imshow(metrics['confusion_matrix'],cmap='Blues'); axis.set_xlabel('Predicted'); axis.set_ylabel('True'); figure.tight_layout(); figure.savefig(output/'confusion_matrix.png'); plt.close(figure)
+
+def write_artifacts(output_root,history,metrics):
+    output=Path(output_root); output.mkdir(parents=True,exist_ok=True)
+    fields=['epoch','train_loss','val_loss','val_accuracy','val_macro_f1']
+    _write_csv(output/'history.csv',history,fields); _write_json(output/'metrics.json',metrics)
+    report=[{'class_id':r['class_id'],'precision':r['precision'],'recall':r['recall'],'f1':r['f1'],'support':r['support']} for r in metrics['per_class']]
+    _write_csv(output/'classification_report.csv',report,['class_id','precision','recall','f1','support'])
+    matrix=[{'class_id':i,**{f'pred_{j}':v for j,v in enumerate(row)}} for i,row in enumerate(metrics['confusion_matrix'])]
+    _write_csv(output/'confusion_matrix.csv',matrix,['class_id']+[f'pred_{i}' for i in range(len(matrix))]); _plot_artifacts(output,history,metrics)
+
+def _class_counts(loader):
+    samples=getattr(getattr(loader,'dataset',None),'samples',None)
+    if samples is None: return None
+    counts=[0]*12
+    for sample in samples: counts[sample.label_id-1]+=1
+    return counts
+
+def run_training(model,loaders,output_root,config,device='cpu',resume=None,evaluate_fn=evaluate,train_fn=train_epoch):
+    if not {'train','val'}<=set(loaders): raise ValueError('training requires train and val loaders')
+    output=Path(output_root); output.mkdir(parents=True,exist_ok=True); device=torch.device(device); model.to(device)
+    optimizer=torch.optim.AdamW(model.parameters(),lr=config.lr,weight_decay=config.weight_decay)
+    scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=max(1,config.epochs)); scaler=_scaler(config.amp and device.type=='cuda')
+    counts=_class_counts(loaders['train']); weights=make_class_weights(counts) if counts is not None else None
+    start=0; best=-1.; stale=0; history=[]; frozen=config.freeze_backbone_epochs>0
+    if frozen: set_backbone_frozen(model,True)
+    if resume:
+        state=load_training_state(resume,model,optimizer,scheduler,scaler); start=state['epoch']+1; best=state['best_f1']; stale=state['patience']; history=list(state['history'])
+        frozen=start<config.freeze_backbone_epochs
+        if config.freeze_backbone_epochs>0: set_backbone_frozen(model,frozen)
+    last_metrics=None
+    for epoch in range(start,config.epochs):
+        if frozen and epoch>=config.freeze_backbone_epochs: set_backbone_frozen(model,False); frozen=False
+        trained=train_fn(model,loaders['train'],optimizer,device,config,weights,scaler=scaler)
+        validation=evaluate_fn(model,loaders['val'],device,weights); last_metrics=validation.metrics
+        row={'epoch':epoch,'train_loss':trained.loss,'val_loss':validation.loss,'val_accuracy':validation.metrics['accuracy'],'val_macro_f1':validation.metrics['macro_f1']}; history.append(row)
+        improved=validation.metrics['macro_f1']>best
+        if improved:
+            best=validation.metrics['macro_f1']; stale=0
+            save_behavior_checkpoint(output/'best.pt',model,validation.metrics,asdict(config))
+        else: stale+=1
+        scheduler.step(); save_training_state(output/'last.pt',epoch,model,optimizer,scheduler,scaler,best,stale,history,config)
+        _write_csv(output/'history.csv',history,['epoch','train_loss','val_loss','val_accuracy','val_macro_f1'])
+        if stale>=config.patience: break
+    if last_metrics is None: raise ValueError('resume checkpoint is already beyond configured epochs')
+    write_artifacts(output,history,last_metrics); return {'history':history,'metrics':last_metrics,'best_f1':best,'epochs_completed':len(history)}
+
+def run_evaluation(checkpoint,loader,output_root,device='cpu'):
+    loaded=load_behavior_checkpoint(checkpoint,device); result=evaluate(loaded.model,loader,device); write_artifacts(output_root,[],result.metrics); return result
+
+def run_smoke(model,loader,output_root,config,device='cpu'):
+    output=Path(output_root); output.mkdir(parents=True,exist_ok=True); model.to(device); optimizer=torch.optim.AdamW(model.parameters(),lr=config.lr); before=torch.cuda.max_memory_allocated(device) if torch.device(device).type=='cuda' else 0
+    result=train_epoch(model,loader,optimizer,device,config,max_steps=2); state=output/'smoke_state.pt'; scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,1); scaler=_scaler(False); save_training_state(state,0,model,optimizer,scheduler,scaler,-1,0,[],config); load_training_state(state,model,optimizer,scheduler,scaler)
+    first=next(iter(loader))[0]; evidence={'device':str(device),'python':platform.python_version(),'torch':torch.__version__,'cuda':torch.version.cuda,'gpu':torch.cuda.get_device_name(device) if torch.device(device).type=='cuda' else None,'input_shape':list(first.shape),'loss':result.loss,'optimizer_steps':result.optimizer_steps,'peak_vram_mb':(torch.cuda.max_memory_allocated(device)-before)/1048576 if torch.device(device).type=='cuda' else 0.0,'reload_success':True}; _write_json(output/'smoke_metrics.json',evidence); return evidence
+
+def build_parser():
+    parser=argparse.ArgumentParser(description='CVB behavior training')
+    parser.add_argument('--mode',required=True,choices=['smoke','train','evaluate']); parser.add_argument('--index-root',required=True); parser.add_argument('--source-data-root',required=True); parser.add_argument('--output-root',required=True); parser.add_argument('--model-root',required=True); parser.add_argument('--checkpoint'); parser.add_argument('--split',choices=['val','test'],default='test'); parser.add_argument('--resume'); parser.add_argument('--device',default='cuda' if torch.cuda.is_available() else 'cpu')
+    parser.add_argument('--seed',type=int,default=20260814); parser.add_argument('--epochs',type=int,default=30); parser.add_argument('--batch-size',type=int,default=4); parser.add_argument('--accumulation-steps',type=int,default=4); parser.add_argument('--lr',type=float,default=3e-4); parser.add_argument('--weight-decay',type=float,default=1e-4); parser.add_argument('--patience',type=int,default=6); parser.add_argument('--workers',type=int,default=2); parser.add_argument('--freeze-backbone-epochs',type=int,default=2); parser.add_argument('--no-amp',action='store_true'); return parser
+
+def main(argv=None):
+    args=build_parser().parse_args(argv); config=TrainingConfig(args.epochs,args.batch_size,args.accumulation_steps,args.lr,args.weight_decay,args.patience,args.workers,args.seed,not args.no_amp,args.freeze_backbone_epochs); seed_everything(config.seed)
+    if args.mode=='evaluate' and not args.checkpoint: raise SystemExit('--checkpoint is required in evaluate mode')
+    if args.resume and args.mode!='train': raise SystemExit('--resume is valid only in train mode')
+    loaders=make_loaders(args.index_root,args.source_data_root,config,'evaluate' if args.mode=='evaluate' else 'train')
+    if args.mode=='evaluate': return run_evaluation(args.checkpoint,loaders[args.split],args.output_root,args.device)
+    model=build_x3d(pretrained=args.mode=='train')
+    if args.mode=='smoke': return run_smoke(model,loaders['train'],args.output_root,config,args.device)
+    return run_training(model,loaders,args.output_root,config,args.device,args.resume)
+
+if __name__=='__main__': main()
