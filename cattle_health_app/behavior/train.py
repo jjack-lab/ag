@@ -9,6 +9,15 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, Subset
 from .dataset import CvbClipDataset
+def _sha256_file(path,chunk_size=1024*1024):
+    if type(chunk_size) is not int or chunk_size<=0: raise ValueError('chunk_size must be a positive integer')
+    digest=hashlib.sha256()
+    with Path(path).open('rb') as source:
+        for chunk in iter(lambda:source.read(chunk_size),b''): digest.update(chunk)
+    return digest.hexdigest()
+
+
+
 from .model import build_x3d, load_behavior_checkpoint, save_behavior_checkpoint
 
 @dataclass(frozen=True)
@@ -360,7 +369,7 @@ def run_smoke(model,loader,output_root,config,device='cpu',context=None,clock=No
     with torch.inference_mode(): reloaded_logits=fresh(first[:1].to(target))
     reload_forward_finite=bool(torch.isfinite(reloaded_logits).all())
     if not reload_forward_finite: raise RuntimeError('reloaded smoke model produced non-finite logits')
-    digest=hashlib.sha256(state.read_bytes()).hexdigest()
+    digest=_sha256_file(state)
     gpu=torch.cuda.get_device_name(target) if target.type=='cuda' else None
     total_vram=torch.cuda.get_device_properties(target).total_memory/1048576 if target.type=='cuda' else 0.0
     evidence={'device':str(target),'python':platform.python_version(),'torch':torch.__version__,'cuda':torch.version.cuda,'gpu':gpu,
@@ -391,13 +400,13 @@ def require_current_data_validation(index_root,output_root):
         raise ValueError('smoke requires successful data validation with verified quality claims')
     manifest_hashes={}
     for split in ('train','val','test'):
-        path=index_root/f'{split}.csv'; actual=hashlib.sha256(path.read_bytes()).hexdigest()
+        path=index_root/f'{split}.csv'; actual=_sha256_file(path)
         expected=evidence.get('splits',{}).get(split,{}).get('manifest_sha256')
         if actual!=expected: raise ValueError(f'{split} manifest changed after data validation')
         manifest_hashes[split]=actual
-    quality=index_root/'quality_report.json'; quality_sha=hashlib.sha256(quality.read_bytes()).hexdigest()
+    quality=index_root/'quality_report.json'; quality_sha=_sha256_file(quality)
     if quality_sha!=evidence.get('quality_report_sha256'): raise ValueError('quality_report changed after data validation')
-    return {'data_validation_sha256':hashlib.sha256(validation_path.read_bytes()).hexdigest(),
+    return {'data_validation_sha256':_sha256_file(validation_path),
             'manifest_sha256':manifest_hashes,'quality_report_sha256':quality_sha}
 
 

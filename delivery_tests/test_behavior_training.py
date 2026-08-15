@@ -360,3 +360,12 @@ def test_smoke_preflight_rejects_manifest_changed_after_validation(tmp_path):
     (index/'train.csv').write_text('changed',encoding='utf-8')
     with pytest.raises(ValueError,match='train manifest changed'):
         training.require_current_data_validation(index,output)
+
+def test_sha256_file_streams_multiple_chunks_without_read_bytes(tmp_path,monkeypatch):
+    import hashlib
+    payload=(b'0123456789abcdef'*(1024*1024//16+1))*3
+    path=tmp_path/'large.csv'; path.write_bytes(payload)
+    expected=hashlib.sha256(payload).hexdigest()
+    def forbidden(*args,**kwargs): raise AssertionError('read_bytes must not be used')
+    monkeypatch.setattr(type(path),'read_bytes',forbidden)
+    assert training._sha256_file(path,chunk_size=1024*1024)==expected
