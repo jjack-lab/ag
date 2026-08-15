@@ -92,6 +92,19 @@ class TrackClipBuffer:
             raise RuntimeError("track clip is not ready for inference")
         self._last_inference_count = self._appended
 
+    def _snapshot(self):
+        return (
+            tuple(self._frames), self._last_frame_index,
+            self._appended, self._last_inference_count,
+        )
+
+    def _restore(self, snapshot) -> None:
+        frames, last_frame_index, appended, last_inference_count = snapshot
+        self._frames = deque(frames, maxlen=self.clip_frames)
+        self._last_frame_index = last_frame_index
+        self._appended = appended
+        self._last_inference_count = last_inference_count
+
     def __len__(self) -> int:
         return len(self._frames)
 
@@ -233,11 +246,19 @@ class BehaviorRuntime:
 
     @property
     def active_track_ids(self) -> tuple[int, ...]:
-        return tuple(self._tracks)
+        self._enter_operation()
+        try:
+            return tuple(self._tracks)
+        finally:
+            self._operation_lock.release()
 
     @property
     def cached_crop_count(self) -> int:
-        return sum(len(state.buffer) for state in self._tracks.values())
+        self._enter_operation()
+        try:
+            return sum(len(state.buffer) for state in self._tracks.values())
+        finally:
+            self._operation_lock.release()
 
     def _enter_operation(self) -> None:
         if not self._operation_lock.acquire(blocking=False):
@@ -295,6 +316,24 @@ class BehaviorRuntime:
         finally:
             self._operation_lock.release()
 
+    @staticmethod
+    def _snapshot_state(state: _TrackState):
+        probabilities = None if state.probabilities is None else state.probabilities.copy()
+        return (
+            state.buffer._snapshot(), state.last_seen_frame, probabilities,
+            state.stable_label_id, state.switch_candidate_id,
+            state.switch_candidate_count, state.last_timestamp,
+        )
+
+    @staticmethod
+    def _restore_state(state: _TrackState, snapshot) -> None:
+        (
+            buffer_snapshot, state.last_seen_frame, state.probabilities,
+            state.stable_label_id, state.switch_candidate_id,
+            state.switch_candidate_count, state.last_timestamp,
+        ) = snapshot
+        state.buffer._restore(buffer_snapshot)
+
     def _observe_batch(self, observations) -> list[BehaviorPrediction]:
         observations = list(observations)
         if not observations:
@@ -313,8 +352,8 @@ class BehaviorRuntime:
             if isinstance(frame_index, bool) or not isinstance(frame_index, int) or frame_index < 0:
                 raise ValueError("frame_index must be a nonnegative integer")
             if (not isinstance(crop, np.ndarray) or crop.dtype != np.uint8 or crop.ndim != 3 or
-                    crop.shape[2] != 3 or crop.size == 0 or not np.isfinite(crop).all()):
-                raise ValueError("crop must be a finite non-empty uint8 HxWx3 BGR image")
+                    crop.shape[2] != 3 or crop.size == 0):
+                raise ValueError("crop must be a non-empty uint8 HxWx3 BGR image")
             timestamp = observation[3] if len(observation) == 4 else None
             if timestamp is not None:
                 if (isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)) or
@@ -333,8 +372,19 @@ class BehaviorRuntime:
                     raise ValueError("timestamp_seconds must be monotonic per track")
             parsed.append((track_id, frame_index, crop, timestamp, retry))
 
-        # Validation is transactional. Inference errors intentionally retain committed
-        # frames so a ready clip can be retried with the same frame index.
+        ordered_snapshot = tuple(self._tracks.items())
+        state_snapshots = {
+            track_id: self._snapshot_state(state) for track_id, state in ordered_snapshot
+        }
+        try:
+            return self._commit_batch(parsed, seen_in_batch)
+        except BaseException:
+            for track_id, state in ordered_snapshot:
+                self._restore_state(state, state_snapshots[track_id])
+            self._tracks = OrderedDict(ordered_snapshot)
+            raise
+
+    def _commit_batch(self, parsed, seen_in_batch) -> list[BehaviorPrediction]:
         latest_frame = max(item[1] for item in parsed)
         self._expire(latest_frame, frozenset(seen_in_batch))
         ready = []
