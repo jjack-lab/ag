@@ -95,7 +95,6 @@ class _TrackState:
     stable_label_id: Optional[int] = None
     switch_candidate_id: Optional[int] = None
     switch_candidate_count: int = 0
-    stable_confidence: float = 0.0
 
 
 class TorchBehaviorClassifier:
@@ -356,11 +355,9 @@ class BehaviorRuntime:
 
         if state.stable_label_id is None:
             state.stable_label_id = smoothed_id
-            state.stable_confidence = smoothed_confidence
         elif smoothed_id == state.stable_label_id:
             state.switch_candidate_id = None
             state.switch_candidate_count = 0
-            state.stable_confidence = smoothed_confidence
         else:
             stable_confidence = float(state.probabilities[state.stable_label_id - 1])
             qualifies = smoothed_confidence >= stable_confidence + self.switch_margin
@@ -374,12 +371,11 @@ class BehaviorRuntime:
                 state.switch_candidate_count = 1
             if state.switch_candidate_count >= self.switch_confirmations:
                 state.stable_label_id = smoothed_id
-                state.stable_confidence = smoothed_confidence
                 state.switch_candidate_id = None
                 state.switch_candidate_count = 0
 
         stable_id = state.stable_label_id
-        confidence = state.stable_confidence
+        confidence = float(state.probabilities[stable_id - 1])
         label_id = stable_id if confidence >= self.confidence_threshold else UNCERTAIN_LABEL_ID
         label = CVB_LABELS[label_id]
         raw_label = CVB_LABELS[raw_label_id]
