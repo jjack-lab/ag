@@ -31,3 +31,4 @@ outputs/acceptance/*
 models/detection/*.pt
 
 .worktrees/
+data/.cvb_behavior_v1.staging-*/
