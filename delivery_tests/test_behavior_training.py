@@ -104,6 +104,10 @@ def test_smoke_exactly_two_steps_and_evidence(tmp_path):
     model=Counting(); loader=DataLoader(TensorDataset(torch.randn(5,2),torch.tensor([0,1,0,1,0])),batch_size=1)
     evidence=training.run_smoke(model,loader,tmp_path,training.TrainingConfig(accumulation_steps=1,workers=0),'cpu')
     assert evidence['optimizer_steps']==2 and evidence['reload_success'] and (tmp_path/'smoke_metrics.json').is_file()
+    assert evidence['elapsed_seconds'] >= 0
+    assert evidence['loss_is_finite'] is True
+    assert evidence['config']['input_frames'] == 16
+    assert evidence['config']['input_size'] == 224
 
 def test_cli_requires_checkpoint_and_resume_scope():
     base=['--index-root','i','--source-data-root','s','--output-root','o']
@@ -129,6 +133,18 @@ def test_history_records_learning_rate(tmp_path,monkeypatch):
     monkeypatch.setattr(training,'save_behavior_checkpoint',lambda *a,**k:None); monkeypatch.setattr(training,'save_training_state',lambda *a,**k:None); monkeypatch.setattr(training,'write_artifacts',lambda *a:None)
     result=training.run_training(nn.Sequential(nn.Linear(2,2)),{'train':[0],'val':[0]},tmp_path,training.TrainingConfig(epochs=1,freeze_backbone_epochs=0),train_fn=lambda *a,**k:_epoch(0),evaluate_fn=lambda *a,**k:_epoch(.5))
     assert result['history'][0]['learning_rate']==pytest.approx(3e-4)
+
+def test_smoke_loaders_cover_classes_present_in_leakage_safe_splits():
+    class Samples(TensorDataset):
+        def __init__(self, labels):
+            super().__init__(torch.arange(len(labels)*2).float().view(len(labels),2),torch.tensor(labels)); self.samples=[type('S',(),{'label_id':i+1})() for i in labels]
+    source={'train':DataLoader(Samples(list(range(1,12))),batch_size=4),
+            'val':DataLoader(Samples(list(range(11))),batch_size=4),
+            'test':DataLoader(Samples(list(range(12))),batch_size=4)}
+    loaders=training.make_smoke_loaders(source,training.TrainingConfig(workers=0))
+    for split in source:
+        expected={sample.label_id for sample in source[split].dataset.samples}; actual={source[split].dataset.samples[i].label_id for i in loaders[split].dataset.indices}
+        assert actual == expected
 
 def test_resume_rejects_incompatible_config(tmp_path,monkeypatch):
     config=training.TrainingConfig(epochs=2,freeze_backbone_epochs=0)

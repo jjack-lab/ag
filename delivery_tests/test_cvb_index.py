@@ -295,3 +295,11 @@ def test_streams_thousands_of_mostly_unique_rows_through_disk_spool(tmp_path: Pa
     iterator.close()
     result = build_index(data, train, test, tmp_path / "out")
     assert result.accepted_count == 2000
+
+
+def test_prepare_script_keeps_generated_index_in_current_worktree():
+    script = (Path(__file__).parents[1] / "scripts" / "prepare_cvb_behavior.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "$projectRoot=Split-Path -Parent $PSScriptRoot" in script
+    assert "Join-Path $projectRoot 'data\\cvb_behavior_v1'" in script

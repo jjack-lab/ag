@@ -1,6 +1,6 @@
 """Reproducible core training primitives for CVB behavior classification."""
 from __future__ import annotations
-import argparse, csv, inspect, json, math, os, platform, random, tempfile
+import argparse, csv, inspect, json, math, os, platform, random, tempfile, time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import numpy as np
@@ -278,29 +278,50 @@ def run_evaluation(checkpoint,loader,output_root,device='cpu'):
 
 def make_smoke_loaders(loaders,config):
     if set(loaders) != {'train','val','test'}: raise ValueError('smoke requires train, val, and test loaders')
-    result={}
+    result={}; union=set()
     for offset,split in enumerate(('train','val','test')):
         source=loaders[split]; samples=getattr(source.dataset,'samples',None)
         if samples is None: raise ValueError('smoke datasets must expose indexed samples')
         by_class={i:[] for i in range(12)}
         for index,sample in enumerate(samples): by_class[sample.label_id-1].append(index)
-        if any(not values for values in by_class.values()): raise ValueError(f'{split} smoke split must cover all 12 classes')
+        present=[label for label,values in by_class.items() if values]
+        if not present: raise ValueError(f'{split} smoke split is empty')
+        union.update(present)
         rng=random.Random(config.seed+offset); indices=[]
-        needed=max(12,config.batch_size*config.accumulation_steps*2)
+        needed=max(len(present),config.batch_size*config.accumulation_steps*2)
         for position in range(needed):
-            label=position%12; indices.append(by_class[label][rng.randrange(len(by_class[label]))])
+            label=present[position%len(present)]; indices.append(by_class[label][rng.randrange(len(by_class[label]))])
         generator=torch.Generator().manual_seed(config.seed+offset)
         result[split]=DataLoader(Subset(source.dataset,indices),batch_size=config.batch_size,shuffle=False,num_workers=config.workers,worker_init_fn=_seed_worker,generator=generator)
+    if union != set(range(12)): raise ValueError('smoke data must cover all 12 classes across splits')
     return result
 def run_smoke(model,loader,output_root,config,device='cpu'):
-    output=Path(output_root); output.mkdir(parents=True,exist_ok=True); model.to(device); optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate); before=torch.cuda.max_memory_allocated(device) if torch.device(device).type=='cuda' else 0
+    output=Path(output_root); output.mkdir(parents=True,exist_ok=True); target=torch.device(device); model.to(target); optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate)
+    if target.type=='cuda':
+        torch.cuda.reset_peak_memory_stats(target); torch.cuda.synchronize(target)
+    started=time.perf_counter()
     result=train_epoch(model,loader,optimizer,device,config,max_steps=2);
+    if target.type=='cuda': torch.cuda.synchronize(target)
+    elapsed=time.perf_counter()-started
+
     if result.optimizer_steps != 2:
         raise ValueError('smoke data must provide exactly two optimizer steps')
+    if not math.isfinite(result.loss): raise ValueError('smoke loss must be finite')
     state=output/'smoke_state.pt'; scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,1); scaler=_scaler(False)
     save_training_state(state,0,model,optimizer,scheduler,scaler,-1,0,[],config)
     load_training_state(state,model,optimizer,scheduler,scaler)
-    first=next(iter(loader))[0]; evidence={'device':str(device),'python':platform.python_version(),'torch':torch.__version__,'cuda':torch.version.cuda,'gpu':torch.cuda.get_device_name(device) if torch.device(device).type=='cuda' else None,'input_shape':list(first.shape),'loss':result.loss,'optimizer_steps':result.optimizer_steps,'peak_vram_mb':(torch.cuda.max_memory_allocated(device)-before)/1048576 if torch.device(device).type=='cuda' else 0.0,'reload_success':True}; _write_json(output/'smoke_metrics.json',evidence); return evidence
+    first=next(iter(loader))[0]
+    gpu=torch.cuda.get_device_name(target) if target.type=='cuda' else None
+    total_vram=torch.cuda.get_device_properties(target).total_memory/1048576 if target.type=='cuda' else 0.0
+    evidence={'device':str(target),'python':platform.python_version(),'torch':torch.__version__,'cuda':torch.version.cuda,'gpu':gpu,
+              'input_shape':list(first.shape),'loss':result.loss,'loss_is_finite':math.isfinite(result.loss),
+              'optimizer_steps':result.optimizer_steps,'elapsed_seconds':elapsed,
+              'peak_vram_mb':torch.cuda.max_memory_allocated(target)/1048576 if target.type=='cuda' else 0.0,
+              'total_vram_mb':total_vram,'reload_success':True,
+              'config':{'batch_size':config.batch_size,'accumulation_steps':config.accumulation_steps,
+                        'amp':config.amp,'input_frames':16,'input_size':224}}
+    _write_json(output/'smoke_metrics.json',evidence)
+    return evidence
 
 def build_parser():
     parser=argparse.ArgumentParser(description='CVB behavior training')
