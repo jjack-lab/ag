@@ -63,6 +63,12 @@ def test_low_confidence_maps_to_uncertain_but_preserves_raw_result():
     assert result.display_name == "无法确定"
     assert result.health_eligible is False
     assert result.raw_label_id == 2
+    assert result.raw_label == "grazing"
+    assert result.raw_display_name == "采食"
+    assert result.smoothed_label_id == 2
+    assert result.smoothed_label == "grazing"
+    assert result.smoothed_display_name == "采食"
+    assert result.smoothed_confidence == pytest.approx(0.44 / sum(probabilities))
     assert result.timestamp_seconds == pytest.approx(1.25)
 
 
@@ -72,8 +78,115 @@ def test_dataset_uncertain_classes_are_never_health_eligible(label_id):
     probabilities[label_id - 1] = 1.0
     result = BehaviorRuntime(FakeClassifier(probabilities), clip_frames=1).observe(1, 0, crop())
     assert result.label_id == label_id
+    assert result.raw_label_id == label_id
+    assert result.smoothed_label_id == label_id
+    assert result.raw_display_name == "无法确定"
+    assert result.smoothed_display_name == "无法确定"
     assert result.display_name == "无法确定"
     assert result.health_eligible is False
+
+
+def test_hysteresis_does_not_flicker_when_boundary_predictions_alternate():
+    classifier = FakeClassifier([0.0, 0.51, 0.49] + [0.0] * 9)
+    runtime = BehaviorRuntime(classifier, clip_frames=1, stride=1, alpha=1.0,
+                              switch_margin=0.0, switch_confirmations=2)
+    assert runtime.observe(3, 0, crop()).label_id == 2
+    for frame_index in range(1, 6):
+        classifier.probabilities = ([0.0, 0.49, 0.51] + [0.0] * 9 if frame_index % 2
+                                    else [0.0, 0.51, 0.49] + [0.0] * 9)
+        assert runtime.observe(3, frame_index, crop()).label_id == 2
+
+
+def test_hysteresis_switches_after_sustained_new_behavior():
+    classifier = FakeClassifier([0.0, 0.9, 0.1] + [0.0] * 9)
+    runtime = BehaviorRuntime(classifier, clip_frames=1, stride=1, alpha=1.0,
+                              switch_margin=0.1, switch_confirmations=2)
+    runtime.observe(3, 0, crop())
+    classifier.probabilities = [0.0, 0.1, 0.9] + [0.0] * 9
+    pending = runtime.observe(3, 1, crop())
+    switched = runtime.observe(3, 2, crop())
+    assert pending.smoothed_label_id == 3
+    assert pending.label_id == 2
+    assert switched.label_id == 3
+
+
+def test_hysteresis_state_is_per_track_and_removed_on_expiry():
+    classifier = FakeClassifier([0.0, 0.9, 0.1] + [0.0] * 9)
+    runtime = BehaviorRuntime(classifier, clip_frames=1, stride=1, alpha=1.0,
+                              switch_margin=0.0, switch_confirmations=2, ttl_frames=1)
+    runtime.observe_batch([(1, 0, crop()), (2, 0, crop())])
+    classifier.probabilities = [0.0, 0.1, 0.9] + [0.0] * 9
+    assert runtime.observe(1, 1, crop()).label_id == 2
+    assert runtime.observe(2, 1, crop()).label_id == 2
+    runtime.expire(3)
+    assert runtime.active_track_ids == ()
+    assert runtime.observe(1, 4, crop()).label_id == 3
+
+
+def test_ready_tracks_are_chunked_to_max_batch_size_without_reordering():
+    class IdentityClassifier:
+        model_version = "identity"
+
+        def __init__(self):
+            self.batch_sizes = []
+
+        def predict(self, clips):
+            self.batch_sizes.append(len(clips))
+            rows = []
+            for clip in clips:
+                row = [0.0] * 12
+                row[int(clip[0][0, 0, 0]) - 1] = 1.0
+                rows.append(row)
+            return rows
+
+    classifier = IdentityClassifier()
+    runtime = BehaviorRuntime(classifier, clip_frames=1, max_batch_size=2)
+    results = runtime.observe_batch([(i, 0, crop(i)) for i in range(1, 6)])
+    assert classifier.batch_sizes == [2, 2, 1]
+    assert [result.track_id for result in results] == [1, 2, 3, 4, 5]
+    assert [result.raw_label_id for result in results] == [1, 2, 3, 4, 5]
+
+
+def test_cuda_oom_halves_batch_but_non_oom_is_not_swallowed():
+    class OomClassifier(FakeClassifier):
+        device = torch.device("cuda")
+
+        def predict(self, clips):
+            self.batch_sizes.append(len(clips))
+            if len(clips) > 1:
+                raise RuntimeError("CUDA out of memory")
+            return [self.probabilities]
+
+    oom = OomClassifier()
+    results = BehaviorRuntime(oom, clip_frames=1, max_batch_size=4).observe_batch(
+        [(i, 0, crop()) for i in range(4)]
+    )
+    assert len(results) == 4
+    assert oom.batch_sizes == [4, 2, 1, 1, 2, 1, 1]
+
+    class BrokenClassifier(FakeClassifier):
+        device = torch.device("cuda")
+
+        def predict(self, clips):
+            raise RuntimeError("kernel contract broken")
+
+    with pytest.raises(RuntimeError, match="kernel contract broken"):
+        BehaviorRuntime(BrokenClassifier(), clip_frames=1).observe(1, 0, crop())
+
+
+def test_cpu_and_single_clip_cuda_oom_are_explicit():
+    class AlwaysOom(FakeClassifier):
+        def __init__(self, device):
+            super().__init__()
+            self.device = torch.device(device)
+
+        def predict(self, clips):
+            raise RuntimeError("out of memory")
+
+    with pytest.raises(RuntimeError, match="out of memory"):
+        BehaviorRuntime(AlwaysOom("cpu"), clip_frames=1).observe(1, 0, crop())
+    with pytest.raises(RuntimeError, match="single clip"):
+        BehaviorRuntime(AlwaysOom("cuda"), clip_frames=1).observe(1, 0, crop())
 
 
 def test_exponential_smoothing_prevents_one_contradiction_from_flipping_label():
