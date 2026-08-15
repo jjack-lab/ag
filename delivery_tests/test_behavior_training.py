@@ -310,3 +310,23 @@ def test_training_preflight_names_missing_official_classes():
     loader=DataLoader(Samples(),batch_size=2)
     with pytest.raises(ValueError,match=r"training split is missing CVB classes: 11, 12"):
         training.require_training_class_coverage(loader)
+
+def test_smoke_utc_interval_contains_training_call(tmp_path):
+    from datetime import datetime,timezone
+    start=datetime(2026,8,15,1,2,3,tzinfo=timezone.utc)
+    during=datetime(2026,8,15,1,2,4,tzinfo=timezone.utc)
+    finish=datetime(2026,8,15,1,2,5,tzinfo=timezone.utc)
+    clock_values=iter((start,finish)); observed=[]
+    original=training.train_epoch
+    def probed_train(*args,**kwargs):
+        observed.append(during)
+        return original(*args,**kwargs)
+    model=Counting(); loader=DataLoader(TensorDataset(torch.randn(4,2),torch.tensor([0,1,0,1])),batch_size=1)
+    evidence=training.run_smoke(model,loader,tmp_path,
+        training.TrainingConfig(accumulation_steps=1,workers=0),'cpu',
+        clock=lambda:next(clock_values),train_fn=probed_train)
+    parsed_start=datetime.fromisoformat(evidence['started_at_utc'])
+    parsed_finish=datetime.fromisoformat(evidence['finished_at_utc'])
+    assert parsed_start <= observed[0] < parsed_finish
+    assert parsed_start.utcoffset().total_seconds() == 0
+    assert parsed_finish.utcoffset().total_seconds() == 0

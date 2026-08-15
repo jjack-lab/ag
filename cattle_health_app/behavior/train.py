@@ -307,13 +307,19 @@ def make_smoke_loaders(loaders,config):
         result[split]=DataLoader(Subset(source.dataset,indices),batch_size=config.batch_size,shuffle=False,num_workers=config.workers,worker_init_fn=_seed_worker,generator=generator)
     if union != set(range(12)): raise ValueError('smoke data must cover all 12 classes across splits')
     return result
-def run_smoke(model,loader,output_root,config,device='cpu',context=None):
+def run_smoke(model,loader,output_root,config,device='cpu',context=None,clock=None,train_fn=train_epoch):
     output=Path(output_root); output.mkdir(parents=True,exist_ok=True); target=torch.device(device); model.to(target); optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate)
     if target.type=='cuda':
         torch.cuda.reset_peak_memory_stats(target); torch.cuda.synchronize(target)
+    clock=clock or (lambda:datetime.now(timezone.utc))
+    def utc_iso():
+        value=clock()
+        if not isinstance(value,datetime) or value.utcoffset() is None:
+            raise ValueError('smoke clock must return a timezone-aware datetime')
+        return value.astimezone(timezone.utc).isoformat()
+    started_at=utc_iso()
     started=time.perf_counter()
-    result=train_epoch(model,loader,optimizer,device,config,max_steps=2);
-    started_at=datetime.now(timezone.utc).isoformat()
+    result=train_fn(model,loader,optimizer,device,config,max_steps=2);
     if target.type=='cuda': torch.cuda.synchronize(target)
     elapsed=time.perf_counter()-started
 
@@ -351,7 +357,7 @@ def run_smoke(model,loader,output_root,config,device='cpu',context=None):
               'config':{'batch_size':config.batch_size,'accumulation_steps':config.accumulation_steps,
                         'amp':config.amp,'input_frames':16,'input_size':224}}
     evidence['started_at_utc']=started_at
-    evidence['finished_at_utc']=datetime.now(timezone.utc).isoformat()
+    evidence['finished_at_utc']=utc_iso()
     if context: evidence.update(context)
     _write_json(output/'smoke_metrics.json',evidence)
     return evidence
