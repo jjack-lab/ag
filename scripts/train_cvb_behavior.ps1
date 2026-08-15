@@ -13,6 +13,9 @@ param(
 )
 $ErrorActionPreference='Stop'
 $projectRoot=Split-Path -Parent $PSScriptRoot
+$utf8=New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding=$utf8
+$env:PYTHONIOENCODING='utf-8'
 if(-not $IndexRoot){$IndexRoot=Join-Path $projectRoot 'data\cvb_behavior_v1'}
 if(-not $OutputRoot){$OutputRoot=Join-Path $projectRoot 'outputs\training\cvb_x3d_v1'}
 $log=Join-Path $OutputRoot ("{0}_run.log" -f $Mode)
@@ -25,7 +28,8 @@ if($Checkpoint){$arguments+=@('--checkpoint',$Checkpoint)}
 if($Resume){$arguments+=@('--resume',$Resume)}
 $savedErrorActionPreference=$ErrorActionPreference
 $ErrorActionPreference='Continue'
-& $python @arguments *>&1 | Tee-Object -FilePath $log
+[IO.File]::WriteAllText($log,'',$utf8)
+& $python @arguments *>&1 | ForEach-Object {$_; [IO.File]::AppendAllText($log,([string]$_)+[Environment]::NewLine,$utf8)}
 $processExitCode=$LASTEXITCODE
 $ErrorActionPreference=$savedErrorActionPreference
 if($processExitCode -ne 0){exit $processExitCode}

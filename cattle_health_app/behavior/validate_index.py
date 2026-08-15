@@ -1,6 +1,6 @@
 """Read-only validation of generated CVB manifests and real 16-frame clips."""
 from __future__ import annotations
-import argparse,csv,hashlib,json,time
+import argparse,csv,hashlib,json,os,tempfile,time
 from collections import Counter
 from pathlib import Path
 import cv2
@@ -44,12 +44,43 @@ def validate_index(index_root,source_data_root,output=None):
             "missing_classes":missing,"clips_checked":clips,"frames_checked":frames,
             "manifest_sha256":_sha256(manifest)}
     quality=index_root/"quality_report.json"
+    try: quality_report=json.loads(quality.read_text(encoding="utf-8"))
+    except (OSError,json.JSONDecodeError) as exc:
+        quality_report={}; errors.append(f"quality_report unreadable: {exc}")
+    actual_leakage=any(error.startswith("group leakage") for error in errors)
+    for split in SPLITS:
+        actual=split_evidence[split]
+        claimed_count=quality_report.get("per_split_counts",{}).get(split)
+        if claimed_count!=actual["rows"]:
+            errors.append(f"quality_report per_split_counts.{split}={claimed_count}, actual={actual['rows']}")
+        claimed_missing=quality_report.get("per_split_missing_classes",{}).get(split)
+        if claimed_missing!=actual["missing_classes"]:
+            errors.append(f"quality_report per_split_missing_classes.{split} mismatch")
+        claimed_classes=quality_report.get("per_split_class_counts",{}).get(split)
+        if claimed_classes!=actual["class_counts"]:
+            errors.append(f"quality_report per_split_class_counts.{split} mismatch")
+    claimed_total=quality_report.get("accepted_count")
+    actual_total=sum(item["rows"] for item in split_evidence.values())
+    if claimed_total!=actual_total: errors.append(f"quality_report accepted_count={claimed_total}, actual={actual_total}")
+    if quality_report.get("group_leakage")!=actual_leakage:
+        errors.append(f"quality_report group_leakage={quality_report.get('group_leakage')}, actual={actual_leakage}")
     evidence={"success":not errors,"read_only":True,"splits":split_evidence,"errors":errors,
-        "group_leakage":any(error.startswith("group leakage") for error in errors),
+        "group_leakage":actual_leakage,"quality_claims_verified":not errors,
         "quality_report_sha256":_sha256(quality),"elapsed_seconds":round(time.perf_counter()-started,3)}
     if output:
         target=Path(output); target.parent.mkdir(parents=True,exist_ok=True)
-        target.write_text(json.dumps(evidence,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+        descriptor,name=tempfile.mkstemp(prefix=f".{target.name}.tmp-",dir=target.parent)
+        temporary=Path(name)
+        try:
+            with os.fdopen(descriptor,"w",encoding="utf-8",newline="\n") as handle:
+                json.dump(evidence,handle,ensure_ascii=False,indent=2); handle.write("\n")
+                handle.flush(); os.fsync(handle.fileno())
+            os.replace(temporary,target)
+        except BaseException:
+            try: os.close(descriptor)
+            except OSError: pass
+            temporary.unlink(missing_ok=True)
+            raise
     return evidence
 
 def main(argv=None):

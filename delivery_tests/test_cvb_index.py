@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 import cattle_health_app.behavior.cvb_index as indexer
 
+from cattle_health_app.behavior.validate_index import validate_index
 from cattle_health_app.behavior.cvb_index import (
     build_index,
     group_id_for_video,
@@ -332,4 +333,19 @@ def test_training_wrapper_logs_native_stderr_without_treating_warnings_as_fatal(
     script=(Path(__file__).parents[1]/"scripts"/"train_cvb_behavior.ps1").read_text(encoding="utf-8")
     assert "$ErrorActionPreference='Continue'" in script
     assert "$processExitCode=$LASTEXITCODE" in script
-    assert "Tee-Object -FilePath $log" in script
+    assert "UTF8Encoding($false)" in script
+    assert "AppendAllText($log" in script
+
+def test_validator_rejects_quality_claim_mismatch_and_publishes_atomically(tmp_path: Path):
+    data=tmp_path/"data"; _video(data,"clip")
+    train,test=data/"train.csv",data/"test.csv"; _ava(train,[_row("clip")]); _ava(test,[])
+    index=tmp_path/"index"; build_index(data,train,test,index)
+    quality=json.loads((index/"quality_report.json").read_text(encoding="utf-8"))
+    quality["per_split_counts"]["train"]+=1
+    (index/"quality_report.json").write_text(json.dumps(quality),encoding="utf-8")
+    output=tmp_path/"validation.json"
+    evidence=validate_index(index,data,output)
+    assert evidence["success"] is False
+    assert any("per_split_counts.train" in error for error in evidence["errors"])
+    assert json.loads(output.read_text(encoding="utf-8"))["success"] is False
+    assert not list(tmp_path.glob(".validation.json.tmp-*"))

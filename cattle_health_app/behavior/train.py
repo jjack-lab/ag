@@ -307,8 +307,20 @@ def make_smoke_loaders(loaders,config):
         result[split]=DataLoader(Subset(source.dataset,indices),batch_size=config.batch_size,shuffle=False,num_workers=config.workers,worker_init_fn=_seed_worker,generator=generator)
     if union != set(range(12)): raise ValueError('smoke data must cover all 12 classes across splits')
     return result
+def _deep_state_equal(left,right):
+    if torch.is_tensor(left) and torch.is_tensor(right): return torch.equal(left.detach().cpu(),right.detach().cpu())
+    if type(left) is not type(right): return False
+    if isinstance(left,dict):
+        return left.keys()==right.keys() and all(_deep_state_equal(left[key],right[key]) for key in left)
+    if isinstance(left,(list,tuple)):
+        return len(left)==len(right) and all(_deep_state_equal(a,b) for a,b in zip(left,right))
+    return left==right
+
+
 def run_smoke(model,loader,output_root,config,device='cpu',context=None,clock=None,train_fn=train_epoch):
     output=Path(output_root); output.mkdir(parents=True,exist_ok=True); target=torch.device(device); model.to(target); optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate)
+    scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,1)
+    scaler=_scaler(config.amp and target.type=='cuda')
     if target.type=='cuda':
         torch.cuda.reset_peak_memory_stats(target); torch.cuda.synchronize(target)
     clock=clock or (lambda:datetime.now(timezone.utc))
@@ -319,14 +331,14 @@ def run_smoke(model,loader,output_root,config,device='cpu',context=None,clock=No
         return value.astimezone(timezone.utc).isoformat()
     started_at=utc_iso()
     started=time.perf_counter()
-    result=train_fn(model,loader,optimizer,device,config,max_steps=2);
+    result=train_fn(model,loader,optimizer,device,config,max_steps=2,scheduler=scheduler,scaler=scaler);
     if target.type=='cuda': torch.cuda.synchronize(target)
     elapsed=time.perf_counter()-started
 
     if result.optimizer_steps != 2:
         raise ValueError('smoke data must provide exactly two optimizer steps')
     if not math.isfinite(result.loss): raise ValueError('smoke loss must be finite')
-    state=output/'last.pt'; scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,1); scaler=_scaler(False)
+    state=output/'last.pt'
     save_training_state(state,0,model,optimizer,scheduler,scaler,-1,0,[],config)
     fresh=build_x3d(pretrained=False) if hasattr(model,'blocks') else copy.deepcopy(model)
     fresh.to(target)
@@ -334,11 +346,15 @@ def run_smoke(model,loader,output_root,config,device='cpu',context=None,clock=No
         for parameter in fresh.parameters(): parameter.zero_()
     fresh_optimizer=torch.optim.AdamW(fresh.parameters(),lr=config.learning_rate)
     fresh_scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(fresh_optimizer,1)
-    fresh_scaler=_scaler(False)
+    fresh_scaler=_scaler(config.amp and target.type=='cuda')
     load_training_state(state,fresh,fresh_optimizer,fresh_scheduler,fresh_scaler)
-    reload_equal=all(torch.equal(value.detach().cpu(),fresh.state_dict()[key].detach().cpu())
-                     for key,value in model.state_dict().items())
-    if not reload_equal: raise RuntimeError('reloaded smoke model state differs from saved model')
+    state_validation={
+        'model':_deep_state_equal(model.state_dict(),fresh.state_dict()),
+        'optimizer':_deep_state_equal(optimizer.state_dict(),fresh_optimizer.state_dict()),
+        'scheduler':_deep_state_equal(scheduler.state_dict(),fresh_scheduler.state_dict()),
+        'scaler':_deep_state_equal(scaler.state_dict(),fresh_scaler.state_dict())}
+    reload_equal=all(state_validation.values())
+    if not reload_equal: raise RuntimeError(f'reloaded smoke state differs: {state_validation}')
     first=next(iter(loader))[0]
     fresh.eval()
     with torch.inference_mode(): reloaded_logits=fresh(first[:1].to(target))
@@ -351,7 +367,8 @@ def run_smoke(model,loader,output_root,config,device='cpu',context=None,clock=No
               'input_shape':list(first.shape),'loss':result.loss,'loss_is_finite':math.isfinite(result.loss),
               'optimizer_steps':result.optimizer_steps,'elapsed_seconds':elapsed,
               'peak_vram_mb':torch.cuda.max_memory_allocated(target)/1048576 if target.type=='cuda' else 0.0,
-              'total_vram_mb':total_vram,'reload_success':reload_equal,
+              'total_vram_mb':total_vram,'reload_success':reload_equal,'state_validation':state_validation,
+              'amp_scaler':{'enabled':scaler.is_enabled(),'state':scaler.state_dict()},
               'reload_forward_finite':reload_forward_finite,'reload_output_shape':list(reloaded_logits.shape),
               'checkpoint':{'path':str(state.resolve()),'size_bytes':state.stat().st_size,'sha256':digest},
               'config':{'batch_size':config.batch_size,'accumulation_steps':config.accumulation_steps,
@@ -366,21 +383,39 @@ def build_parser():
     parser=argparse.ArgumentParser(description='CVB behavior training')
     parser.add_argument('--mode',required=True,choices=['smoke','train','evaluate']); parser.add_argument('--index-root',required=True); parser.add_argument('--source-data-root',required=True); parser.add_argument('--output-root',required=True); parser.add_argument('--checkpoint'); parser.add_argument('--split',choices=['val','test'],default='test'); parser.add_argument('--resume'); parser.add_argument('--device',default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--learning-rate','--lr',dest='learning_rate',type=float,default=3e-4); parser.add_argument('--seed',type=int,default=20260814); parser.add_argument('--epochs',type=int,default=30); parser.add_argument('--batch-size',type=int,default=4); parser.add_argument('--accumulation-steps',type=int,default=4); parser.add_argument('--weight-decay',type=float,default=1e-4); parser.add_argument('--patience',type=int,default=6); parser.add_argument('--workers',type=int,default=2); parser.add_argument('--freeze-backbone-epochs',type=int,default=2); parser.add_argument('--no-amp',action='store_true'); return parser
+def require_current_data_validation(index_root,output_root):
+    index_root=Path(index_root); validation_path=Path(output_root)/'data_validation.json'
+    try: evidence=json.loads(validation_path.read_text(encoding='utf-8'))
+    except (OSError,json.JSONDecodeError) as exc: raise ValueError(f'smoke requires readable data_validation.json: {exc}') from exc
+    if evidence.get('success') is not True or evidence.get('quality_claims_verified') is not True:
+        raise ValueError('smoke requires successful data validation with verified quality claims')
+    manifest_hashes={}
+    for split in ('train','val','test'):
+        path=index_root/f'{split}.csv'; actual=hashlib.sha256(path.read_bytes()).hexdigest()
+        expected=evidence.get('splits',{}).get(split,{}).get('manifest_sha256')
+        if actual!=expected: raise ValueError(f'{split} manifest changed after data validation')
+        manifest_hashes[split]=actual
+    quality=index_root/'quality_report.json'; quality_sha=hashlib.sha256(quality.read_bytes()).hexdigest()
+    if quality_sha!=evidence.get('quality_report_sha256'): raise ValueError('quality_report changed after data validation')
+    return {'data_validation_sha256':hashlib.sha256(validation_path.read_bytes()).hexdigest(),
+            'manifest_sha256':manifest_hashes,'quality_report_sha256':quality_sha}
+
+
+
 
 def main(argv=None):
     args=build_parser().parse_args(argv); config=TrainingConfig(args.epochs,args.batch_size,args.accumulation_steps,args.learning_rate,args.weight_decay,args.patience,args.workers,args.seed,not args.no_amp,args.freeze_backbone_epochs); seed_everything(config.seed)
     if args.mode=='evaluate' and not args.checkpoint: raise SystemExit('--checkpoint is required in evaluate mode')
     if args.resume and args.mode!='train': raise SystemExit('--resume is valid only in train mode')
+    validation_context=require_current_data_validation(args.index_root,args.output_root) if args.mode=='smoke' else {}
     loaders=make_loaders(args.index_root,args.source_data_root,config,'evaluate' if args.mode=='evaluate' else 'train')
     if args.mode=='smoke': loaders=make_smoke_loaders(loaders,config)
     if args.mode=='evaluate': return run_evaluation(args.checkpoint,loaders[args.split],args.output_root,args.device)
     model=build_x3d(pretrained=args.mode=='train')
     if args.mode=='smoke':
-        quality=Path(args.index_root)/'quality_report.json'
-        quality_sha=hashlib.sha256(quality.read_bytes()).hexdigest()
         try: commit=subprocess.run(['git','rev-parse','HEAD'],capture_output=True,text=True,check=True).stdout.strip()
         except (OSError,subprocess.SubprocessError): commit=None
-        context={'git_commit':commit,'quality_report_sha256':quality_sha,
+        context={'git_commit':commit,**validation_context,
                  'command':[sys.executable,'-m','cattle_health_app.behavior.train',*(argv or sys.argv[1:])],
                  'full_config':asdict(config)}
         evidence=run_smoke(model,loaders['train'],args.output_root,config,args.device,context)

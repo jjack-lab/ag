@@ -330,3 +330,33 @@ def test_smoke_utc_interval_contains_training_call(tmp_path):
     assert parsed_start <= observed[0] < parsed_finish
     assert parsed_start.utcoffset().total_seconds() == 0
     assert parsed_finish.utcoffset().total_seconds() == 0
+
+def test_smoke_uses_and_deep_verifies_training_states(tmp_path):
+    captured={}; original=training.train_epoch
+    def probe(*args,**kwargs):
+        captured['scaler']=kwargs.get('scaler'); captured['scheduler']=kwargs.get('scheduler')
+        return original(*args,**kwargs)
+    model=Counting(); loader=DataLoader(TensorDataset(torch.randn(4,2),torch.tensor([0,1,0,1])),batch_size=1)
+    evidence=training.run_smoke(model,loader,tmp_path,
+        training.TrainingConfig(accumulation_steps=1,workers=0),'cpu',train_fn=probe)
+    assert captured['scaler'] is not None and captured['scheduler'] is not None
+    assert evidence['state_validation'] == {
+        'model':True,'optimizer':True,'scheduler':True,'scaler':True
+    }
+    assert evidence['amp_scaler']['enabled'] is False
+
+def test_smoke_preflight_rejects_manifest_changed_after_validation(tmp_path):
+    import hashlib,json
+    index=tmp_path/'index'; output=tmp_path/'output'; index.mkdir(); output.mkdir()
+    splits={}
+    for split in ('train','val','test'):
+        path=index/f'{split}.csv'; path.write_text(split,encoding='utf-8')
+        splits[split]={'manifest_sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
+    quality=index/'quality_report.json'; quality.write_text('{}',encoding='utf-8')
+    evidence={'success':True,'quality_claims_verified':True,'quality_report_sha256':hashlib.sha256(quality.read_bytes()).hexdigest(),'splits':splits}
+    validation=output/'data_validation.json'; validation.write_text(json.dumps(evidence),encoding='utf-8')
+    context=training.require_current_data_validation(index,output)
+    assert context['data_validation_sha256']==hashlib.sha256(validation.read_bytes()).hexdigest()
+    (index/'train.csv').write_text('changed',encoding='utf-8')
+    with pytest.raises(ValueError,match='train manifest changed'):
+        training.require_current_data_validation(index,output)
