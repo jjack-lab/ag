@@ -262,3 +262,91 @@ def test_classifier_validates_probability_shape_from_runtime():
 
     with pytest.raises(ValueError, match="12 probabilities"):
         BehaviorRuntime(BadClassifier(), clip_frames=1).observe(1, 0, crop())
+
+
+def test_batch_expiry_excludes_tracks_observed_in_same_mixed_frame_batch():
+    runtime = BehaviorRuntime(FakeClassifier(), clip_frames=2, ttl_frames=32)
+    runtime.observe(1, 100, crop(1))
+    results = runtime.observe_batch([(1, 101, crop(2)), (2, 1000, crop(3))])
+    assert [result.track_id for result in results] == [1]
+    assert runtime.active_track_ids == (1, 2)
+    assert runtime.cached_crop_count == 3
+
+
+def test_inference_failure_keeps_ready_clip_for_same_frame_retry():
+    class FailsOnce(FakeClassifier):
+        def __init__(self, message):
+            super().__init__()
+            self.message = message
+            self.calls = 0
+
+        def predict(self, clips):
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError(self.message)
+            return super().predict(clips)
+
+    for message in ("kernel failed", "CUDA out of memory"):
+        classifier = FailsOnce(message)
+        if "memory" in message:
+            classifier.device = torch.device("cuda")
+        runtime = BehaviorRuntime(classifier, clip_frames=1, stride=4)
+        with pytest.raises(RuntimeError):
+            runtime.observe(1, 7, crop(7))
+        retried = runtime.observe(1, 7, crop(7))
+        assert retried.track_id == 1
+        assert runtime.observe(1, 8, crop(8)) is None
+
+
+@pytest.mark.parametrize("bad_observation", [
+    (1, 11, np.zeros((4, 4, 3), dtype=np.float32)),
+    (1, 9, crop()),
+])
+def test_invalid_later_observation_does_not_mutate_any_track_state(bad_observation):
+    runtime = BehaviorRuntime(FakeClassifier(), clip_frames=3, max_tracks=2)
+    runtime.observe(1, 10, crop(1), timestamp_seconds=1.0)
+    before_ids = runtime.active_track_ids
+    before_count = runtime.cached_crop_count
+    with pytest.raises(ValueError):
+        runtime.observe_batch([(2, 11, crop(2), 1.1), bad_observation])
+    assert runtime.active_track_ids == before_ids
+    assert runtime.cached_crop_count == before_count
+    assert runtime.observe(1, 11, crop(3), timestamp_seconds=1.1) is None
+
+
+def test_duplicate_late_in_batch_and_bad_timestamp_are_transactional():
+    runtime = BehaviorRuntime(FakeClassifier(), clip_frames=3)
+    runtime.observe(1, 10, crop())
+    for observations in (
+        [(2, 11, crop()), (2, 12, crop())],
+        [(2, 11, crop(), -0.1)],
+    ):
+        with pytest.raises(ValueError):
+            runtime.observe_batch(observations)
+        assert runtime.active_track_ids == (1,)
+        assert runtime.cached_crop_count == 1
+
+
+def test_timestamp_is_nonnegative_and_monotonic_per_track():
+    runtime = BehaviorRuntime(FakeClassifier(), clip_frames=3)
+    runtime.observe(1, 1, crop(), timestamp_seconds=2.0)
+    with pytest.raises(ValueError, match="monotonic"):
+        runtime.observe(1, 2, crop(), timestamp_seconds=1.9)
+    with pytest.raises(ValueError, match="nonnegative"):
+        runtime.observe(2, 2, crop(), timestamp_seconds=-1.0)
+    assert runtime.cached_crop_count == 1
+
+
+def test_amp_requires_an_actual_boolean():
+    with pytest.raises(TypeError, match="amp"):
+        TorchBehaviorClassifier(torch.nn.Identity(), amp=1)
+
+
+def test_classifier_rejects_nonfinite_logits():
+    class NonFinite(torch.nn.Module):
+        def forward(self, clips):
+            return torch.full((clips.shape[0], 12), float("nan"))
+
+    classifier = TorchBehaviorClassifier(NonFinite(), device="cpu")
+    with pytest.raises(ValueError, match="finite"):
+        classifier.predict([[crop() for _ in range(16)]])

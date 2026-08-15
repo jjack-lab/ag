@@ -7,6 +7,7 @@ from collections import OrderedDict, deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional, Sequence, Union
+from threading import Lock
 
 import numpy as np
 import torch
@@ -71,17 +72,25 @@ class TrackClipBuffer:
         self._appended += 1
 
     @property
+    def last_frame_index(self) -> Optional[int]:
+        return self._last_frame_index
+
+    @property
     def ready(self) -> bool:
         if len(self._frames) < self.clip_frames:
             return False
         return (self._last_inference_count is None or
                 self._appended - self._last_inference_count >= self.stride)
 
-    def clip(self) -> tuple[np.ndarray, ...]:
+    def peek(self) -> tuple[np.ndarray, ...]:
+        if not self.ready:
+            raise RuntimeError("track clip is not ready for inference")
+        return tuple(self._frames)
+
+    def mark_inferred(self) -> None:
         if not self.ready:
             raise RuntimeError("track clip is not ready for inference")
         self._last_inference_count = self._appended
-        return tuple(self._frames)
 
     def __len__(self) -> int:
         return len(self._frames)
@@ -95,6 +104,7 @@ class _TrackState:
     stable_label_id: Optional[int] = None
     switch_candidate_id: Optional[int] = None
     switch_candidate_count: int = 0
+    last_timestamp: Optional[float] = None
 
 
 class TorchBehaviorClassifier:
@@ -123,10 +133,12 @@ class TorchBehaviorClassifier:
             raise ValueError("model_version must be a nonempty string")
         if isinstance(input_size, bool) or not isinstance(input_size, int) or input_size <= 0:
             raise ValueError("input_size must be a positive integer")
+        if type(amp) is not bool:
+            raise TypeError("amp must be a boolean")
         self.device = validated_device
         self.model_version = model_version
         self.input_size = input_size
-        self.amp = bool(amp)
+        self.amp = amp
         self.model = model.to(self.device).eval()
 
     @classmethod
@@ -154,12 +166,17 @@ class TorchBehaviorClassifier:
                 raise ValueError(
                     f"behavior model must return shape ({len(clips)}, {CLASS_COUNT})"
                 )
+            if not torch.isfinite(logits).all():
+                raise ValueError("behavior model logits must be finite")
             probabilities = torch.softmax(logits.float(), dim=1)
         return probabilities.cpu()
 
 
 class BehaviorRuntime:
-    """Maintain bounded track clips, batch ready tracks, and smooth predictions."""
+    """Maintain bounded track clips, batch ready tracks, and smooth predictions.
+
+    The runtime has single-thread ownership; overlapping public mutations are rejected.
+    """
 
     def __init__(
         self,
@@ -212,6 +229,7 @@ class BehaviorRuntime:
         self.switch_margin = float(switch_margin)
         self.switch_confirmations = switch_confirmations
         self._tracks: "OrderedDict[int, _TrackState]" = OrderedDict()
+        self._operation_lock = Lock()
 
     @property
     def active_track_ids(self) -> tuple[int, ...]:
@@ -221,12 +239,25 @@ class BehaviorRuntime:
     def cached_crop_count(self) -> int:
         return sum(len(state.buffer) for state in self._tracks.values())
 
+    def _enter_operation(self) -> None:
+        if not self._operation_lock.acquire(blocking=False):
+            raise RuntimeError("BehaviorRuntime supports one calling thread at a time")
+
     def expire(self, current_frame_index: int) -> tuple[int, ...]:
-        if isinstance(current_frame_index, bool) or not isinstance(current_frame_index, int):
-            raise ValueError("current_frame_index must be an integer")
+        self._enter_operation()
+        try:
+            return self._expire(current_frame_index)
+        finally:
+            self._operation_lock.release()
+
+    def _expire(self, current_frame_index: int, excluded=frozenset()) -> tuple[int, ...]:
+        if (isinstance(current_frame_index, bool) or
+                not isinstance(current_frame_index, int) or current_frame_index < 0):
+            raise ValueError("current_frame_index must be a nonnegative integer")
         expired = tuple(
             track_id for track_id, state in self._tracks.items()
-            if current_frame_index - state.last_seen_frame > self.ttl_frames
+            if (track_id not in excluded and
+                current_frame_index - state.last_seen_frame > self.ttl_frames)
         )
         for track_id in expired:
             del self._tracks[track_id]
@@ -258,34 +289,65 @@ class BehaviorRuntime:
         return results[0] if results else None
 
     def observe_batch(self, observations: Iterable[Sequence[object]]) -> list[BehaviorPrediction]:
+        self._enter_operation()
+        try:
+            return self._observe_batch(observations)
+        finally:
+            self._operation_lock.release()
+
+    def _observe_batch(self, observations) -> list[BehaviorPrediction]:
         observations = list(observations)
         if not observations:
             return []
         parsed = []
+        seen_in_batch = set()
         for observation in observations:
-            if len(observation) not in (3, 4):
+            if not isinstance(observation, Sequence) or len(observation) not in (3, 4):
                 raise ValueError("observations must contain track_id, frame_index, crop, [timestamp]")
             track_id, frame_index, crop = observation[:3]
-            timestamp = observation[3] if len(observation) == 4 else None
-            if timestamp is not None:
-                if isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)) or not math.isfinite(timestamp):
-                    raise ValueError("timestamp_seconds must be finite or None")
-                timestamp = float(timestamp)
-            parsed.append((track_id, frame_index, crop, timestamp))
-        latest_frame = max(item[1] for item in parsed)
-        self.expire(latest_frame)
-        ready = []
-        metadata = []
-        seen_in_batch = set()
-        for track_id, frame_index, crop, timestamp in parsed:
+            if isinstance(track_id, bool) or not isinstance(track_id, int) or track_id < 0:
+                raise ValueError("track_id must be a nonnegative integer")
             if track_id in seen_in_batch:
                 raise ValueError("a track may appear only once per observation batch")
             seen_in_batch.add(track_id)
+            if isinstance(frame_index, bool) or not isinstance(frame_index, int) or frame_index < 0:
+                raise ValueError("frame_index must be a nonnegative integer")
+            if (not isinstance(crop, np.ndarray) or crop.dtype != np.uint8 or crop.ndim != 3 or
+                    crop.shape[2] != 3 or crop.size == 0 or not np.isfinite(crop).all()):
+                raise ValueError("crop must be a finite non-empty uint8 HxWx3 BGR image")
+            timestamp = observation[3] if len(observation) == 4 else None
+            if timestamp is not None:
+                if (isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)) or
+                        not math.isfinite(timestamp) or timestamp < 0):
+                    raise ValueError("timestamp_seconds must be finite and nonnegative or None")
+                timestamp = float(timestamp)
+            state = self._tracks.get(track_id)
+            retry = False
+            if state is not None:
+                last_frame = state.buffer.last_frame_index
+                retry = frame_index == last_frame and state.buffer.ready
+                if last_frame is not None and frame_index <= last_frame and not retry:
+                    raise ValueError("frame indexes must be strictly increasing per track")
+                if (timestamp is not None and state.last_timestamp is not None and
+                        timestamp < state.last_timestamp):
+                    raise ValueError("timestamp_seconds must be monotonic per track")
+            parsed.append((track_id, frame_index, crop, timestamp, retry))
+
+        # Validation is transactional. Inference errors intentionally retain committed
+        # frames so a ready clip can be retried with the same frame index.
+        latest_frame = max(item[1] for item in parsed)
+        self._expire(latest_frame, frozenset(seen_in_batch))
+        ready = []
+        metadata = []
+        for track_id, frame_index, crop, timestamp, retry in parsed:
             state = self._state_for(track_id, frame_index)
-            state.buffer.append(frame_index, crop)
+            if not retry:
+                state.buffer.append(frame_index, crop)
             state.last_seen_frame = frame_index
+            if timestamp is not None:
+                state.last_timestamp = timestamp
             if state.buffer.ready:
-                ready.append(state.buffer.clip())
+                ready.append(state.buffer.peek())
                 metadata.append((track_id, frame_index, timestamp, state))
         if not ready:
             return []
@@ -294,10 +356,13 @@ class BehaviorRuntime:
             chunk = ready[start:start + self.max_batch_size]
             probability_rows.extend(self._predict_with_oom_retry(chunk))
         probabilities = np.asarray(probability_rows)
-        return [
+        results = [
             self._prediction(track_id, frame_index, timestamp, state, row)
             for (track_id, frame_index, timestamp, state), row in zip(metadata, probabilities)
         ]
+        for _, _, _, state in metadata:
+            state.buffer.mark_inferred()
+        return results
 
     def _predict_with_oom_retry(self, clips):
         """Retry only CUDA OOM by recursively halving a bounded input batch."""
