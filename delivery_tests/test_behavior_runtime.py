@@ -106,7 +106,11 @@ def test_hysteresis_switches_after_sustained_new_behavior():
     pending = runtime.observe(3, 1, crop())
     switched = runtime.observe(3, 2, crop())
     assert pending.smoothed_label_id == 3
-    assert pending.label_id == 2
+    assert pending.label_id == 1
+    assert pending.display_name == "无法确定"
+    assert pending.health_eligible is False
+    assert pending.confidence == pytest.approx(0.1)
+    assert pending.smoothed_confidence == pytest.approx(0.9)
     assert switched.label_id == 3
 
 
@@ -116,8 +120,8 @@ def test_hysteresis_state_is_per_track_and_removed_on_expiry():
                               switch_margin=0.0, switch_confirmations=2, ttl_frames=1)
     runtime.observe_batch([(1, 0, crop()), (2, 0, crop())])
     classifier.probabilities = [0.0, 0.1, 0.9] + [0.0] * 9
-    assert runtime.observe(1, 1, crop()).label_id == 2
-    assert runtime.observe(2, 1, crop()).label_id == 2
+    assert runtime.observe(1, 1, crop()).display_name == "无法确定"
+    assert runtime.observe(2, 1, crop()).display_name == "无法确定"
     runtime.expire(3)
     assert runtime.active_track_ids == ()
     assert runtime.observe(1, 4, crop()).label_id == 3
