@@ -377,7 +377,9 @@ def main(argv=None):
         context={'git_commit':commit,'quality_report_sha256':quality_sha,
                  'command':[sys.executable,'-m','cattle_health_app.behavior.train',*(argv or sys.argv[1:])],
                  'full_config':asdict(config)}
-        return run_smoke(model,loaders['train'],args.output_root,config,args.device,context)
+        evidence=run_smoke(model,loaders['train'],args.output_root,config,args.device,context)
+        print(json.dumps(evidence,ensure_ascii=False,indent=2))
+        return evidence
     return run_training(model,loaders,args.output_root,config,args.device,args.resume)
 
 if __name__=='__main__': main()
