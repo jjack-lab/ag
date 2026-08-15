@@ -167,6 +167,53 @@ def _assign_train_val(groups: Iterable[str], seed: int) -> dict[str, str]:
     return {group: ("val" if group in val_groups else "train") for group in ordered}
 
 
+def _ensure_training_class_coverage(connection: sqlite3.Connection, seed: int) -> list[dict]:
+    """Move the deterministic minimum number of whole groups needed by train."""
+    train_labels = {row[0] for row in connection.execute(
+        "SELECT DISTINCT label_id FROM accepted WHERE split='train'"
+    )}
+    all_labels={row[0] for row in connection.execute("SELECT DISTINCT label_id FROM accepted")}
+    if all_labels != set(range(1,13)): return []
+
+    missing = set(range(1, 13)) - train_labels
+    if not missing:
+        return []
+    candidates = []
+    for group_id, split, row_count in connection.execute(
+        "SELECT group_id,split,COUNT(*) FROM accepted WHERE split!='train' GROUP BY group_id,split"
+    ):
+        labels = {row[0] for row in connection.execute(
+            "SELECT DISTINCT label_id FROM accepted WHERE group_id=?", (group_id,)
+        )}
+        covered = labels & missing
+        if covered:
+            mask = sum(1 << (label - 1) for label in covered)
+            candidates.append((group_id, split, row_count, labels, mask))
+    candidates.sort(key=lambda item: sha256(f"{seed}:{item[0]}".encode()).hexdigest())
+    target=0
+    for candidate in candidates: target|=candidate[4]
+    if not target: return []
+
+    states = {0: ((0, 0, 0, ()), ())}
+    for group_id, split, row_count, labels, mask in candidates:
+        snapshot = list(states.items())
+        for existing_mask, (cost, selected) in snapshot:
+            combined = existing_mask | mask
+            group_ids = tuple(sorted((*cost[3], group_id)))
+            candidate_cost = (cost[0] + 1, cost[1] + (split == "test"), cost[2] + row_count, group_ids)
+            current = states.get(combined)
+            if current is None or candidate_cost < current[0]:
+                states[combined] = (candidate_cost, (*selected, (group_id, split, row_count, labels)))
+    if target not in states:
+        raise RuntimeError("failed to compute deterministic training class coverage")
+    moves = []
+    for group_id, split, row_count, labels in states[target][1]:
+        connection.execute("UPDATE accepted SET split='train' WHERE group_id=?", (group_id,))
+        moves.append({"group_id": group_id, "from_split": split, "to_split": "train",
+                      "labels": sorted(labels), "row_count": row_count})
+    connection.commit()
+    return sorted(moves, key=lambda move: move["group_id"])
+
 def _write_csv(path: Path, fieldnames: list[str], rows: Iterable[dict]) -> None:
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
@@ -311,6 +358,7 @@ def build_index(
                 json.dumps(relative, ensure_ascii=False, separators=(",", ":")), split))
         connection.commit()
 
+        split_adjustments = _ensure_training_class_coverage(connection, seed)
         groups_by_split = {split: {row[0] for row in connection.execute(
             "SELECT DISTINCT group_id FROM accepted WHERE split=?", (split,))} for split in ("train","val","test")}
         if any(groups_by_split[a] & groups_by_split[b] for a,b in (("train","val"),("train","test"),("val","test"))):
@@ -328,10 +376,29 @@ def build_index(
                    ({"source_split":r["source"],"row_number":r["row_number"],"reason":r["reason"],"row":r["raw_json"],"detail":r["detail"]} for r in cursor))
         accepted_count = sum(split_counts.values())
         class_counts = dict(connection.execute("SELECT label_id,COUNT(*) FROM accepted GROUP BY label_id"))
+        per_split_class_counts = {}
+        per_split_missing_classes = {}
+        for split in ("train", "val", "test"):
+            counts = dict(connection.execute(
+                "SELECT label_id,COUNT(*) FROM accepted WHERE split=? GROUP BY label_id", (split,)
+            ))
+            per_split_class_counts[split] = {str(i): counts.get(i, 0) for i in range(1, 13)}
+            per_split_missing_classes[split] = [i for i in range(1, 13) if not counts.get(i, 0)]
+        class_group_counts = {str(i): {split: connection.execute(
+            "SELECT COUNT(DISTINCT group_id) FROM accepted WHERE label_id=? AND split=?", (i, split)
+        ).fetchone()[0] for split in ("train", "val", "test")} for i in range(1, 13)}
+        independent_limitations = {str(i): [split for split in ("val", "test")
+            if i in per_split_missing_classes[split]] for i in range(1, 13)}
+        independent_limitations = {key: value for key, value in independent_limitations.items() if value}
         report = {"accepted_count":accepted_count,"rejected_count":rejected_count,"rejected_by_reason":reasons,
           "per_split_counts":split_counts,"per_class_counts":{str(i):class_counts.get(i,0) for i in range(1,13)},
           "source_paths":{"data_root":str(data_root),"train_ava":str(train_ava),"test_ava":str(test_ava)},
-          "seed":seed,"frame_count":FRAME_COUNT,"fps":fps,"duration_seconds":DURATION_SECONDS,"group_leakage":False}
+          "seed":seed,"frame_count":FRAME_COUNT,"fps":fps,"duration_seconds":DURATION_SECONDS,"group_leakage":False,
+          "per_split_class_counts":per_split_class_counts,"per_split_missing_classes":per_split_missing_classes,
+          "per_class_group_counts":class_group_counts,"classes_without_independent_evaluation":independent_limitations,
+          "split_adjustments":split_adjustments,
+          "official_test_split_modified":any(move["from_split"]=="test" for move in split_adjustments),
+          "split_adjustment_reason":"minimum whole-group moves required for 12-class training coverage" if split_adjustments else None}
         (staging/"quality_report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
         connection.close()
         database.unlink()

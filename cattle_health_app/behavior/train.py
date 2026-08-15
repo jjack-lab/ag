@@ -1,7 +1,8 @@
 """Reproducible core training primitives for CVB behavior classification."""
 from __future__ import annotations
-import argparse, csv, inspect, json, math, os, platform, random, tempfile, time
+import argparse, copy, csv, hashlib, inspect, json, math, os, platform, random, subprocess, sys, tempfile, time
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 import torch
@@ -94,6 +95,15 @@ def make_loaders(index_root,source_data_root,config,mode='train'):
 def _scaler(enabled):
     try: return torch.amp.GradScaler('cuda',enabled=enabled)
     except (AttributeError,TypeError): return torch.cuda.amp.GradScaler(enabled=enabled)
+def require_training_class_coverage(loader):
+    samples=getattr(getattr(loader,'dataset',None),'samples',None)
+    if samples is None: return None
+    present={sample.label_id for sample in samples}
+    missing=sorted(set(range(1,13))-present)
+    if missing:
+        raise ValueError('training split is missing CVB classes: '+', '.join(map(str,missing)))
+    return [sum(sample.label_id==label for sample in samples) for label in range(1,13)]
+
 
 def train_epoch(model,loader,optimizer,device,config,class_weights=None,scheduler=None,scaler=None,max_steps=None):
     device=torch.device(device); amp=bool(config.amp and device.type=='cuda'); scaler=scaler or _scaler(amp)
@@ -245,7 +255,9 @@ def run_training(model,loaders,output_root,config,device='cpu',resume=None,evalu
     output=Path(output_root); output.mkdir(parents=True,exist_ok=True); device=torch.device(device); model.to(device)
     optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate,weight_decay=config.weight_decay)
     scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=max(1,config.epochs)); scaler=_scaler(config.amp and device.type=='cuda')
-    counts=_class_counts(loaders['train']); weights=make_class_weights(counts) if counts is not None else None
+    counts=require_training_class_coverage(loaders['train'])
+    if counts is None: counts=_class_counts(loaders['train'])
+    weights=make_class_weights(counts) if counts is not None else None
     start=0; best=-1.; best_metrics=None; stale=0; history=[]; frozen=config.freeze_backbone_epochs>0
     if frozen: set_backbone_frozen(model,True)
     if resume:
@@ -295,31 +307,52 @@ def make_smoke_loaders(loaders,config):
         result[split]=DataLoader(Subset(source.dataset,indices),batch_size=config.batch_size,shuffle=False,num_workers=config.workers,worker_init_fn=_seed_worker,generator=generator)
     if union != set(range(12)): raise ValueError('smoke data must cover all 12 classes across splits')
     return result
-def run_smoke(model,loader,output_root,config,device='cpu'):
+def run_smoke(model,loader,output_root,config,device='cpu',context=None):
     output=Path(output_root); output.mkdir(parents=True,exist_ok=True); target=torch.device(device); model.to(target); optimizer=torch.optim.AdamW(model.parameters(),lr=config.learning_rate)
     if target.type=='cuda':
         torch.cuda.reset_peak_memory_stats(target); torch.cuda.synchronize(target)
     started=time.perf_counter()
     result=train_epoch(model,loader,optimizer,device,config,max_steps=2);
+    started_at=datetime.now(timezone.utc).isoformat()
     if target.type=='cuda': torch.cuda.synchronize(target)
     elapsed=time.perf_counter()-started
 
     if result.optimizer_steps != 2:
         raise ValueError('smoke data must provide exactly two optimizer steps')
     if not math.isfinite(result.loss): raise ValueError('smoke loss must be finite')
-    state=output/'smoke_state.pt'; scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,1); scaler=_scaler(False)
+    state=output/'last.pt'; scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,1); scaler=_scaler(False)
     save_training_state(state,0,model,optimizer,scheduler,scaler,-1,0,[],config)
-    load_training_state(state,model,optimizer,scheduler,scaler)
+    fresh=build_x3d(pretrained=False) if hasattr(model,'blocks') else copy.deepcopy(model)
+    fresh.to(target)
+    with torch.no_grad():
+        for parameter in fresh.parameters(): parameter.zero_()
+    fresh_optimizer=torch.optim.AdamW(fresh.parameters(),lr=config.learning_rate)
+    fresh_scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(fresh_optimizer,1)
+    fresh_scaler=_scaler(False)
+    load_training_state(state,fresh,fresh_optimizer,fresh_scheduler,fresh_scaler)
+    reload_equal=all(torch.equal(value.detach().cpu(),fresh.state_dict()[key].detach().cpu())
+                     for key,value in model.state_dict().items())
+    if not reload_equal: raise RuntimeError('reloaded smoke model state differs from saved model')
     first=next(iter(loader))[0]
+    fresh.eval()
+    with torch.inference_mode(): reloaded_logits=fresh(first[:1].to(target))
+    reload_forward_finite=bool(torch.isfinite(reloaded_logits).all())
+    if not reload_forward_finite: raise RuntimeError('reloaded smoke model produced non-finite logits')
+    digest=hashlib.sha256(state.read_bytes()).hexdigest()
     gpu=torch.cuda.get_device_name(target) if target.type=='cuda' else None
     total_vram=torch.cuda.get_device_properties(target).total_memory/1048576 if target.type=='cuda' else 0.0
     evidence={'device':str(target),'python':platform.python_version(),'torch':torch.__version__,'cuda':torch.version.cuda,'gpu':gpu,
               'input_shape':list(first.shape),'loss':result.loss,'loss_is_finite':math.isfinite(result.loss),
               'optimizer_steps':result.optimizer_steps,'elapsed_seconds':elapsed,
               'peak_vram_mb':torch.cuda.max_memory_allocated(target)/1048576 if target.type=='cuda' else 0.0,
-              'total_vram_mb':total_vram,'reload_success':True,
+              'total_vram_mb':total_vram,'reload_success':reload_equal,
+              'reload_forward_finite':reload_forward_finite,'reload_output_shape':list(reloaded_logits.shape),
+              'checkpoint':{'path':str(state.resolve()),'size_bytes':state.stat().st_size,'sha256':digest},
               'config':{'batch_size':config.batch_size,'accumulation_steps':config.accumulation_steps,
                         'amp':config.amp,'input_frames':16,'input_size':224}}
+    evidence['started_at_utc']=started_at
+    evidence['finished_at_utc']=datetime.now(timezone.utc).isoformat()
+    if context: evidence.update(context)
     _write_json(output/'smoke_metrics.json',evidence)
     return evidence
 
@@ -336,7 +369,15 @@ def main(argv=None):
     if args.mode=='smoke': loaders=make_smoke_loaders(loaders,config)
     if args.mode=='evaluate': return run_evaluation(args.checkpoint,loaders[args.split],args.output_root,args.device)
     model=build_x3d(pretrained=args.mode=='train')
-    if args.mode=='smoke': return run_smoke(model,loaders['train'],args.output_root,config,args.device)
+    if args.mode=='smoke':
+        quality=Path(args.index_root)/'quality_report.json'
+        quality_sha=hashlib.sha256(quality.read_bytes()).hexdigest()
+        try: commit=subprocess.run(['git','rev-parse','HEAD'],capture_output=True,text=True,check=True).stdout.strip()
+        except (OSError,subprocess.SubprocessError): commit=None
+        context={'git_commit':commit,'quality_report_sha256':quality_sha,
+                 'command':[sys.executable,'-m','cattle_health_app.behavior.train',*(argv or sys.argv[1:])],
+                 'full_config':asdict(config)}
+        return run_smoke(model,loaders['train'],args.output_root,config,args.device,context)
     return run_training(model,loaders,args.output_root,config,args.device,args.resume)
 
 if __name__=='__main__': main()

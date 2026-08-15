@@ -7,6 +7,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pytest
+import cattle_health_app.behavior.cvb_index as indexer
 
 from cattle_health_app.behavior.cvb_index import (
     build_index,
@@ -303,3 +304,26 @@ def test_prepare_script_keeps_generated_index_in_current_worktree():
     )
     assert "$projectRoot=Split-Path -Parent $PSScriptRoot" in script
     assert "Join-Path $projectRoot 'data\\cvb_behavior_v1'" in script
+
+def test_rebalance_moves_the_minimum_whole_groups_without_leakage():
+    connection = indexer.sqlite3.connect(":memory:")
+    connection.execute("CREATE TABLE accepted(label_id INTEGER, group_id TEXT, split TEXT)")
+    connection.executemany("INSERT INTO accepted VALUES (?,?,?)",
+        [(label,"train-base","train") for label in range(1,11)]
+        + [(11,"val-both","val"),(12,"val-both","val")]
+        + [(11,"val-eleven","val"),(12,"test-twelve","test")])
+    moves=indexer._ensure_training_class_coverage(connection,seed=20260814)
+    assert moves == [{"group_id":"val-both","from_split":"val","to_split":"train","labels":[11,12],"row_count":2}]
+    assert set(row[0] for row in connection.execute("SELECT DISTINCT label_id FROM accepted WHERE split='train'")) == set(range(1,13))
+    assert all(row[1] == 1 for row in connection.execute("SELECT group_id,COUNT(DISTINCT split) FROM accepted GROUP BY group_id"))
+
+def test_quality_report_lists_missing_classes_and_split_deviation(tmp_path: Path):
+    data=tmp_path/"data"; _video(data,"train-a"); _video(data,"test-b")
+    train,test=data/"train.csv",data/"test.csv"
+    _ava(train,[_row("train-a",label=str(label),track=str(label)) for label in range(1,12)])
+    _ava(test,[_row("test-b",label="12")])
+    output=tmp_path/"out"; build_index(data,train,test,output)
+    report=json.loads((output/"quality_report.json").read_text(encoding="utf-8"))
+    assert report["per_split_missing_classes"]["train"] == []
+    assert report["split_adjustments"][0]["from_split"] == "test"
+    assert report["official_test_split_modified"] is True

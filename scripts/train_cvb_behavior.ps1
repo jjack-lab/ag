@@ -15,11 +15,14 @@ $ErrorActionPreference='Stop'
 $projectRoot=Split-Path -Parent $PSScriptRoot
 if(-not $IndexRoot){$IndexRoot=Join-Path $projectRoot 'data\cvb_behavior_v1'}
 if(-not $OutputRoot){$OutputRoot=Join-Path $projectRoot 'outputs\training\cvb_x3d_v1'}
+$log=Join-Path $OutputRoot ("{0}_run.log" -f $Mode)
+New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
 $env:TORCH_HOME=Join-Path $projectRoot 'models\cache\torch'
 $python='F:\deepl\anaconda1\envs\pytorch\python.exe'
 if($Mode -eq 'evaluate' -and -not $Checkpoint){throw '-Checkpoint is required for evaluate mode'}
 $arguments=@('-m','cattle_health_app.behavior.train','--mode',$Mode,'--index-root',$IndexRoot,'--source-data-root',$SourceDataRoot,'--output-root',$OutputRoot,'--split',$Split,'--device',$Device,'--epochs',$Epochs,'--batch-size',$BatchSize,'--accumulation-steps',$AccumulationSteps,'--learning-rate',$LearningRate,'--weight-decay',$WeightDecay,'--patience',$Patience,'--workers',$Workers,'--freeze-backbone-epochs',$FreezeBackboneEpochs,'--seed',$Seed)
 if($Checkpoint){$arguments+=@('--checkpoint',$Checkpoint)}
 if($Resume){$arguments+=@('--resume',$Resume)}
-& $python @arguments
-if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+& $python @arguments *>&1 | Tee-Object -FilePath $log
+$processExitCode=$LASTEXITCODE
+if($processExitCode -ne 0){exit $processExitCode}

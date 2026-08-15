@@ -104,6 +104,9 @@ def test_smoke_exactly_two_steps_and_evidence(tmp_path):
     model=Counting(); loader=DataLoader(TensorDataset(torch.randn(5,2),torch.tensor([0,1,0,1,0])),batch_size=1)
     evidence=training.run_smoke(model,loader,tmp_path,training.TrainingConfig(accumulation_steps=1,workers=0),'cpu')
     assert evidence['optimizer_steps']==2 and evidence['reload_success'] and (tmp_path/'smoke_metrics.json').is_file()
+    assert (tmp_path/'last.pt').is_file()
+    assert evidence['checkpoint']['sha256']
+    assert evidence['reload_forward_finite'] is True
     assert evidence['elapsed_seconds'] >= 0
     assert evidence['loss_is_finite'] is True
     assert evidence['config']['input_frames'] == 16
@@ -165,7 +168,7 @@ def test_smoke_persists_and_reloads_real_state(tmp_path,monkeypatch):
     monkeypatch.setattr(training,'load_training_state',lambda *a,**k:(calls.append('load'),original_load(*a,**k))[1])
     loader=DataLoader(TensorDataset(torch.randn(4,2),torch.tensor([0,1,0,1])),batch_size=1)
     evidence=training.run_smoke(Counting(),loader,tmp_path,training.TrainingConfig(accumulation_steps=1,workers=0),'cpu')
-    assert calls==['save','load'] and (tmp_path/'smoke_state.pt').is_file() and evidence['reload_success'] is True
+    assert calls==['save','load'] and (tmp_path/'last.pt').is_file() and evidence['reload_success'] is True
 
 def test_learning_rate_is_checkpoint_dataclass_field():
     config=training.TrainingConfig(learning_rate=.02)
@@ -299,3 +302,11 @@ def test_multiple_accumulation_groups_match_independent_torch_reference(weights)
     assert result.optimizer_steps==2
     for actual_parameter,reference_parameter in zip(actual.parameters(),reference.parameters()):
         assert torch.allclose(actual_parameter,reference_parameter,atol=1e-7)
+
+def test_training_preflight_names_missing_official_classes():
+    class Samples(TensorDataset):
+        def __init__(self):
+            super().__init__(torch.randn(10,2),torch.arange(10)); self.samples=[type('S',(),{'label_id':i})() for i in range(1,11)]
+    loader=DataLoader(Samples(),batch_size=2)
+    with pytest.raises(ValueError,match=r"training split is missing CVB classes: 11, 12"):
+        training.require_training_class_coverage(loader)
