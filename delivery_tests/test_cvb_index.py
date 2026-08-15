@@ -327,3 +327,9 @@ def test_quality_report_lists_missing_classes_and_split_deviation(tmp_path: Path
     assert report["per_split_missing_classes"]["train"] == []
     assert report["split_adjustments"][0]["from_split"] == "test"
     assert report["official_test_split_modified"] is True
+
+def test_training_wrapper_logs_native_stderr_without_treating_warnings_as_fatal():
+    script=(Path(__file__).parents[1]/"scripts"/"train_cvb_behavior.ps1").read_text(encoding="utf-8")
+    assert "$ErrorActionPreference='Continue'" in script
+    assert "$processExitCode=$LASTEXITCODE" in script
+    assert "Tee-Object -FilePath $log" in script

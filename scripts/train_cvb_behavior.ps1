@@ -23,6 +23,9 @@ if($Mode -eq 'evaluate' -and -not $Checkpoint){throw '-Checkpoint is required fo
 $arguments=@('-m','cattle_health_app.behavior.train','--mode',$Mode,'--index-root',$IndexRoot,'--source-data-root',$SourceDataRoot,'--output-root',$OutputRoot,'--split',$Split,'--device',$Device,'--epochs',$Epochs,'--batch-size',$BatchSize,'--accumulation-steps',$AccumulationSteps,'--learning-rate',$LearningRate,'--weight-decay',$WeightDecay,'--patience',$Patience,'--workers',$Workers,'--freeze-backbone-epochs',$FreezeBackboneEpochs,'--seed',$Seed)
 if($Checkpoint){$arguments+=@('--checkpoint',$Checkpoint)}
 if($Resume){$arguments+=@('--resume',$Resume)}
+$savedErrorActionPreference=$ErrorActionPreference
+$ErrorActionPreference='Continue'
 & $python @arguments *>&1 | Tee-Object -FilePath $log
 $processExitCode=$LASTEXITCODE
+$ErrorActionPreference=$savedErrorActionPreference
 if($processExitCode -ne 0){exit $processExitCode}
