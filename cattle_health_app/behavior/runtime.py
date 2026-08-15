@@ -18,7 +18,6 @@ from .model import DEFAULT_MODEL_VERSION, load_behavior_checkpoint
 
 CLASS_COUNT = len(CVB_LABELS)
 UNCERTAIN_LABEL_ID = 1
-UNCERTAIN_DISPLAY_NAME = "无法确定"
 
 
 @dataclass(frozen=True)
@@ -35,7 +34,12 @@ class BehaviorPrediction:
     health_eligible: bool
     raw_label_id: int
     raw_label: str
+    raw_display_name: str
     raw_confidence: float
+    smoothed_label_id: int
+    smoothed_label: str
+    smoothed_display_name: str
+    smoothed_confidence: float
     model_version: str
 
 
@@ -88,6 +92,10 @@ class _TrackState:
     buffer: TrackClipBuffer
     last_seen_frame: int
     probabilities: Optional[np.ndarray] = None
+    stable_label_id: Optional[int] = None
+    switch_candidate_id: Optional[int] = None
+    switch_candidate_count: int = 0
+    stable_confidence: float = 0.0
 
 
 class TorchBehaviorClassifier:
@@ -164,6 +172,9 @@ class BehaviorRuntime:
         fps: float = 30.0,
         ttl_frames: Optional[int] = None,
         max_tracks: int = 128,
+        max_batch_size: int = 16,
+        switch_margin: float = 0.05,
+        switch_confirmations: int = 2,
     ):
         if classifier is None or not callable(getattr(classifier, "predict", None)):
             raise TypeError("classifier must provide predict(clips)")
@@ -179,6 +190,15 @@ class BehaviorRuntime:
             raise ValueError("ttl_frames must be a positive integer")
         if isinstance(max_tracks, bool) or not isinstance(max_tracks, int) or max_tracks <= 0:
             raise ValueError("max_tracks must be a positive integer")
+        if (isinstance(max_batch_size, bool) or not isinstance(max_batch_size, int) or
+                max_batch_size <= 0):
+            raise ValueError("max_batch_size must be a positive integer")
+        if not math.isfinite(switch_margin) or not 0 <= switch_margin <= 1:
+            raise ValueError("switch_margin must be in [0, 1]")
+        if (isinstance(switch_confirmations, bool) or
+                not isinstance(switch_confirmations, int) or switch_confirmations <= 0):
+            raise ValueError("switch_confirmations must be a positive integer")
+
         # Validate buffer settings once before accepting observations.
         TrackClipBuffer(clip_frames, stride)
         self.classifier = classifier
@@ -189,6 +209,9 @@ class BehaviorRuntime:
         self.ttl_frames = ttl_frames
         self.max_tracks = max_tracks
         self.model_version = getattr(classifier, "model_version", "unknown")
+        self.max_batch_size = max_batch_size
+        self.switch_margin = float(switch_margin)
+        self.switch_confirmations = switch_confirmations
         self._tracks: "OrderedDict[int, _TrackState]" = OrderedDict()
 
     @property
@@ -267,11 +290,41 @@ class BehaviorRuntime:
                 metadata.append((track_id, frame_index, timestamp, state))
         if not ready:
             return []
-        probabilities = self._validated_probabilities(self.classifier.predict(ready), len(ready))
+        probability_rows = []
+        for start in range(0, len(ready), self.max_batch_size):
+            chunk = ready[start:start + self.max_batch_size]
+            probability_rows.extend(self._predict_with_oom_retry(chunk))
+        probabilities = np.asarray(probability_rows)
         return [
             self._prediction(track_id, frame_index, timestamp, state, row)
             for (track_id, frame_index, timestamp, state), row in zip(metadata, probabilities)
         ]
+
+    def _predict_with_oom_retry(self, clips):
+        """Retry only CUDA OOM by recursively halving a bounded input batch."""
+        try:
+            values = self.classifier.predict(clips)
+            return list(self._validated_probabilities(values, len(clips)))
+        except RuntimeError as exc:
+            device = getattr(self.classifier, "device", None)
+            try:
+                is_cuda = torch.device(device).type == "cuda"
+            except (TypeError, ValueError, RuntimeError):
+                is_cuda = False
+            message = str(exc).lower()
+            is_oom = "out of memory" in message or "cuda_error_out_of_memory" in message
+            if not (is_cuda and is_oom):
+                raise
+            if len(clips) == 1:
+                raise RuntimeError(
+                    "behavior inference CUDA OOM for a single clip; reduce input size "
+                    "or use CPU inference"
+                ) from exc
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            midpoint = len(clips) // 2
+            return (self._predict_with_oom_retry(clips[:midpoint]) +
+                    self._predict_with_oom_retry(clips[midpoint:]))
 
     @staticmethod
     def _validated_probabilities(values, batch_size: int) -> np.ndarray:
@@ -299,10 +352,38 @@ class BehaviorRuntime:
             state.probabilities = self.alpha * raw + (1 - self.alpha) * state.probabilities
             state.probabilities /= state.probabilities.sum()
         smoothed_id = int(np.argmax(state.probabilities)) + 1
-        confidence = float(state.probabilities[smoothed_id - 1])
-        label_id = smoothed_id if confidence >= self.confidence_threshold else UNCERTAIN_LABEL_ID
+        smoothed_confidence = float(state.probabilities[smoothed_id - 1])
+
+        if state.stable_label_id is None:
+            state.stable_label_id = smoothed_id
+            state.stable_confidence = smoothed_confidence
+        elif smoothed_id == state.stable_label_id:
+            state.switch_candidate_id = None
+            state.switch_candidate_count = 0
+            state.stable_confidence = smoothed_confidence
+        else:
+            stable_confidence = float(state.probabilities[state.stable_label_id - 1])
+            qualifies = smoothed_confidence >= stable_confidence + self.switch_margin
+            if not qualifies:
+                state.switch_candidate_id = None
+                state.switch_candidate_count = 0
+            elif state.switch_candidate_id == smoothed_id:
+                state.switch_candidate_count += 1
+            else:
+                state.switch_candidate_id = smoothed_id
+                state.switch_candidate_count = 1
+            if state.switch_candidate_count >= self.switch_confirmations:
+                state.stable_label_id = smoothed_id
+                state.stable_confidence = smoothed_confidence
+                state.switch_candidate_id = None
+                state.switch_candidate_count = 0
+
+        stable_id = state.stable_label_id
+        confidence = state.stable_confidence
+        label_id = stable_id if confidence >= self.confidence_threshold else UNCERTAIN_LABEL_ID
         label = CVB_LABELS[label_id]
         raw_label = CVB_LABELS[raw_label_id]
+        smoothed_label = CVB_LABELS[smoothed_id]
         return BehaviorPrediction(
             track_id=track_id,
             frame_index=frame_index,
@@ -314,6 +395,11 @@ class BehaviorRuntime:
             health_eligible=not label.uncertain,
             raw_label_id=raw_label_id,
             raw_label=raw_label.name,
+            raw_display_name=raw_label.display_name,
             raw_confidence=raw_confidence,
+            smoothed_label_id=smoothed_id,
+            smoothed_label=smoothed_label.name,
+            smoothed_display_name=smoothed_label.display_name,
+            smoothed_confidence=smoothed_confidence,
             model_version=self.model_version,
         )
