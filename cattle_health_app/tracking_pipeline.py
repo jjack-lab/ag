@@ -20,6 +20,8 @@ from health_monitor import CattleHealthMonitor, DetectionObservation, HealthConf
 from inference_profile import build_track_kwargs
 
 LOGGER = logging.getLogger(__name__)
+UNCERTAIN_IDS = frozenset((1, 10, 11))
+MAX_DECODE_RETRIES = 2
 
 
 @dataclass(frozen=True)
@@ -38,6 +40,7 @@ class TrackingVideoResult:
     behavior_model_status: str = "unavailable"
     behavior_model_version: Optional[str] = None
     behavior_summary: list = field(default_factory=list)
+    decode_error_count: int = 0
 
     def to_dict(self, media_root=None) -> dict:
         root = Path(media_root).resolve() if media_root else None
@@ -63,36 +66,54 @@ class TrackingVideoResult:
             "behavior_model_status": self.behavior_model_status,
             "behavior_model_version": self.behavior_model_version,
             "behavior_summary": list(self.behavior_summary),
+            "decode_error_count": self.decode_error_count,
         }
 
 
-def _crop_xywh(frame, xywh: Sequence[float], context: float = 0.15):
+def _geometry_xywh(frame, xywh: Sequence[float], context: float = 0.15):
     if frame is None or getattr(frame, "ndim", 0) != 3 or frame.size == 0:
-        return None
-    if len(xywh) != 4 or not math.isfinite(float(context)) or context < 0:
-        return None
-    x, y, width, height = map(float, xywh)
+        return None, (0, 12)
+    frame_height, frame_width = frame.shape[:2]
+    try:
+        valid_length = len(xywh) == 4
+    except TypeError:
+        valid_length = False
+    if not valid_length or not math.isfinite(float(context)) or context < 0:
+        return None, (0, 12)
+    try:
+        x, y, width, height = map(float, xywh)
+    except (TypeError, ValueError, OverflowError):
+        return None, (0, 12)
     if not all(math.isfinite(value) for value in (x, y, width, height)):
-        return None
+        return None, (0, 12)
+    fallback = (
+        min(max(int(round(x)), 0), max(frame_width - 1, 0)),
+        min(max(int(round(y)) - 8, 12), max(frame_height - 1, 12)),
+    )
     if width <= 0 or height <= 0:
-        return None
-    width *= 1 + 2 * context
-    height *= 1 + 2 * context
-    left = max(0, int(math.floor(x - width / 2)))
-    right = min(frame.shape[1], int(math.ceil(x + width / 2)))
-    top = max(0, int(math.floor(y - height / 2)))
-    bottom = min(frame.shape[0], int(math.ceil(y + height / 2)))
+        return None, fallback
+    expanded_width = width * (1 + 2 * context)
+    expanded_height = height * (1 + 2 * context)
+    left = max(0, int(math.floor(x - expanded_width / 2)))
+    right = min(frame_width, int(math.ceil(x + expanded_width / 2)))
+    top = max(0, int(math.floor(y - expanded_height / 2)))
+    bottom = min(frame_height, int(math.ceil(y + expanded_height / 2)))
+    anchor = (left, max(12, top - 6))
     if right <= left or bottom <= top:
-        return None
+        return None, fallback
     crop = frame[top:bottom, left:right]
-    return crop.copy() if crop.size else None
+    return (crop.copy() if crop.size else None), anchor
 
 
-def _draw_status(frame, track_id: int, text: str) -> None:
+def _crop_xywh(frame, xywh: Sequence[float], context: float = 0.15):
+    return _geometry_xywh(frame, xywh, context)[0]
+
+
+def _draw_status(frame, anchor, track_id: int, text: str) -> None:
     cv2.putText(
         frame,
         "ID {} {}".format(track_id, text),
-        (8, 24 + 22 * (track_id % 12)),
+        anchor,
         cv2.FONT_HERSHEY_SIMPLEX,
         0.55,
         (0, 255, 255),
@@ -101,11 +122,71 @@ def _draw_status(frame, track_id: int, text: str) -> None:
     )
 
 
-def _draw_behavior(frame, prediction) -> None:
-    _draw_status(
-        frame,
+def _uncertain_observation(track_id, frame_index, fps, version, confidence=0.0):
+    return BehaviorObservation(
+        frame_index=frame_index,
+        time_seconds=frame_index / fps,
+        track_id=track_id,
+        label_id=1,
+        label="none",
+        display_name="无法确定",
+        confidence=float(confidence),
+        health_eligible=False,
+        model_version=version or "unavailable",
+    )
+
+
+def _prediction_observation(prediction, fps, threshold):
+    timestamp = prediction.timestamp_seconds
+    if timestamp is None:
+        timestamp = prediction.frame_index / fps
+    uncertain = (
+        prediction.label_id in UNCERTAIN_IDS
+        or not prediction.health_eligible
+        or prediction.confidence < threshold
+    )
+    if uncertain:
+        return BehaviorObservation(
+            prediction.frame_index,
+            timestamp,
+            prediction.track_id,
+            1,
+            "none",
+            "无法确定",
+            prediction.confidence,
+            False,
+            prediction.model_version,
+        )
+    return BehaviorObservation(
+        prediction.frame_index,
+        timestamp,
         prediction.track_id,
-        "{} {:.0f}%".format(prediction.display_name, prediction.confidence * 100),
+        prediction.label_id,
+        prediction.label,
+        prediction.display_name,
+        prediction.confidence,
+        True,
+        prediction.model_version,
+    )
+
+
+def _read_frame(capture, total_frames):
+    success, frame = capture.read()
+    if success:
+        return frame, 0, False
+    position = max(0, int(capture.get(cv2.CAP_PROP_POS_FRAMES)))
+    if total_frames <= 0 or position >= total_frames:
+        return None, 0, True
+    errors = 1
+    for _ in range(MAX_DECODE_RETRIES):
+        success, frame = capture.read()
+        if success:
+            return frame, errors, False
+        errors += 1
+    raise RuntimeError(
+        "video decode failed after {} consecutive errors at frame {}".format(
+            errors, position
+        )
     )
 
 
@@ -146,6 +227,7 @@ def process_tracked_video(
     behavior_rows = []
     track_ids_seen = set()
     frame_index = 0
+    decode_error_count = 0
     behavior_status = "ready" if behavior_runtime is not None else "unavailable"
     behavior_version = (
         getattr(behavior_runtime, "model_version", None)
@@ -157,14 +239,16 @@ def process_tracked_video(
 
     try:
         while True:
-            success, frame = capture.read()
-            if not success:
+            frame, decode_errors, eof = _read_frame(capture, total_frames)
+            decode_error_count += decode_errors
+            if eof:
                 break
             track_kwargs = build_track_kwargs(conf, iou, class_id)
             track_kwargs["tracker"] = tracker
             result = model.track(frame, **track_kwargs)[0]
-            observations = []
+            health_observations = []
             behavior_inputs = []
+            frame_tracks = {}
             if result.boxes.id is not None:
                 ids = result.boxes.id.int().cpu().tolist()
                 boxes = result.boxes.xywh.cpu().tolist()
@@ -175,6 +259,8 @@ def process_tracked_video(
                 ):
                     track_id = int(track_id)
                     x, y, box_width, box_height = map(float, box)
+                    crop, anchor = _geometry_xywh(frame, box)
+                    frame_tracks[track_id] = anchor
                     track_ids_seen.add(track_id)
                     rows.append(
                         {
@@ -189,7 +275,7 @@ def process_tracked_video(
                             "height": box_height,
                         }
                     )
-                    observations.append(
+                    health_observations.append(
                         DetectionObservation(
                             track_id=track_id,
                             class_id=detected_class,
@@ -197,43 +283,47 @@ def process_tracked_video(
                             xywh=(x, y, box_width, box_height),
                         )
                     )
-                    if behavior_status == "ready":
-                        crop = _crop_xywh(frame, box)
-                        if crop is not None:
-                            behavior_inputs.append(
-                                (track_id, frame_index, crop, frame_index / fps)
-                            )
+                    if behavior_status == "ready" and crop is not None:
+                        behavior_inputs.append(
+                            (track_id, frame_index, crop, frame_index / fps)
+                        )
 
-            monitor.update(frame_index, observations)
+            monitor.update(frame_index, health_observations)
             annotated = result.plot()
+            predictions = {}
             if behavior_inputs and behavior_status == "ready":
                 try:
-                    predictions = behavior_runtime.observe_batch(behavior_inputs)
-                    for prediction in predictions:
-                        timestamp = prediction.timestamp_seconds
-                        if timestamp is None:
-                            timestamp = prediction.frame_index / fps
-                        behavior_rows.append(
-                            BehaviorObservation(
-                                prediction.frame_index,
-                                timestamp,
-                                prediction.track_id,
-                                prediction.label_id,
-                                prediction.label,
-                                prediction.display_name,
-                                prediction.confidence,
-                                prediction.health_eligible,
-                                prediction.model_version,
-                            )
-                        )
-                        _draw_behavior(annotated, prediction)
-                    if not predictions:
-                        for track_id, _, _, _ in behavior_inputs:
-                            _draw_status(annotated, track_id, "行为待识别")
+                    returned = behavior_runtime.observe_batch(behavior_inputs)
+                    predictions = {item.track_id: item for item in returned}
                 except Exception as exc:
                     behavior_status = "error"
                     behavior_error = "{}: {}".format(type(exc).__name__, exc)
                     LOGGER.exception("Behavior inference disabled for this video")
+
+            threshold = getattr(behavior_runtime, "confidence_threshold", 0.45)
+            for track_id, anchor in frame_tracks.items():
+                prediction = predictions.get(track_id)
+                if prediction is None:
+                    observation = _uncertain_observation(
+                        track_id, frame_index, fps, behavior_version
+                    )
+                    _draw_status(
+                        annotated,
+                        anchor,
+                        track_id,
+                        "行为待识别/无法确定 0%",
+                    )
+                else:
+                    observation = _prediction_observation(prediction, fps, threshold)
+                    _draw_status(
+                        annotated,
+                        anchor,
+                        track_id,
+                        "{} {:.0f}%".format(
+                            observation.display_name, observation.confidence * 100
+                        ),
+                    )
+                behavior_rows.append(observation)
 
             video_writer.write(annotated)
             frame_index += 1
@@ -279,6 +369,7 @@ def process_tracked_video(
         behavior_version,
         fps,
         behavior_error,
+        decode_error_count=decode_error_count,
     )
     return TrackingVideoResult(
         video_path=video_path,
@@ -295,4 +386,5 @@ def process_tracked_video(
         behavior_model_status=behavior_status,
         behavior_model_version=behavior_version,
         behavior_summary=summary,
+        decode_error_count=decode_error_count,
     )

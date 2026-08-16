@@ -12,5 +12,5 @@ def test_behavior_buffering_draws_explicit_pending_status(tmp_path, monkeypatch)
         def observe_batch(self, values): return []
     result = pipeline.process_tracked_video(Model(), tmp_path / "in.mp4", tmp_path / "out", .2, .5, behavior_runtime=NotReady())
     assert result.behavior_model_status == "ready"
-    assert result.behavior_summary == []
+    assert result.behavior_summary[0]["display_name"] == "无法确定"
     assert any("待识别" in text for text in drawn)

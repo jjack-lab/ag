@@ -32,10 +32,13 @@ class Model:
 
 
 class Capture:
-    def __init__(self, _): self.frames = [np.zeros((6, 8, 3), dtype=np.uint8)]; self.released = False
+    def __init__(self, _): self.frames = [np.zeros((6, 8, 3), dtype=np.uint8)]; self.released = False; self.position = 0
     def isOpened(self): return True
-    def get(self, key): return {5: 20.0, 3: 8, 4: 6, 7: 1}.get(key, 0)
-    def read(self): return (True, self.frames.pop(0)) if self.frames else (False, None)
+    def get(self, key): return self.position if key == 1 else {5: 20.0, 3: 8, 4: 6, 7: 1}.get(key, 0)
+    def read(self):
+        if not self.frames: return False, None
+        self.position += 1
+        return True, self.frames.pop(0)
     def release(self): self.released = True
 
 
@@ -86,11 +89,13 @@ def test_tracking_associates_predictions_and_publishes_behavior_artifacts(tmp_pa
 def test_no_runtime_and_failed_runtime_are_explicit_without_fabricated_predictions(tmp_path, monkeypatch):
     install_video_fakes(monkeypatch)
     unavailable = pipeline.process_tracked_video(Model(), tmp_path / "a.mp4", tmp_path / "a", .2, .5)
-    assert unavailable.behavior_model_status == "unavailable" and unavailable.behavior_summary == []
+    assert unavailable.behavior_model_status == "unavailable"
+    assert unavailable.behavior_summary[0]["display_name"] == "无法确定"
     class Broken(Runtime):
         def observe_batch(self, values): raise RuntimeError("bad checkpoint")
     failed = pipeline.process_tracked_video(Model(), tmp_path / "b.mp4", tmp_path / "b", .2, .5, behavior_runtime=Broken())
-    assert failed.behavior_model_status == "error" and failed.behavior_summary == []
+    assert failed.behavior_model_status == "error"
+    assert failed.behavior_summary[0]["display_name"] == "无法确定"
     assert "bad checkpoint" in failed.behavior_report_json.read_text(encoding="utf-8")
 
 
