@@ -90,6 +90,7 @@ def test_invalid_crop_still_records_uncertain_and_never_calls_runtime(tmp_path, 
 
 def test_mixed_ready_pending_records_each_track_and_draws_at_bbox_anchors(tmp_path, monkeypatch):
     install(monkeypatch)
+    monkeypatch.setattr(pipeline, "_get_cjk_font", lambda size=20: None)
     calls = []
     monkeypatch.setattr(pipeline.cv2, "putText", lambda frame, text, point, *args: calls.append((text, point)) or frame)
     class Mixed(PendingRuntime):
@@ -100,8 +101,8 @@ def test_mixed_ready_pending_records_each_track_and_draws_at_bbox_anchors(tmp_pa
     assert {(row["track_id"], row["display_name"]) for row in rows} == {("1", "采食"), ("2", "无法确定")}
     assert calls[0][1] == (13, 17)
     assert calls[1][1] == (57, 67)
-    assert "ID 1" in calls[0][0] and "采食" in calls[0][0] and "80%" in calls[0][0]
-    assert "ID 2" in calls[1][0] and "待识别" in calls[1][0] and "无法确定" in calls[1][0]
+    assert "ID 1" in calls[0][0] and "grazing" in calls[0][0] and "80%" in calls[0][0]
+    assert "ID 2" in calls[1][0] and "Pending/Unknown" in calls[1][0]
 
 
 def test_low_confidence_prediction_is_uncertain_in_timeline(tmp_path, monkeypatch):

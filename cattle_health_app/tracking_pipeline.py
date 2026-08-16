@@ -16,6 +16,11 @@ from cattle_health_app.behavior.reporting import (
     write_behavior_summary,
     write_behavior_timeline,
 )
+from cattle_health_app.behavior.overlay import (
+    discover_cjk_font as _discover_cjk_font,
+    draw_statuses as _draw_statuses_impl,
+    get_cjk_font as _get_cjk_font,
+)
 from health_monitor import CattleHealthMonitor, DetectionObservation, HealthConfig
 from inference_profile import build_track_kwargs
 
@@ -109,17 +114,13 @@ def _crop_xywh(frame, xywh: Sequence[float], context: float = 0.15):
     return _geometry_xywh(frame, xywh, context)[0]
 
 
+def _draw_statuses(frame, statuses) -> None:
+    _draw_statuses_impl(frame, statuses, font_getter=_get_cjk_font)
+
+
 def _draw_status(frame, anchor, track_id: int, text: str) -> None:
-    cv2.putText(
-        frame,
-        "ID {} {}".format(track_id, text),
-        anchor,
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.55,
-        (0, 255, 255),
-        2,
-        cv2.LINE_AA,
-    )
+    chinese = "ID {} {}".format(track_id, text)
+    _draw_statuses(frame, [(anchor, chinese, "ID {} Unknown".format(track_id))])
 
 
 def _uncertain_observation(track_id, frame_index, fps, version, confidence=0.0):
@@ -175,7 +176,7 @@ def _read_frame(capture, total_frames):
     if success:
         return frame, 0, False
     position = max(0, int(capture.get(cv2.CAP_PROP_POS_FRAMES)))
-    if total_frames <= 0 or position >= total_frames:
+    if total_frames > 0 and position >= total_frames:
         return None, 0, True
     errors = 1
     for _ in range(MAX_DECODE_RETRIES):
@@ -183,12 +184,13 @@ def _read_frame(capture, total_frames):
         if success:
             return frame, errors, False
         errors += 1
+    if total_frames <= 0:
+        return None, 0, True
     raise RuntimeError(
         "video decode failed after {} consecutive errors at frame {}".format(
             errors, position
         )
     )
-
 
 def process_tracked_video(
     model,
@@ -301,30 +303,33 @@ def process_tracked_video(
                     LOGGER.exception("Behavior inference disabled for this video")
 
             threshold = getattr(behavior_runtime, "confidence_threshold", 0.45)
+            overlays = []
             for track_id, anchor in frame_tracks.items():
                 prediction = predictions.get(track_id)
                 if prediction is None:
                     observation = _uncertain_observation(
                         track_id, frame_index, fps, behavior_version
                     )
-                    _draw_status(
-                        annotated,
-                        anchor,
-                        track_id,
-                        "行为待识别/无法确定 0%",
+                    overlays.append(
+                        (
+                            anchor,
+                            "ID {} 行为待识别/无法确定 0%".format(track_id),
+                            "ID {} Pending/Unknown 0%".format(track_id),
+                        )
                     )
                 else:
                     observation = _prediction_observation(prediction, fps, threshold)
-                    _draw_status(
-                        annotated,
-                        anchor,
-                        track_id,
-                        "{} {:.0f}%".format(
-                            observation.display_name, observation.confidence * 100
-                        ),
+                    fallback_label = prediction.label if observation.health_eligible else "Unknown"
+                    overlays.append(
+                        (
+                            anchor,
+                            "ID {} {} {:.0f}%".format(track_id, observation.display_name, observation.confidence * 100),
+                            "ID {} {} {:.0f}%".format(track_id, fallback_label, observation.confidence * 100),
+                        )
                     )
                 behavior_rows.append(observation)
 
+            _draw_statuses(annotated, overlays)
             video_writer.write(annotated)
             frame_index += 1
             if progress_callback and total_frames:
