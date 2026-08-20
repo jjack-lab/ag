@@ -18,6 +18,8 @@ TIMELINE_FIELDS = (
 SUMMARY_FIELDS = (
     "track_id", "label_id", "label", "display_name", "duration_seconds",
     "percentage", "mean_confidence", "health_eligible", "model_version",
+    "behavior_name", "behavior_display_name", "eligible_ratio",
+    "uncertain_duration_seconds",
 )
 UNCERTAIN_IDS = frozenset((1, 10, 11))
 REPORT_SCHEMA_VERSION = 2
@@ -125,7 +127,25 @@ def write_behavior_timeline(path: Path, observations: Iterable[BehaviorObservati
 
 
 def write_behavior_summary(path: Path, rows: Sequence[Mapping]) -> None:
-    _atomic_csv(path, rows, SUMMARY_FIELDS)
+    eligible_totals = defaultdict(float)
+    uncertain_totals = defaultdict(float)
+    for row in rows:
+        target = eligible_totals if row["health_eligible"] else uncertain_totals
+        target[int(row["track_id"])] += float(row["duration_seconds"])
+    exported = []
+    for row in rows:
+        track_id = int(row["track_id"])
+        eligible_total = eligible_totals[track_id]
+        value = dict(row)
+        value.update({
+            "behavior_name": row["label"],
+            "behavior_display_name": row["display_name"],
+            "eligible_ratio": round(float(row["duration_seconds"]) / eligible_total, 6)
+            if row["health_eligible"] and eligible_total else 0.0,
+            "uncertain_duration_seconds": round(uncertain_totals[track_id], 6),
+        })
+        exported.append(value)
+    _atomic_csv(path, exported, SUMMARY_FIELDS)
 
 
 def write_behavior_report(

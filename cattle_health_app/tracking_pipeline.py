@@ -44,6 +44,7 @@ class TrackingVideoResult:
     behavior_report_json: Optional[Path] = None
     behavior_model_status: str = "unavailable"
     behavior_model_version: Optional[str] = None
+    behavior_model_error: Optional[str] = None
     behavior_summary: list = field(default_factory=list)
     decode_error_count: int = 0
 
@@ -55,6 +56,36 @@ class TrackingVideoResult:
                 return None
             resolved = path.resolve()
             return resolved.relative_to(root).as_posix() if root else resolved.as_posix()
+
+        complete_fields = {"health_eligible", "label", "model_version"}
+        legacy_summary = any(
+            not complete_fields.issubset(row) for row in self.behavior_summary
+        )
+        eligible_totals = {}
+        uncertain_totals = {}
+        for row in self.behavior_summary:
+            track_id = int(row["track_id"])
+            target = eligible_totals if row.get("health_eligible", True) else uncertain_totals
+            target[track_id] = target.get(track_id, 0.0) + float(row["duration_seconds"])
+        product_summary = []
+        for row in self.behavior_summary:
+            if not row.get("health_eligible", True):
+                continue
+            track_id = int(row["track_id"])
+            eligible_total = eligible_totals.get(track_id, 0.0)
+            product_summary.append({
+                "track_id": track_id,
+                "behavior_name": row.get("label", row["display_name"]),
+                "behavior_display_name": row["display_name"],
+                "duration_seconds": float(row["duration_seconds"]),
+                "eligible_ratio": round(float(row["duration_seconds"]) / eligible_total, 6)
+                if eligible_total else 0.0,
+                "uncertain_duration_seconds": round(uncertain_totals.get(track_id, 0.0), 6),
+                "model_version": row.get("model_version", self.behavior_model_version),
+            })
+
+        if legacy_summary:
+            product_summary = list(self.behavior_summary)
 
         return {
             "video_path": display(self.video_path),
@@ -70,7 +101,8 @@ class TrackingVideoResult:
             "behavior_report_json": display(self.behavior_report_json),
             "behavior_model_status": self.behavior_model_status,
             "behavior_model_version": self.behavior_model_version,
-            "behavior_summary": list(self.behavior_summary),
+            "behavior_model_error": self.behavior_model_error,
+            "behavior_summary": product_summary,
             "decode_error_count": self.decode_error_count,
         }
 
@@ -390,6 +422,7 @@ def process_tracked_video(
         behavior_report_json=behavior_report_json,
         behavior_model_status=behavior_status,
         behavior_model_version=behavior_version,
+        behavior_model_error=behavior_error,
         behavior_summary=summary,
         decode_error_count=decode_error_count,
     )
