@@ -36,6 +36,9 @@ function Wait-DeliveryProcessesExit {
     do {
         $remaining = @()
         foreach ($id in $ProcessIds) {
+            if (-not $ExpectedStartTicks.ContainsKey([string]$id)) {
+                continue
+            }
             $live = Get-Process -Id $id -ErrorAction SilentlyContinue
             if (-not $live) {
                 continue

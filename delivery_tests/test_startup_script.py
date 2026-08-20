@@ -514,3 +514,151 @@ $state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | 
     assert 5151 in payload["recovery_ids"]
     assert "state write exploded" in payload["message"]
     assert "Unable to read process identity" in payload["message"]
+
+def test_stop_ignores_reused_pid_when_identity_was_not_captured(tmp_path):
+    project = tmp_path / "stop-reuse-harness"
+    data_dir = project / "data"
+    data_dir.mkdir(parents=True)
+    shutil.copy2(PROJECT_ROOT / "stop_delivery.ps1", project / "stop_delivery.ps1")
+    state_path = data_dir / "delivery-processes.json"
+    state_path.write_text(
+        json.dumps(
+            {
+                "project_root": str(project),
+                "api_pid": 6161,
+                "web_pid": 0,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+        encoding="utf-8",
+    )
+    harness = f"""
+$ErrorActionPreference = "Stop"
+$script:getCalls = 0
+$script:stopCalls = 0
+$script:projectRoot = {_ps_quote(project)}
+$script:expectedStart = [DateTime]::UtcNow
+function Get-CimInstance {{
+    [CmdletBinding()]
+    param([string]$ClassName, [string]$Filter)
+    [pscustomobject]@{{
+        ProcessId = 6161
+        ParentProcessId = 1
+        CommandLine = "$script:projectRoot\\owned.exe"
+        CreationDate = $script:expectedStart
+    }}
+}}
+function Get-Process {{
+    [CmdletBinding()]
+    param([int]$Id)
+    $script:getCalls++
+    if ($script:getCalls -eq 1) {{
+        return $null
+    }}
+    [pscustomobject]@{{
+        Id = $Id
+        StartTime = $script:expectedStart.AddMinutes(1)
+    }}
+}}
+function Stop-Process {{
+    [CmdletBinding()]
+    param([int]$Id, [switch]$Force)
+    $script:stopCalls++
+}}
+. {_ps_quote(project / "stop_delivery.ps1")}
+[pscustomobject]@{{
+    stop_calls = $script:stopCalls
+    state_exists = Test-Path -LiteralPath {_ps_quote(state_path)}
+}} | ConvertTo-Json -Compress
+"""
+    result = _run_powershell_harness(tmp_path, harness)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert payload["stop_calls"] == 0
+    assert payload["state_exists"] is False
+
+def test_startup_rollback_keeps_root_anchor_when_descendant_identity_read_fails(tmp_path):
+    state_path = tmp_path / "descendant-race-state.json"
+    start_script = PROJECT_ROOT / "start_delivery.ps1"
+    rollback_functions = "\n".join(
+        _extract_powershell_function(start_script, name)
+        for name in ("Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
+    )
+    harness = f"""
+$ErrorActionPreference = "Stop"
+{rollback_functions}
+$script:rootAlive = $true
+$script:stopped = @()
+$script:projectRoot = {_ps_quote(tmp_path)}
+$script:rootStart = [DateTime]::UtcNow
+function Get-CimInstance {{
+    [CmdletBinding()]
+    param([string]$ClassName)
+    @(
+        [pscustomobject]@{{
+            ProcessId = 7001
+            ParentProcessId = 1
+            CommandLine = "$script:projectRoot\\api.exe"
+            CreationDate = $script:rootStart
+        }}
+        [pscustomobject]@{{
+            ProcessId = 7002
+            ParentProcessId = 7001
+            CommandLine = "$script:projectRoot\\child.exe"
+            CreationDate = $script:rootStart
+        }}
+    )
+}}
+function Get-Process {{
+    [CmdletBinding()]
+    param([int]$Id)
+    if ($Id -eq 7001) {{
+        if (-not $script:rootAlive) {{ return $null }}
+        return [pscustomobject]@{{ Id = $Id; StartTime = $script:rootStart }}
+    }}
+    $value = [pscustomobject]@{{ Id = $Id }}
+    $value | Add-Member -MemberType ScriptProperty -Name StartTime -Value {{ throw "descendant identity race" }}
+    return $value
+}}
+function Stop-Process {{
+    [CmdletBinding()]
+    param([int]$Id, [switch]$Force)
+    $script:stopped += $Id
+    if ($Id -eq 7001) {{ $script:rootAlive = $false }}
+}}
+$record = [pscustomobject]@{{
+    id = 7001
+    role = "api"
+    start_time_ticks = $script:rootStart.Ticks
+    process = $null
+}}
+$params = @{{
+    OriginalError = "web start exploded"
+    ProcessRecords = @($record)
+    ProjectRoot = $script:projectRoot
+    ProcessStatePath = {_ps_quote(state_path)}
+    CreatedAt = $script:rootStart.ToString("o")
+    StateWriteAttempted = $true
+    TimeoutMilliseconds = 20
+}}
+$result = Invoke-DeliveryStartupRollback @params
+$state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | ConvertFrom-Json
+[pscustomobject]@{{
+    success = $result.success
+    message = $result.message
+    root_alive = $script:rootAlive
+    stopped = @($script:stopped)
+    recovery_ids = @($state.recovery_processes | ForEach-Object {{ $_.pid }})
+}} | ConvertTo-Json -Compress
+"""
+    result = _run_powershell_harness(tmp_path, harness)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert payload["success"] is False
+    assert payload["root_alive"] is True
+    assert 7001 not in payload["stopped"]
+    assert 7001 in payload["recovery_ids"]
+    assert "web start exploded" in payload["message"]
+    assert "descendant identity" in payload["message"].lower()

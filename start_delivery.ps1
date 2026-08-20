@@ -86,6 +86,7 @@ function Stop-StartedProcessTrees {
     }
 
     $pending = [System.Collections.Generic.Queue[object]]::new()
+    $blockedAnchorIds = @()
     foreach ($record in $ProcessRecords) {
         $id = [int]$record.id
         if ($id -le 0) {
@@ -132,6 +133,7 @@ function Stop-StartedProcessTrees {
             creation_date = $creationDate
             start_time_ticks = $expectedTicks
             role = [string]$record.role
+            anchor_id = $id
             depth = 0
             record = $record
         }
@@ -160,6 +162,7 @@ function Stop-StartedProcessTrees {
                 $childTicks = [long]$live.StartTime.ToUniversalTime().Ticks
             } catch {
                 $errors += "Unable to read descendant identity for PID $($childId): $($_.Exception.Message)"
+                $blockedAnchorIds += [int]$parent.anchor_id
                 continue
             }
             $target = [pscustomobject]@{
@@ -167,6 +170,7 @@ function Stop-StartedProcessTrees {
                 parent_id = $childParentId
                 start_time_ticks = $childTicks
                 role = "descendant"
+                anchor_id = [int]$parent.anchor_id
                 depth = [int]$parent.depth + 1
                 record = $null
             }
@@ -178,6 +182,12 @@ function Stop-StartedProcessTrees {
     $waitTargets = @()
     foreach ($target in $targets | Sort-Object depth -Descending) {
         $id = [int]$target.id
+        if ($blockedAnchorIds -contains [int]$target.anchor_id) {
+            if ($id -eq [int]$target.anchor_id) {
+                $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = [long]$target.start_time_ticks; role = [string]$target.role }
+            }
+            continue
+        }
         $live = Get-Process -Id $id -ErrorAction SilentlyContinue
         if (-not $live) {
             continue
