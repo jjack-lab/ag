@@ -22,6 +22,30 @@ def test_startup_script_runs_real_preflight_and_records_processes():
     assert "stop_delivery.ps1" in script
 
 
+def test_startup_script_persists_process_output_to_stable_log_files():
+    script = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
+
+    assert 'Join-Path $projectRoot "data\\logs"' in script
+    assert "api.stdout.log" in script
+    assert "api.stderr.log" in script
+    assert "web.stdout.log" in script
+    assert "web.stderr.log" in script
+    assert script.count("-RedirectStandardOutput") == 2
+    assert script.count("-RedirectStandardError") == 2
+
+
+def test_startup_script_tails_delivery_logs_for_failed_readiness():
+    script = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
+
+    assert "Show-DeliveryLogTail" in script
+    assert "Get-Content -LiteralPath $Path -Tail 40" in script
+    assert "Unable to read delivery log" in script
+    assert 'Write-Host "Logs: $logRoot"' in script
+    helper = script[script.index("function Show-DeliveryLogTail") : script.index("$pythonCandidates")]
+    assert helper.index("try {") < helper.index("Test-Path")
+    assert "-WarningAction Continue" in helper
+
+
 def test_startup_and_stop_scripts_guard_process_ownership():
     start = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
     stop = (PROJECT_ROOT / "stop_delivery.ps1").read_text(encoding="utf-8")

@@ -12,11 +12,43 @@ $webVite = Join-Path $webRoot "node_modules\.bin\vite.cmd"
 $preflightPath = Join-Path $projectRoot "scripts\preflight.py"
 $processStatePath = Join-Path $projectRoot "data\delivery-processes.json"
 $stopScriptPath = Join-Path $projectRoot "stop_delivery.ps1"
+$logRoot = Join-Path $projectRoot "data\logs"
+$apiStdoutLog = Join-Path $logRoot "api.stdout.log"
+$apiStderrLog = Join-Path $logRoot "api.stderr.log"
+$webStdoutLog = Join-Path $logRoot "web.stdout.log"
+$webStderrLog = Join-Path $logRoot "web.stderr.log"
 
 function Stop-WithDiagnostic {
     param([string]$Message)
     Write-Error $Message
     exit 1
+}
+
+function Show-DeliveryLogTail {
+    param(
+        [string]$Label,
+        [string]$Path
+    )
+
+    try {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            return
+        }
+        $lines = @(Get-Content -LiteralPath $Path -Tail 40 -ErrorAction Stop)
+        if ($lines.Count -eq 0) {
+            return
+        }
+        Write-Host "----- $Label ($Path) -----"
+        foreach ($line in $lines) {
+            Write-Host $line
+        }
+    } catch {
+        $warningMessage = "Unable to read delivery log: $Path ($($_.Exception.Message))"
+        try {
+            Write-Warning $warningMessage -WarningAction Continue
+        } catch {
+        }
+    }
 }
 
 $pythonCandidates = @()
@@ -84,11 +116,24 @@ if ($occupied.Count -gt 0) {
     Stop-WithDiagnostic "Refusing to start because delivery ports are occupied: $details"
 }
 
+try {
+    New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
+    $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText($apiStdoutLog, "", $utf8NoBom)
+    [System.IO.File]::WriteAllText($apiStderrLog, "", $utf8NoBom)
+    [System.IO.File]::WriteAllText($webStdoutLog, "", $utf8NoBom)
+    [System.IO.File]::WriteAllText($webStderrLog, "", $utf8NoBom)
+} catch {
+    Stop-WithDiagnostic "Unable to initialize delivery logs: $logRoot ($($_.Exception.Message))"
+}
+
 $createdAt = (Get-Date).ToUniversalTime().ToString("o")
 $apiProcess = Start-Process `
     -FilePath $pythonPath `
     -ArgumentList @($apiPath) `
     -WorkingDirectory $projectRoot `
+    -RedirectStandardOutput $apiStdoutLog `
+    -RedirectStandardError $apiStderrLog `
     -WindowStyle Hidden `
     -PassThru
 
@@ -96,6 +141,8 @@ $webProcess = Start-Process `
     -FilePath $webVite `
     -ArgumentList @("--host", "127.0.0.1") `
     -WorkingDirectory $webRoot `
+    -RedirectStandardOutput $webStdoutLog `
+    -RedirectStandardError $webStderrLog `
     -WindowStyle Hidden `
     -PassThru
 
@@ -143,9 +190,14 @@ $apiProcess.Refresh()
 $webProcess.Refresh()
 if ($apiProcess.HasExited -or $webProcess.HasExited -or -not ($apiReady -and $webReady)) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $stopScriptPath
+    Show-DeliveryLogTail "API stdout" $apiStdoutLog
+    Show-DeliveryLogTail "API stderr" $apiStderrLog
+    Show-DeliveryLogTail "Web stdout" $webStdoutLog
+    Show-DeliveryLogTail "Web stderr" $webStderrLog
     Stop-WithDiagnostic "API or Web failed to become ready from this start attempt."
 }
 
 Write-Host "API ready. PID: $($apiProcess.Id), URL: http://127.0.0.1:8000"
 Write-Host "Web ready. PID: $($webProcess.Id), URL: http://127.0.0.1:5173"
+Write-Host "Logs: $logRoot"
 Write-Host "Stop command: powershell -NoProfile -ExecutionPolicy Bypass -File $stopScriptPath"
