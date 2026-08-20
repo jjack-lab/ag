@@ -18,6 +18,16 @@ export type AlertRecord = {
   status: string;
 };
 
+export type BehaviorSummaryRow = {
+  track_id: number;
+  behavior_name: string;
+  behavior_display_name: string;
+  duration_seconds: number;
+  eligible_ratio: number;
+  uncertain_duration_seconds: number;
+  model_version: string;
+};
+
 export type TrackingResult = {
   video_path: string;
   trajectory_csv: string;
@@ -27,6 +37,12 @@ export type TrackingResult = {
   frame_count: number;
   tracked_cattle: number;
   alert_count: number;
+  behavior_csv?: string | null;
+  behavior_summary_csv?: string | null;
+  behavior_model_status?: "ready" | "unavailable" | "failed";
+  behavior_model_version?: string | null;
+  behavior_model_error?: string | null;
+  behavior_summary?: BehaviorSummaryRow[];
 };
 
 export type VideoJob = {

@@ -14,7 +14,10 @@ from pydantic import BaseModel, Field
 from cattle_health_app.domain import AlertLevel
 from cattle_health_app.jobs import VideoJobService
 from cattle_health_app.media_processor import LocalMediaProcessor
-from cattle_health_app.model_registry import resolve_detector_model
+from cattle_health_app.model_registry import (
+    resolve_behavior_model,
+    resolve_detector_model,
+)
 from cattle_health_app.repository import SQLiteRepository
 
 
@@ -32,6 +35,7 @@ def create_app(
     media_root: str | Path = Path("data") / "media",
     job_service=None,
     detector_artifact=None,
+    behavior_artifact=None,
 ):
     media_processor = media_processor or LocalMediaProcessor()
     media_root = Path(media_root)
@@ -41,6 +45,11 @@ def create_app(
     result_dir.mkdir(parents=True, exist_ok=True)
     detector_artifact = detector_artifact or resolve_detector_model(
         explicit_path=media_processor.model_path
+    )
+    behavior_artifact = (
+        behavior_artifact
+        or getattr(media_processor, "behavior_artifact", None)
+        or resolve_behavior_model()
     )
     job_service = job_service or VideoJobService(
         repository,
@@ -83,7 +92,13 @@ def create_app(
 
     @app.get("/api/models")
     def models():
-        return {"detector": detector_artifact.to_dict()}
+        current_behavior_artifact = getattr(
+            media_processor, "behavior_artifact", behavior_artifact
+        )
+        return {
+            "detector": detector_artifact.to_dict(),
+            "behavior": current_behavior_artifact.to_dict(),
+        }
 
     @app.get("/api/alerts")
     def list_alerts(status: Optional[str] = None):

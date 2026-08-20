@@ -29,6 +29,7 @@ outputs/acceptance/*
 
 # The delivery model is copied explicitly during setup and verified by SHA-256.
 models/detection/*.pt
+models/behavior/*.pt
 
 .worktrees/
 data/cvb_behavior_v1/

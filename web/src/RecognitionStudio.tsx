@@ -317,6 +317,68 @@ export default function RecognitionStudio() {
             <small>若浏览器无法直接播放结果视频，请使用“下载结果视频”。</small>
           </div>
         )}
+        {tracking?.behavior_model_status === "ready" && (
+          <section className="behavior-result" aria-label="行为识别结果">
+            <header>
+              <div>
+                <strong>行为识别</strong>
+                <span>研究演示模型</span>
+              </div>
+              <small>模型版本 {tracking.behavior_model_version || "未知"}</small>
+            </header>
+            {[...new Set((tracking.behavior_summary || []).map((row) => row.track_id))].map(
+              (trackId) => {
+                const rows = (tracking.behavior_summary || []).filter(
+                  (row) => row.track_id === trackId,
+                );
+                const uncertain = Math.max(
+                  0,
+                  ...rows.map((row) => row.uncertain_duration_seconds),
+                );
+                return (
+                  <article className="behavior-track" key={trackId}>
+                    <div>
+                      <strong>视频内 ID {trackId}</strong>
+                      <small>无法确定 {uncertain.toFixed(1)} 秒</small>
+                    </div>
+                    <div className="behavior-table">
+                      {rows.map((row) => (
+                        <div key={`${row.track_id}-${row.behavior_name}`}>
+                          <span>{row.behavior_display_name}</span>
+                          <strong>{row.duration_seconds.toFixed(1)} 秒</strong>
+                          <small>{(row.eligible_ratio * 100).toFixed(1)}%</small>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                );
+              },
+            )}
+            <footer>
+              {tracking.behavior_csv && (
+                <a href={resultMediaUrl(tracking.behavior_csv)} download>
+                  行为时间线 CSV
+                </a>
+              )}
+              {tracking.behavior_summary_csv && (
+                <a href={resultMediaUrl(tracking.behavior_summary_csv)} download>
+                  行为汇总 CSV
+                </a>
+              )}
+            </footer>
+          </section>
+        )}
+        {tracking && tracking.behavior_model_status === "unavailable" && (
+          <p className="behavior-unavailable">
+            行为模型未加载，检测、追踪和规则健康分析仍可用。
+          </p>
+        )}
+        {tracking && tracking.behavior_model_status === "failed" && (
+          <p className="behavior-unavailable">
+            行为识别运行失败，其他结果已保留。
+            {tracking.behavior_model_error && ` ${tracking.behavior_model_error}`}
+          </p>
+        )}
       </div>
     </section>
   );

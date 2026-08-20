@@ -350,3 +350,33 @@ def test_classifier_rejects_nonfinite_logits():
     classifier = TorchBehaviorClassifier(NonFinite(), device="cpu")
     with pytest.raises(ValueError, match="finite"):
         classifier.predict([[crop() for _ in range(16)]])
+
+
+def test_mixed_ready_batch_rolls_back_completely_when_inference_fails():
+    class BoomOnce(FakeClassifier):
+        def __init__(self):
+            super().__init__()
+            self.calls = 0
+
+        def predict(self, clips):
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("boom")
+            return super().predict(clips)
+
+    classifier = BoomOnce()
+    runtime = BehaviorRuntime(classifier, clip_frames=2, stride=1)
+    runtime.observe(1, 0, crop(1), timestamp_seconds=0.0)
+    before_ids = runtime.active_track_ids
+    before_count = runtime.cached_crop_count
+    batch = [(1, 1, crop(2), 0.1), (2, 1, crop(3), 0.1)]
+    with pytest.raises(RuntimeError, match="boom"):
+        runtime.observe_batch(batch)
+    assert runtime.active_track_ids == before_ids
+    assert runtime.cached_crop_count == before_count
+
+    results = runtime.observe_batch(batch)
+    assert [result.track_id for result in results] == [1]
+    assert runtime.active_track_ids == (1, 2)
+    assert runtime.cached_crop_count == 3
+    assert runtime.observe(2, 2, crop(4), timestamp_seconds=0.2).track_id == 2
