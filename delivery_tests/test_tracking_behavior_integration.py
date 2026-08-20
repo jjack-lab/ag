@@ -90,11 +90,13 @@ def test_no_runtime_and_failed_runtime_are_explicit_without_fabricated_predictio
     install_video_fakes(monkeypatch)
     unavailable = pipeline.process_tracked_video(Model(), tmp_path / "a.mp4", tmp_path / "a", .2, .5)
     assert unavailable.behavior_model_status == "unavailable"
-    assert unavailable.behavior_summary[0]["display_name"] == "无法确定"
+    assert unavailable.behavior_summary == []
+    assert unavailable.behavior_csv is None
+    assert unavailable.behavior_report_json is None
     class Broken(Runtime):
         def observe_batch(self, values): raise RuntimeError("bad checkpoint")
     failed = pipeline.process_tracked_video(Model(), tmp_path / "b.mp4", tmp_path / "b", .2, .5, behavior_runtime=Broken())
-    assert failed.behavior_model_status == "error"
+    assert failed.behavior_model_status == "failed"
     assert failed.behavior_summary[0]["display_name"] == "无法确定"
     assert "bad checkpoint" in failed.behavior_report_json.read_text(encoding="utf-8")
 

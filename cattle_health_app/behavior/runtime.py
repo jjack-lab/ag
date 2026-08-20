@@ -260,6 +260,14 @@ class BehaviorRuntime:
         finally:
             self._operation_lock.release()
 
+    def reset(self) -> None:
+        """Clear all per-track state at a video boundary."""
+        self._enter_operation()
+        try:
+            self._tracks.clear()
+        finally:
+            self._operation_lock.release()
+
     def _enter_operation(self) -> None:
         if not self._operation_lock.acquire(blocking=False):
             raise RuntimeError("BehaviorRuntime supports one calling thread at a time")

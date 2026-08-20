@@ -81,7 +81,7 @@ class LocalMediaProcessor:
                 class_id,
                 tracker,
                 progress_callback=progress_callback,
-                behavior_runtime=self._load_behavior_runtime(),
+                behavior_runtime=self._behavior_runtime_for_video(),
             )
 
     def detect_video(self, source_path, result_dir, conf, iou, class_id):
@@ -115,4 +115,23 @@ class LocalMediaProcessor:
             version=getattr(runtime, "model_version", None),
             error=None,
         )
+        return runtime
+
+    def _behavior_runtime_for_video(self):
+        runtime = self._load_behavior_runtime()
+        if runtime is None:
+            return None
+        reset = getattr(runtime, "reset", None)
+        if not callable(reset):
+            return runtime
+        try:
+            reset()
+        except Exception as error:
+            self.behavior_artifact = replace(
+                self.behavior_artifact,
+                status="failed",
+                version=None,
+                error="{}: {}".format(type(error).__name__, error),
+            )
+            return None
         return runtime

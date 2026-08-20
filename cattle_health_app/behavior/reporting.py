@@ -72,31 +72,55 @@ def build_behavior_summary(
         raise ValueError("fps must be finite and positive")
     if not math.isfinite(float(confidence_threshold)) or not 0 <= confidence_threshold <= 1:
         raise ValueError("confidence_threshold must be in [0, 1]")
-    grouped = defaultdict(list)
-    totals = defaultdict(int)
+    normalized = []
     for value in observations:
         if not isinstance(value, BehaviorObservation):
             raise TypeError("observations must contain BehaviorObservation values")
-        item = _normalized(value, confidence_threshold)
+        normalized.append(_normalized(value, confidence_threshold))
+
+    by_track = defaultdict(list)
+    for item in normalized:
+        by_track[item.track_id].append(item)
+    durations = {}
+    for track_id, items in by_track.items():
+        items.sort(key=lambda item: (item.time_seconds, item.frame_index))
+        last_positive_interval = 0.0
+        for index, item in enumerate(items[:-1]):
+            interval = items[index + 1].time_seconds - item.time_seconds
+            duration = interval if interval > 0 else 0.0
+            durations[id(item)] = duration
+            if duration > 0:
+                last_positive_interval = duration
+        durations[id(items[-1])] = last_positive_interval if len(items) > 1 else 0.0
+
+    grouped = defaultdict(lambda: {"confidences": [], "duration": 0.0})
+    totals = defaultdict(float)
+    for item in normalized:
         key = (
             item.track_id, item.label_id, item.label, item.display_name,
             item.health_eligible, item.model_version,
         )
-        grouped[key].append(item.confidence)
-        totals[item.track_id] += 1
+        duration = durations[id(item)]
+        grouped[key]["confidences"].append(item.confidence)
+        grouped[key]["duration"] += duration
+        totals[item.track_id] += duration
     rows = []
     for key in sorted(grouped):
         track_id, label_id, label, display_name, eligible, version = key
-        confidences = grouped[key]
+        confidences = grouped[key]["confidences"]
         count = len(confidences)
+        duration = grouped[key]["duration"]
         rows.append(
             {
                 "track_id": track_id,
                 "label_id": label_id,
                 "label": label,
                 "display_name": display_name,
-                "duration_seconds": round(count / float(fps), 6),
-                "percentage": round(100.0 * count / totals[track_id], 6),
+                "duration_seconds": round(duration, 6),
+                "percentage": (
+                    round(100.0 * duration / totals[track_id], 6)
+                    if totals[track_id] else 0.0
+                ),
                 "mean_confidence": round(sum(confidences) / count, 6),
                 "health_eligible": eligible,
                 "model_version": version,

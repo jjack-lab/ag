@@ -76,7 +76,7 @@ def test_short_clip_and_buffering_frames_record_uncertain_observation(tmp_path, 
     monkeypatch.setattr(pipeline.cv2, "putText", lambda *args: args[0])
     result = pipeline.process_tracked_video(DynamicModel(), tmp_path / "in.mp4", tmp_path / "out", .2, .5, behavior_runtime=PendingRuntime())
     assert timeline(result)[0]["display_name"] == "无法确定"
-    assert result.behavior_summary == [{"track_id": 7, "label_id": 1, "label": "none", "display_name": "无法确定", "duration_seconds": .05, "percentage": 100.0, "mean_confidence": 0.0, "health_eligible": False, "model_version": "v1"}]
+    assert result.behavior_summary == [{"track_id": 7, "label_id": 1, "label": "none", "display_name": "无法确定", "duration_seconds": 0.0, "percentage": 0.0, "mean_confidence": 0.0, "health_eligible": False, "model_version": "v1"}]
 
 
 def test_invalid_crop_still_records_uncertain_and_never_calls_runtime(tmp_path, monkeypatch):
@@ -118,7 +118,9 @@ def test_low_confidence_prediction_is_uncertain_in_timeline(tmp_path, monkeypatc
 def test_normal_eof_is_not_a_decode_error_and_report_schema_is_versioned(tmp_path, monkeypatch):
     install(monkeypatch)
     monkeypatch.setattr(pipeline.cv2, "putText", lambda *args: args[0])
-    result = pipeline.process_tracked_video(DynamicModel(), tmp_path / "in.mp4", tmp_path / "out", .2, .5)
+    result = pipeline.process_tracked_video(
+        DynamicModel(), tmp_path / "in.mp4", tmp_path / "out", .2, .5,
+        behavior_runtime=PendingRuntime())
     assert result.decode_error_count == 0
     payload = json.loads(result.behavior_report_json.read_text(encoding="utf-8"))
     assert payload["schema_version"] == 2

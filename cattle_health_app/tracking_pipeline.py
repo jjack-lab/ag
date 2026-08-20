@@ -169,10 +169,14 @@ def _uncertain_observation(track_id, frame_index, fps, version, confidence=0.0):
     )
 
 
-def _prediction_observation(prediction, fps, threshold):
-    timestamp = prediction.timestamp_seconds
+def _prediction_observation(prediction, fps, threshold, frame_index=None):
+    observation_frame = prediction.frame_index if frame_index is None else frame_index
+    timestamp = (
+        prediction.timestamp_seconds if frame_index is None
+        else observation_frame / fps
+    )
     if timestamp is None:
-        timestamp = prediction.frame_index / fps
+        timestamp = observation_frame / fps
     uncertain = (
         prediction.label_id in UNCERTAIN_IDS
         or not prediction.health_eligible
@@ -180,7 +184,7 @@ def _prediction_observation(prediction, fps, threshold):
     )
     if uncertain:
         return BehaviorObservation(
-            prediction.frame_index,
+            observation_frame,
             timestamp,
             prediction.track_id,
             1,
@@ -191,7 +195,7 @@ def _prediction_observation(prediction, fps, threshold):
             prediction.model_version,
         )
     return BehaviorObservation(
-        prediction.frame_index,
+        observation_frame,
         timestamp,
         prediction.track_id,
         prediction.label_id,
@@ -270,6 +274,7 @@ def process_tracked_video(
     )
     behavior_error = None
     processing_failed = False
+    latest_predictions = {}
 
     try:
         while True:
@@ -329,15 +334,21 @@ def process_tracked_video(
                 try:
                     returned = behavior_runtime.observe_batch(behavior_inputs)
                     predictions = {item.track_id: item for item in returned}
+                    latest_predictions.update(predictions)
                 except Exception as exc:
-                    behavior_status = "error"
+                    behavior_status = "failed"
                     behavior_error = "{}: {}".format(type(exc).__name__, exc)
+                    latest_predictions.clear()
                     LOGGER.exception("Behavior inference disabled for this video")
 
+            active_track_ids = set(frame_tracks)
+            for stale_track_id in set(latest_predictions) - active_track_ids:
+                del latest_predictions[stale_track_id]
             threshold = getattr(behavior_runtime, "confidence_threshold", 0.45)
             overlays = []
-            for track_id, anchor in frame_tracks.items():
-                prediction = predictions.get(track_id)
+            behavior_tracks = frame_tracks.items() if behavior_runtime is not None else ()
+            for track_id, anchor in behavior_tracks:
+                prediction = latest_predictions.get(track_id) if behavior_status == "ready" else None
                 if prediction is None:
                     observation = _uncertain_observation(
                         track_id, frame_index, fps, behavior_version
@@ -350,7 +361,9 @@ def process_tracked_video(
                         )
                     )
                 else:
-                    observation = _prediction_observation(prediction, fps, threshold)
+                    observation = _prediction_observation(
+                        prediction, fps, threshold, frame_index=frame_index
+                    )
                     fallback_label = prediction.label if observation.health_eligible else "Unknown"
                     overlays.append(
                         (
@@ -392,22 +405,42 @@ def process_tracked_video(
     monitor.export_health_summary_csv(str(health_summary_csv))
     monitor.export_alerts_html(str(health_report_html))
 
-    behavior_csv = root / "{}_behavior.csv".format(source.stem)
-    behavior_summary_csv = root / "{}_behavior_summary.csv".format(source.stem)
-    behavior_report_json = root / "{}_behavior_report.json".format(source.stem)
-    summary = build_behavior_summary(behavior_rows, fps)
-    write_behavior_timeline(behavior_csv, behavior_rows)
-    write_behavior_summary(behavior_summary_csv, summary)
-    write_behavior_report(
-        behavior_report_json,
-        behavior_rows,
-        summary,
-        behavior_status,
-        behavior_version,
-        fps,
-        behavior_error,
-        decode_error_count=decode_error_count,
-    )
+    behavior_csv = None
+    behavior_summary_csv = None
+    behavior_report_json = None
+    summary = []
+    if behavior_runtime is not None:
+        candidates = (
+            root / "{}_behavior.csv".format(source.stem),
+            root / "{}_behavior_summary.csv".format(source.stem),
+            root / "{}_behavior_report.json".format(source.stem),
+        )
+        try:
+            summary = build_behavior_summary(behavior_rows, fps)
+            write_behavior_timeline(candidates[0], behavior_rows)
+            write_behavior_summary(candidates[1], summary)
+            write_behavior_report(
+                candidates[2],
+                behavior_rows,
+                summary,
+                behavior_status,
+                behavior_version,
+                fps,
+                behavior_error,
+                decode_error_count=decode_error_count,
+            )
+            behavior_csv, behavior_summary_csv, behavior_report_json = candidates
+        except Exception as exc:
+            LOGGER.exception("Behavior reports disabled for this video")
+            for path in candidates:
+                path.unlink(missing_ok=True)
+            report_error = "{}: {}".format(type(exc).__name__, exc)
+            behavior_error = (
+                "{}; {}".format(behavior_error, report_error)
+                if behavior_error else report_error
+            )
+            behavior_status = "failed"
+            summary = []
     return TrackingVideoResult(
         video_path=video_path,
         trajectory_csv=trajectory_csv,
