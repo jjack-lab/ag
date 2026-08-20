@@ -96,6 +96,30 @@ models/detection/yolo11s-waid.pt
 
 可通过 `AGRINEBULA_DETECTOR_MODEL` 指定其他模型，但模型必须兼容当前 Ultralytics YOLO11 运行时。
 
+行为研究模型默认路径：
+
+```text
+models/behavior/cvb_x3d_v2_best.pt
+```
+
+该文件是 `outputs/cvb_x3d_v2/best.pt` 的已校验副本，模型元数据版本为 `cvb-x3d-v1`，输入为 16 帧、224×224、12 类。SHA-256：
+
+```text
+731c6ed39dcf002915e888c829e1f86727f815331a2b3c21d06a17d40d62a08e
+```
+
+当前验证集指标为 Accuracy `0.8342201644668648`、Macro-F1 `0.2188597785907576`。Accuracy 主要受到“无法确定”大类样本数量影响，不能据此认定各行为均可可靠识别。该模型仅用于研究演示和后续数据改进，不用于疾病诊断，也暂不自动触发新的健康告警。
+
+视频任务会新增：
+
+- 带 Track ID、中文行为和置信度的结果视频；
+- `*_behavior.csv` 行为时间线；
+- `*_behavior_summary.csv` 逐轨迹行为汇总；
+- `*_behavior_report.json` 结构化研究报告；
+- 页面中的行为时长、有效行为占比和无法确定时长。
+
+可通过 `AGRINEBULA_BEHAVIOR_MODEL` 指定其他兼容检查点。行为权重缺失、损坏或推理失败时，YOLO 检测、跟踪、轨迹和原有规则健康分析仍会继续运行，页面会明确显示降级状态。
+
 ## 首次安装到其他电脑
 
 需要 Python 3.8、Node.js 和 npm。建议创建独立虚拟环境：
@@ -109,7 +133,7 @@ npm ci
 Set-Location ..
 ```
 
-将已验证的权重复制到 `models/detection/yolo11s-waid.pt`，再运行启动前检查。
+将已验证的检测权重复制到 `models/detection/yolo11s-waid.pt`，并将行为权重复制到 `models/behavior/cvb_x3d_v2_best.pt`，再运行启动前检查。行为权重可选；缺少时系统以检测和跟踪模式启动。
 
 ## 验证结果
 
@@ -150,4 +174,4 @@ data/
 
 ## 当前边界
 
-当前已经实现检测、跟踪和基于轨迹规则的健康风险提示，但尚未接入经过训练的时序行为分类模型、Isolation Forest轨迹异常模型或具体疾病识别模型。具体疾病诊断必须在获得合规、可靠的疾病标注数据后单独验证。
+当前已经实现检测、跟踪、研究级时序行为识别和基于轨迹规则的健康风险提示。行为模型 Macro-F1 较低，结果只作为实验观察证据；尚未实现 Isolation Forest 轨迹异常、跨视频永久身份、实时摄像头或具体疾病识别。具体疾病诊断必须在获得合规、可靠的疾病标注数据后单独验证。
