@@ -55,6 +55,10 @@ if ([string]$state.project_root -ne $projectRoot) {
 
 $createdAt = [DateTimeOffset]::Parse([string]$state.created_at).UtcDateTime.AddSeconds(-5)
 $rootIds = @([int]$state.api_pid, [int]$state.web_pid)
+if ($state.PSObject.Properties.Name -contains "recovery_pids") {
+    $rootIds += @($state.recovery_pids | ForEach-Object { [int]$_ })
+}
+$rootIds = @($rootIds | Where-Object { $_ -gt 0 } | Select-Object -Unique)
 $ownedRootIds = @()
 foreach ($id in $rootIds) {
     $process = Get-CimInstance Win32_Process -Filter "ProcessId=$id" -ErrorAction SilentlyContinue

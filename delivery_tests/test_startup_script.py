@@ -8,6 +8,37 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+def _ps_quote(value):
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _extract_powershell_function(path, name):
+    script = path.read_text(encoding="utf-8")
+    start = script.index(f"function {name}")
+    opening = script.index("{", start)
+    depth = 0
+    for index in range(opening, len(script)):
+        if script[index] == "{":
+            depth += 1
+        elif script[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return script[start : index + 1]
+    raise AssertionError(f"Unclosed PowerShell function: {name}")
+
+
+def _run_powershell_harness(tmp_path, script):
+    harness = tmp_path / "harness.ps1"
+    harness.write_text(script, encoding="utf-8")
+    return subprocess.run(
+        ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(harness)],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+
+
 def test_runtime_docs_name_logs_and_nonfatal_behavior_preflight():
     required_phrases = (
         "data/logs",
@@ -67,7 +98,7 @@ def test_startup_script_tails_delivery_logs_for_failed_readiness():
     script = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
 
     assert "Show-DeliveryLogTail" in script
-    assert "Get-Content -LiteralPath $Path -Tail 40" in script
+    assert "Get-Content -LiteralPath $Path -Encoding UTF8 -Tail 40" in script
     assert "Unable to read delivery log" in script
     assert 'Write-Host "Logs: $logRoot"' in script
     helper = script[script.index("function Show-DeliveryLogTail") : script.index("$pythonCandidates")]
@@ -125,20 +156,24 @@ def test_stop_script_waits_before_removing_process_state():
     assert stop_flow.index("Stop-Process -Id $id") < stop_flow.index("Wait-DeliveryProcessesExit")
     assert stop_flow.index("Wait-DeliveryProcessesExit") < stop_flow.index("Remove-Item")
     assert "Timed out waiting for delivery processes to exit" in stop_flow
+    assert "Where-Object { $_ -gt 0 }" in stop
 
 
 def test_startup_script_rolls_back_partial_process_startup():
     start = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
     startup = start[start.index("$createdAt =") : start.index("$apiReady =")]
 
-    assert "$startedProcessIds = @()" in startup
+    assert "$startedProcesses = @()" in startup
     assert startup.index("try {") < startup.index("$apiProcess = Start-Process")
-    assert "Stop-StartedProcessTrees -RootIds $startedProcessIds" in startup
-    assert "Delivery process startup failed" in startup
+    assert "Invoke-DeliveryStartupRollback" in startup
+    assert "start_time_ticks" in start
+    assert "recovery_pids" in start
+    assert "Delivery process startup failed" in start
     assert "$stateWriteAttempted" in startup
     assert startup.index("[System.IO.File]::WriteAllText(") < startup.index("} catch {")
     cleanup = start[start.index("function Stop-StartedProcessTrees") : start.index("$pythonCandidates")]
-    assert cleanup.index("$ids = @($RootIds)") < cleanup.index("Get-CimInstance")
+    assert cleanup.index("Get-CimInstance") < cleanup.index("Stop-Process")
+    assert "Process identity mismatch" in cleanup
 
 
 def test_stop_script_waits_for_owned_controlled_process(tmp_path):
@@ -191,3 +226,143 @@ def test_stop_script_waits_for_owned_controlled_process(tmp_path):
         if process.poll() is None:
             process.kill()
             process.wait(timeout=5)
+
+def test_startup_rollback_reports_survivor_identity_mismatch_and_preserves_state(tmp_path):
+    state_path = tmp_path / "delivery-processes.json"
+    state_path.write_text("partial", encoding="utf-8")
+    start_script = PROJECT_ROOT / "start_delivery.ps1"
+    rollback_functions = "\n".join(
+        _extract_powershell_function(start_script, name)
+        for name in ("Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
+    )
+    harness = f"""
+$ErrorActionPreference = "Stop"
+{rollback_functions}
+$script:stopCalls = 0
+$script:projectRoot = {_ps_quote(tmp_path)}
+$script:expectedStart = [DateTime]::UtcNow
+function Get-CimInstance {{
+    [CmdletBinding()]
+    param([string]$ClassName)
+    @(
+        [pscustomobject]@{{
+            ProcessId = 4242
+            ParentProcessId = 1
+            CommandLine = "$script:projectRoot\\unrelated.exe"
+            CreationDate = $script:expectedStart.AddMinutes(1)
+        }}
+        [pscustomobject]@{{
+            ProcessId = 4343
+            ParentProcessId = 1
+            CommandLine = "$script:projectRoot\\owned.exe"
+            CreationDate = $script:expectedStart
+        }}
+    )
+}}
+function Get-Process {{
+    [CmdletBinding()]
+    param([int]$Id)
+    $startTime = $script:expectedStart
+    if ($Id -eq 4242) {{
+        $startTime = $script:expectedStart.AddMinutes(1)
+    }}
+    [pscustomobject]@{{
+        Id = $Id
+        StartTime = $startTime
+    }}
+}}
+function Stop-Process {{
+    [CmdletBinding()]
+    param([int]$Id, [switch]$Force)
+    $script:stopCalls++
+}}
+function Start-Sleep {{ param([int]$Milliseconds) }}
+$record = [pscustomobject]@{{
+    id = 4242
+    role = "api"
+    start_time_ticks = $script:expectedStart.Ticks
+    process = $null
+}}
+$stubbornRecord = [pscustomobject]@{{
+    id = 4343
+    role = "web"
+    start_time_ticks = $script:expectedStart.Ticks
+    process = $null
+}}
+$params = @{{
+    OriginalError = "web start exploded"
+    ProcessRecords = @($record, $stubbornRecord)
+    ProjectRoot = $script:projectRoot
+    ProcessStatePath = {_ps_quote(state_path)}
+    CreatedAt = [DateTime]::UtcNow.ToString("o")
+    StateWriteAttempted = $true
+    TimeoutMilliseconds = 20
+}}
+$result = Invoke-DeliveryStartupRollback @params
+$state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | ConvertFrom-Json
+[pscustomobject]@{{
+    message = $result.message
+    success = $result.success
+    stop_calls = $script:stopCalls
+    state_exists = Test-Path -LiteralPath {_ps_quote(state_path)}
+    api_pid = $state.api_pid
+    web_pid = $state.web_pid
+    recovery_pids = @($state.recovery_pids)
+}} | ConvertTo-Json -Compress
+"""
+    result = _run_powershell_harness(tmp_path, harness)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert payload["success"] is False
+    assert payload["stop_calls"] == 1
+    assert payload["state_exists"] is True
+    assert payload["api_pid"] == 4242
+    assert payload["web_pid"] == 4343
+    assert 4242 in payload["recovery_pids"]
+    assert 4343 in payload["recovery_pids"]
+    assert "web start exploded" in payload["message"]
+    assert "identity" in payload["message"].lower()
+    assert "timed out" in payload["message"].lower()
+    assert "4242" in payload["message"]
+    assert "4343" in payload["message"]
+
+def test_startup_rollback_stops_owned_controlled_process(tmp_path):
+    sleeper = tmp_path / "rollback-sleeper.ps1"
+    sleeper.write_text("Start-Sleep -Seconds 60\n", encoding="utf-8")
+    start_script = PROJECT_ROOT / "start_delivery.ps1"
+    rollback_function = _extract_powershell_function(start_script, "Stop-StartedProcessTrees")
+    harness = f"""
+$ErrorActionPreference = "Stop"
+{rollback_function}
+$process = Start-Process powershell.exe -ArgumentList @("-NoProfile", "-File", {_ps_quote(sleeper)}) -WindowStyle Hidden -PassThru
+try {{
+    $record = [pscustomobject]@{{
+        id = $process.Id
+        role = "api"
+        start_time_ticks = $process.StartTime.ToUniversalTime().Ticks
+        process = $process
+    }}
+    $result = Stop-StartedProcessTrees -ProcessRecords @($record) -ProjectRoot {_ps_quote(tmp_path)} -TimeoutMilliseconds 5000
+    $process.Refresh()
+    [pscustomobject]@{{
+        success = $result.success
+        survivors = @($result.survivor_ids)
+        errors = @($result.errors)
+        has_exited = $process.HasExited
+    }} | ConvertTo-Json -Compress
+}} finally {{
+    $process.Refresh()
+    if (-not $process.HasExited) {{
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+    }}
+}}
+"""
+    result = _run_powershell_harness(tmp_path, harness)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert payload["success"] is True
+    assert payload["survivors"] == []
+    assert payload["errors"] == []
+    assert payload["has_exited"] is True
