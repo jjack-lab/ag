@@ -1,3 +1,7 @@
+import json
+import shutil
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -86,3 +90,79 @@ def test_double_click_wrappers_are_cmd_safe_ascii():
 def test_stop_script_tolerates_process_exit_race():
     stop = (PROJECT_ROOT / "stop_delivery.ps1").read_text(encoding="utf-8")
     assert "Stop-Process -Id $id -Force -ErrorAction SilentlyContinue" in stop
+
+
+def test_stop_script_waits_before_removing_process_state():
+    stop = (PROJECT_ROOT / "stop_delivery.ps1").read_text(encoding="utf-8")
+    stop_flow = stop[stop.index("$ids = Get-DescendantProcessIds") :]
+
+    assert "Wait-DeliveryProcessesExit -ProcessIds $ids" in stop_flow
+    assert stop_flow.index("Stop-Process -Id $id") < stop_flow.index("Wait-DeliveryProcessesExit")
+    assert stop_flow.index("Wait-DeliveryProcessesExit") < stop_flow.index("Remove-Item")
+    assert "Timed out waiting for delivery processes to exit" in stop_flow
+
+
+def test_startup_script_rolls_back_partial_process_startup():
+    start = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
+    startup = start[start.index("$createdAt =") : start.index("$apiReady =")]
+
+    assert "$startedProcessIds = @()" in startup
+    assert startup.index("try {") < startup.index("$apiProcess = Start-Process")
+    assert "Stop-StartedProcessTrees -RootIds $startedProcessIds" in startup
+    assert "Delivery process startup failed" in startup
+    assert "$stateWriteAttempted" in startup
+    assert startup.index("[System.IO.File]::WriteAllText(") < startup.index("} catch {")
+    cleanup = start[start.index("function Stop-StartedProcessTrees") : start.index("$pythonCandidates")]
+    assert cleanup.index("$ids = @($RootIds)") < cleanup.index("Get-CimInstance")
+
+
+def test_stop_script_waits_for_owned_controlled_process(tmp_path):
+    project = tmp_path / "delivery-harness"
+    data_dir = project / "data"
+    data_dir.mkdir(parents=True)
+    shutil.copy2(PROJECT_ROOT / "stop_delivery.ps1", project / "stop_delivery.ps1")
+    sleeper = project / "owned-sleeper.ps1"
+    sleeper.write_text("Start-Sleep -Seconds 60\n", encoding="utf-8")
+
+    creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    process = subprocess.Popen(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-File",
+            str(sleeper),
+        ],
+        creationflags=creation_flags,
+    )
+    try:
+        state_path = data_dir / "delivery-processes.json"
+        state = {
+            "project_root": str(project),
+            "api_pid": process.pid,
+            "web_pid": process.pid,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+
+        result = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(project / "stop_delivery.ps1"),
+            ],
+            cwd=project,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        process.wait(timeout=2)
+        assert process.poll() is not None
+        assert not state_path.exists()
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)

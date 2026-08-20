@@ -51,6 +51,57 @@ function Show-DeliveryLogTail {
     }
 }
 
+function Stop-StartedProcessTrees {
+    param(
+        [int[]]$RootIds,
+        [int]$TimeoutMilliseconds = 5000
+    )
+
+    if (-not $RootIds -or $RootIds.Count -eq 0) {
+        return
+    }
+
+    $ids = @($RootIds)
+    try {
+        $all = @(Get-CimInstance Win32_Process)
+        $pending = [System.Collections.Generic.Queue[int]]::new()
+        $seen = [System.Collections.Generic.HashSet[int]]::new()
+        foreach ($id in $RootIds) {
+            if ($id -gt 0) {
+                $pending.Enqueue($id)
+                [void]$seen.Add($id)
+            }
+        }
+        while ($pending.Count -gt 0) {
+            $parent = $pending.Dequeue()
+            foreach ($child in $all | Where-Object { $_.ParentProcessId -eq $parent }) {
+                if ($seen.Add([int]$child.ProcessId)) {
+                    $pending.Enqueue([int]$child.ProcessId)
+                }
+            }
+        }
+        $ids = @($seen) | Sort-Object -Descending
+    } catch {
+    }
+
+    try {
+        foreach ($id in $ids) {
+            if (Get-Process -Id $id -ErrorAction SilentlyContinue) {
+                Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
+            }
+        }
+        $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMilliseconds)
+        do {
+            $remaining = @($ids | Where-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
+            if ($remaining.Count -eq 0) {
+                return
+            }
+            Start-Sleep -Milliseconds 100
+        } while ([DateTime]::UtcNow -lt $deadline)
+    } catch {
+    }
+}
+
 $pythonCandidates = @()
 if ($env:AGRINEBULA_PYTHON) {
     $pythonCandidates += $env:AGRINEBULA_PYTHON
@@ -128,6 +179,9 @@ try {
 }
 
 $createdAt = (Get-Date).ToUniversalTime().ToString("o")
+$startedProcessIds = @()
+$stateWriteAttempted = $false
+try {
 $apiProcess = Start-Process `
     -FilePath $pythonPath `
     -ArgumentList @($apiPath) `
@@ -136,6 +190,8 @@ $apiProcess = Start-Process `
     -RedirectStandardError $apiStderrLog `
     -WindowStyle Hidden `
     -PassThru
+
+$startedProcessIds += $apiProcess.Id
 
 $webProcess = Start-Process `
     -FilePath $webVite `
@@ -146,6 +202,8 @@ $webProcess = Start-Process `
     -WindowStyle Hidden `
     -PassThru
 
+$startedProcessIds += $webProcess.Id
+
 $state = @{
     project_root = $projectRoot
     api_pid = $apiProcess.Id
@@ -154,11 +212,24 @@ $state = @{
 } | ConvertTo-Json
 $stateDir = Split-Path -Parent $processStatePath
 New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+$stateWriteAttempted = $true
 [System.IO.File]::WriteAllText(
     $processStatePath,
     $state,
     [System.Text.UTF8Encoding]::new($false)
 )
+
+} catch {
+    $startupError = $_.Exception.Message
+    Stop-StartedProcessTrees -RootIds $startedProcessIds
+    try {
+        if ($stateWriteAttempted -and (Test-Path -LiteralPath $processStatePath -PathType Leaf)) {
+            Remove-Item -LiteralPath $processStatePath -Force -ErrorAction Stop
+        }
+    } catch {
+    }
+    Stop-WithDiagnostic "Delivery process startup failed: $startupError"
+}
 
 $apiReady = $false
 $webReady = $false

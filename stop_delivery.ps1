@@ -22,6 +22,26 @@ function Get-DescendantProcessIds {
     return @($seen)
 }
 
+function Wait-DeliveryProcessesExit {
+    param(
+        [int[]]$ProcessIds,
+        [int]$TimeoutMilliseconds = 5000
+    )
+
+    if (-not $ProcessIds -or $ProcessIds.Count -eq 0) {
+        return $true
+    }
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMilliseconds)
+    do {
+        $remaining = @($ProcessIds | Where-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
+        if ($remaining.Count -eq 0) {
+            return $true
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    return $false
+}
+
 if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) {
     Write-Host "No delivery process state found."
     exit 0
@@ -55,6 +75,10 @@ foreach ($id in $ids) {
     if (Get-Process -Id $id -ErrorAction SilentlyContinue) {
         Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
     }
+}
+if (-not (Wait-DeliveryProcessesExit -ProcessIds $ids)) {
+    Write-Error "Timed out waiting for delivery processes to exit; state was preserved: $statePath"
+    exit 1
 }
 Remove-Item -LiteralPath $statePath -Force
 Write-Host "Delivery services stopped."
