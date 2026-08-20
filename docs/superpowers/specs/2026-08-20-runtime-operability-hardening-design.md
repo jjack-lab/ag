@@ -57,7 +57,7 @@ resolver and emits these JSON fields:
 
 - `detector_status`, `detector_path`, `detector_sha256`;
 - `behavior_status`, `behavior_path`, `behavior_sha256`;
-- `behavior_error` when unavailable or invalid at the registry boundary.
+- `behavior_error` when the resolver reports the artifact as unavailable.
 
 The legacy `model_sha256` detector field remains for compatibility.
 
