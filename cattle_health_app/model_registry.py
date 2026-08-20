@@ -31,6 +31,21 @@ class ModelArtifact:
         return payload
 
 
+@dataclass(frozen=True)
+class BehaviorModelArtifact:
+    name: str
+    path: Path
+    sha256: str | None
+    status: str
+    version: str | None = None
+    error: str | None = None
+
+    def to_dict(self) -> dict:
+        payload = asdict(self)
+        payload["path"] = str(self.path)
+        return payload
+
+
 def sha256_file(path: Path) -> str:
     digest = sha256()
     with path.open("rb") as source:
@@ -66,4 +81,32 @@ def resolve_detector_model(
         name="yolo11-detector",
         path=path,
         sha256=fingerprint,
+    )
+
+
+def resolve_behavior_model(
+    explicit_path: str | Path | None = None,
+    project_root: str | Path | None = None,
+) -> BehaviorModelArtifact:
+    root = Path(project_root or Path(__file__).resolve().parents[1])
+    configured = explicit_path or os.environ.get("AGRINEBULA_BEHAVIOR_MODEL")
+    path = (
+        Path(configured)
+        if configured
+        else root / "models" / "behavior" / "cvb_x3d_v2_best.pt"
+    )
+    path = path.expanduser().resolve()
+    if not path.is_file():
+        return BehaviorModelArtifact(
+            name="cvb-x3d-behavior",
+            path=path,
+            sha256=None,
+            status="unavailable",
+            error="Behavior checkpoint is missing: {}".format(path),
+        )
+    return BehaviorModelArtifact(
+        name="cvb-x3d-behavior",
+        path=path,
+        sha256=sha256_file(path),
+        status="ready",
     )
