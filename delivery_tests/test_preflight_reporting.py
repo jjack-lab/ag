@@ -12,6 +12,7 @@ PREFLIGHT = PROJECT_ROOT / "scripts" / "preflight.py"
 
 def run_preflight(extra_env):
     environment = os.environ.copy()
+    environment.pop("AGRINEBULA_DETECTOR_MODEL", None)
     environment.update(extra_env)
     completed = subprocess.run(
         [sys.executable, str(PREFLIGHT)],
@@ -23,9 +24,27 @@ def run_preflight(extra_env):
         errors="replace",
         timeout=60,
     )
-    assert completed.returncode == 0, completed.stderr
+    if completed.returncode != 0:
+        raise AssertionError(
+            f"preflight exited with return code {completed.returncode}\n"
+            f"stdout:\n{completed.stdout}\n"
+            f"stderr:\n{completed.stderr}"
+        )
     lines = [line for line in completed.stdout.splitlines() if line.strip()]
-    return json.loads(lines[-1])
+    if not lines:
+        raise AssertionError(
+            "preflight produced no non-empty stdout lines\n"
+            f"stdout:\n{completed.stdout}\n"
+            f"stderr:\n{completed.stderr}"
+        )
+    try:
+        return json.loads(lines[-1])
+    except json.JSONDecodeError as error:
+        raise AssertionError(
+            "preflight stdout did not end with valid JSON\n"
+            f"stdout:\n{completed.stdout}\n"
+            f"stderr:\n{completed.stderr}"
+        ) from error
 
 
 def test_preflight_reports_ready_detector_and_behavior_artifacts(tmp_path):
