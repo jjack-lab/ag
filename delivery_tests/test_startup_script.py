@@ -8,6 +8,17 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_runtime_docs_name_logs_and_nonfatal_behavior_preflight():
+    for filename in ("README.md", "README_DELIVERY.md"):
+        documentation = (PROJECT_ROOT / filename).read_text(encoding="utf-8")
+
+        assert "data/logs" in documentation
+        assert "api.stderr.log" in documentation
+        assert "web.stderr.log" in documentation
+        assert "行为模型" in documentation
+        assert "不阻断" in documentation
+
+
 def test_startup_script_discovers_python_without_machine_specific_path():
     script = (PROJECT_ROOT / "start_delivery.ps1").read_text(encoding="utf-8")
 
