@@ -167,13 +167,16 @@ def test_startup_script_rolls_back_partial_process_startup():
     assert startup.index("try {") < startup.index("$apiProcess = Start-Process")
     assert "Invoke-DeliveryStartupRollback" in startup
     assert "start_time_ticks" in start
-    assert "recovery_pids" in start
+    assert "recovery_processes" in start
+    assert "recovery_processes" in (PROJECT_ROOT / "stop_delivery.ps1").read_text(encoding="utf-8")
     assert "Delivery process startup failed" in start
+    assert "Rollback internal failure" in startup
     assert "$stateWriteAttempted" in startup
     assert startup.index("[System.IO.File]::WriteAllText(") < startup.index("} catch {")
     cleanup = start[start.index("function Stop-StartedProcessTrees") : start.index("$pythonCandidates")]
     assert cleanup.index("Get-CimInstance") < cleanup.index("Stop-Process")
     assert "Process identity mismatch" in cleanup
+    assert "survivor_processes = @()" in cleanup
 
 
 def test_stop_script_waits_for_owned_controlled_process(tmp_path):
@@ -307,7 +310,7 @@ $state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | 
     state_exists = Test-Path -LiteralPath {_ps_quote(state_path)}
     api_pid = $state.api_pid
     web_pid = $state.web_pid
-    recovery_pids = @($state.recovery_pids)
+    recovery_processes = @($state.recovery_processes)
 }} | ConvertTo-Json -Compress
 """
     result = _run_powershell_harness(tmp_path, harness)
@@ -317,10 +320,11 @@ $state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | 
     assert payload["success"] is False
     assert payload["stop_calls"] == 1
     assert payload["state_exists"] is True
-    assert payload["api_pid"] == 4242
+    assert payload["api_pid"] == 0
     assert payload["web_pid"] == 4343
-    assert 4242 in payload["recovery_pids"]
-    assert 4343 in payload["recovery_pids"]
+    recovery_ids = [item["pid"] for item in payload["recovery_processes"]]
+    assert 4242 not in recovery_ids
+    assert 4343 in recovery_ids
     assert "web start exploded" in payload["message"]
     assert "identity" in payload["message"].lower()
     assert "timed out" in payload["message"].lower()
@@ -366,3 +370,147 @@ try {{
     assert payload["survivors"] == []
     assert payload["errors"] == []
     assert payload["has_exited"] is True
+
+def test_stop_recovery_state_rejects_reused_pid_then_stops_exact_survivor(tmp_path):
+    project = tmp_path / "recovery-stop-harness"
+    data_dir = project / "data"
+    data_dir.mkdir(parents=True)
+    shutil.copy2(PROJECT_ROOT / "stop_delivery.ps1", project / "stop_delivery.ps1")
+    sleeper = project / "recovery-sleeper.ps1"
+    sleeper.write_text("Start-Sleep -Seconds 60\n", encoding="utf-8")
+    creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    process = subprocess.Popen(
+        ["powershell.exe", "-NoProfile", "-File", str(sleeper)],
+        creationflags=creation_flags,
+    )
+    state_path = data_dir / "delivery-processes.json"
+    try:
+        ticks_result = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-Command",
+                f"(Get-Process -Id {process.pid}).StartTime.ToUniversalTime().Ticks",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert ticks_result.returncode == 0, ticks_result.stdout + ticks_result.stderr
+        exact_ticks = int(ticks_result.stdout.strip())
+        state = {
+            "project_root": str(project),
+            "api_pid": process.pid,
+            "web_pid": 0,
+            "recovery_processes": [
+                {"pid": process.pid, "start_time_ticks": exact_ticks - 1, "role": "api"}
+            ],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+
+        mismatch = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(project / "stop_delivery.ps1"),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        assert mismatch.returncode != 0
+        assert process.poll() is None
+        assert state_path.exists()
+
+        state["recovery_processes"][0]["start_time_ticks"] = exact_ticks
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+        exact = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(project / "stop_delivery.ps1"),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        assert exact.returncode == 0, exact.stdout + exact.stderr
+        process.wait(timeout=2)
+        assert process.poll() is not None
+        assert not state_path.exists()
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)
+
+def test_startup_rollback_preserves_original_error_when_identity_property_races(tmp_path):
+    state_path = tmp_path / "race-delivery-processes.json"
+    start_script = PROJECT_ROOT / "start_delivery.ps1"
+    rollback_functions = "\n".join(
+        _extract_powershell_function(start_script, name)
+        for name in ("Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
+    )
+    harness = f"""
+$ErrorActionPreference = "Stop"
+{rollback_functions}
+$script:projectRoot = {_ps_quote(tmp_path)}
+function Get-CimInstance {{
+    [CmdletBinding()]
+    param([string]$ClassName)
+    [pscustomobject]@{{
+        ProcessId = 5151
+        ParentProcessId = 1
+        CommandLine = "$script:projectRoot\\owned.exe"
+        CreationDate = [DateTime]::UtcNow
+    }}
+}}
+function Get-Process {{
+    [CmdletBinding()]
+    param([int]$Id)
+    $value = [pscustomobject]@{{ Id = $Id }}
+    $value | Add-Member -MemberType ScriptProperty -Name StartTime -Value {{ throw "process exited during StartTime read" }}
+    return $value
+}}
+function Stop-Process {{
+    [CmdletBinding()]
+    param([int]$Id, [switch]$Force)
+    throw "must not stop without identity"
+}}
+$record = [pscustomobject]@{{
+    id = 5151
+    role = "api"
+    start_time_ticks = [DateTime]::UtcNow.Ticks
+    process = $null
+}}
+$params = @{{
+    OriginalError = "state write exploded"
+    ProcessRecords = @($record)
+    ProjectRoot = $script:projectRoot
+    ProcessStatePath = {_ps_quote(state_path)}
+    CreatedAt = [DateTime]::UtcNow.ToString("o")
+    StateWriteAttempted = $true
+    TimeoutMilliseconds = 20
+}}
+$result = Invoke-DeliveryStartupRollback @params
+$state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | ConvertFrom-Json
+[pscustomobject]@{{
+    success = $result.success
+    message = $result.message
+    recovery_ids = @($state.recovery_processes | ForEach-Object {{ $_.pid }})
+}} | ConvertTo-Json -Compress
+"""
+    result = _run_powershell_harness(tmp_path, harness)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert payload["success"] is False
+    assert 5151 in payload["recovery_ids"]
+    assert "state write exploded" in payload["message"]
+    assert "Unable to read process identity" in payload["message"]

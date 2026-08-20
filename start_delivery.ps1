@@ -61,10 +61,12 @@ function Stop-StartedProcessTrees {
     $errors = @()
     $survivors = @()
     $targets = @()
+    try {
     if (-not $ProcessRecords -or $ProcessRecords.Count -eq 0) {
         return [pscustomobject]@{
             success = $true
             survivor_ids = @()
+            survivor_processes = @()
             errors = @()
         }
     }
@@ -74,9 +76,11 @@ function Stop-StartedProcessTrees {
     } catch {
         $rootIds = @($ProcessRecords | ForEach-Object { [int]$_.id } | Where-Object { $_ -gt 0 })
         $errors += "Unable to enumerate delivery process identities: $($_.Exception.Message)"
+        $fallback = @($ProcessRecords | ForEach-Object { [pscustomobject]@{ pid = [int]$_.id; start_time_ticks = [long]$_.start_time_ticks; role = [string]$_.role } } | Where-Object { $_.pid -gt 0 })
         return [pscustomobject]@{
             success = $false
             survivor_ids = $rootIds
+            survivor_processes = $fallback
             errors = $errors
         }
     }
@@ -93,20 +97,41 @@ function Stop-StartedProcessTrees {
         }
         $snapshotProcess = $snapshot | Where-Object { [int]$_.ProcessId -eq $id } | Select-Object -First 1
         $expectedTicks = [long]$record.start_time_ticks
-        $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
-        if (
-            -not $snapshotProcess -or
-            $actualTicks -ne $expectedTicks -or
-            [string]$snapshotProcess.CommandLine -notlike "*$ProjectRoot*"
-        ) {
+        try {
+            $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
+        } catch {
+            $errors += "Unable to read process identity for PID $($id): $($_.Exception.Message)"
+            $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = $expectedTicks; role = [string]$record.role }
+            continue
+        }
+        if ($actualTicks -ne $expectedTicks) {
+            $errors += "Process identity mismatch for PID $id; original instance already exited."
+            continue
+        }
+        if (-not $snapshotProcess) {
+            $errors += "Unable to confirm process ownership for PID $id from the CIM snapshot."
+            $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = $expectedTicks; role = [string]$record.role }
+            continue
+        }
+        try {
+            $commandLine = [string]$snapshotProcess.CommandLine
+            $parentId = [int]$snapshotProcess.ParentProcessId
+            $creationDate = [DateTime]$snapshotProcess.CreationDate
+        } catch {
+            $errors += "Unable to read CIM identity for PID $($id): $($_.Exception.Message)"
+            $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = $expectedTicks; role = [string]$record.role }
+            continue
+        }
+        if ($commandLine -notlike "*$ProjectRoot*") {
             $errors += "Process identity mismatch for PID $id; refusing rollback termination."
-            $survivors += $id
             continue
         }
         $target = [pscustomobject]@{
             id = $id
-            parent_id = [int]$snapshotProcess.ParentProcessId
-            creation_date = [DateTime]$snapshotProcess.CreationDate
+            parent_id = $parentId
+            creation_date = $creationDate
+            start_time_ticks = $expectedTicks
+            role = [string]$record.role
             depth = 0
             record = $record
         }
@@ -117,14 +142,31 @@ function Stop-StartedProcessTrees {
     while ($pending.Count -gt 0) {
         $parent = $pending.Dequeue()
         foreach ($child in $snapshot | Where-Object { [int]$_.ParentProcessId -eq [int]$parent.id }) {
-            $childId = [int]$child.ProcessId
+            try {
+                $childId = [int]$child.ProcessId
+                $childParentId = [int]$child.ParentProcessId
+            } catch {
+                $errors += "Unable to read descendant CIM identity: $($_.Exception.Message)"
+                continue
+            }
             if ($targets.id -contains $childId) {
+                continue
+            }
+            $live = Get-Process -Id $childId -ErrorAction SilentlyContinue
+            if (-not $live) {
+                continue
+            }
+            try {
+                $childTicks = [long]$live.StartTime.ToUniversalTime().Ticks
+            } catch {
+                $errors += "Unable to read descendant identity for PID $($childId): $($_.Exception.Message)"
                 continue
             }
             $target = [pscustomobject]@{
                 id = $childId
-                parent_id = [int]$child.ParentProcessId
-                creation_date = [DateTime]$child.CreationDate
+                parent_id = $childParentId
+                start_time_ticks = $childTicks
+                role = "descendant"
                 depth = [int]$parent.depth + 1
                 record = $null
             }
@@ -133,56 +175,78 @@ function Stop-StartedProcessTrees {
         }
     }
 
-    $waitIds = @()
+    $waitTargets = @()
     foreach ($target in $targets | Sort-Object depth -Descending) {
         $id = [int]$target.id
         $live = Get-Process -Id $id -ErrorAction SilentlyContinue
         if (-not $live) {
             continue
         }
-        $identityMatches = $true
-        if ($target.record) {
-            $identityMatches = (
-                [long]$live.StartTime.ToUniversalTime().Ticks -eq
-                [long]$target.record.start_time_ticks
-            )
-        } else {
-            $snapshotStart = ([DateTime]$target.creation_date).ToUniversalTime()
-            $liveStart = $live.StartTime.ToUniversalTime()
-            $identityMatches = [Math]::Abs(($liveStart - $snapshotStart).TotalSeconds) -le 2
-        }
-        if (-not $identityMatches) {
-            $errors += "Process identity mismatch for PID $id; refusing rollback termination."
-            $survivors += $id
+        try {
+            $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
+        } catch {
+            $errors += "Unable to re-read process identity for PID $($id): $($_.Exception.Message)"
+            $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = [long]$target.start_time_ticks; role = [string]$target.role }
             continue
         }
-        $waitIds += $id
+        if ($actualTicks -ne [long]$target.start_time_ticks) {
+            $errors += "Process identity mismatch for PID $id before termination; original instance already exited."
+            continue
+        }
+        $waitTargets += $target
         try {
             Stop-Process -Id $id -Force -ErrorAction Stop
         } catch {
-            $errors += "Unable to stop rollback PID ${id}: $($_.Exception.Message)"
+            $errors += "Unable to stop rollback PID $($id): $($_.Exception.Message)"
         }
     }
 
     $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMilliseconds)
     do {
-        $remaining = @($waitIds | Where-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
+        $remaining = @()
+        foreach ($target in $waitTargets) {
+            $live = Get-Process -Id ([int]$target.id) -ErrorAction SilentlyContinue
+            if (-not $live) {
+                continue
+            }
+            try {
+                $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
+            } catch {
+                $errors += "Unable to confirm rollback exit for PID $($target.id): $($_.Exception.Message)"
+                $remaining += $target
+                continue
+            }
+            if ($actualTicks -eq [long]$target.start_time_ticks) {
+                $remaining += $target
+            }
+        }
         if ($remaining.Count -eq 0) {
             break
         }
         Start-Sleep -Milliseconds 100
     } while ([DateTime]::UtcNow -lt $deadline)
 
-    $remaining = @($waitIds | Where-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
     if ($remaining.Count -gt 0) {
-        $errors += "Timed out waiting for rollback PIDs to exit: $($remaining -join ', ')"
-        $survivors += $remaining
+        $remainingIds = @($remaining | ForEach-Object { $_.id })
+        $errors += "Timed out waiting for rollback PIDs to exit: $($remainingIds -join ', ')"
+        $survivors += @($remaining | ForEach-Object { [pscustomobject]@{ pid = [int]$_.id; start_time_ticks = [long]$_.start_time_ticks; role = [string]$_.role } })
     }
-    $survivors = @($survivors | Select-Object -Unique)
+    $survivors = @($survivors | Sort-Object pid, start_time_ticks -Unique)
     return [pscustomobject]@{
         success = ($errors.Count -eq 0 -and $survivors.Count -eq 0)
-        survivor_ids = $survivors
+        survivor_ids = @($survivors | ForEach-Object { $_.pid })
+        survivor_processes = $survivors
         errors = $errors
+    }
+    } catch {
+        $errors += "Rollback internal failure: $($_.Exception.Message)"
+        $fallback = @($ProcessRecords | ForEach-Object { [pscustomobject]@{ pid = [int]$_.id; start_time_ticks = [long]$_.start_time_ticks; role = [string]$_.role } } | Where-Object { $_.pid -gt 0 })
+        return [pscustomobject]@{
+            success = $false
+            survivor_ids = @($fallback | ForEach-Object { $_.pid })
+            survivor_processes = $fallback
+            errors = $errors
+        }
     }
 }
 
@@ -197,76 +261,95 @@ function Invoke-DeliveryStartupRollback {
         [int]$TimeoutMilliseconds = 5000
     )
 
-    $rollbackParams = @{
-        ProcessRecords = $ProcessRecords
-        ProjectRoot = $ProjectRoot
-        TimeoutMilliseconds = $TimeoutMilliseconds
-    }
-    $rollback = Stop-StartedProcessTrees @rollbackParams
-    $survivors = @($rollback.survivor_ids)
-    $rollbackErrors = @($rollback.errors)
-    $stateError = $null
-
-    if ($survivors.Count -eq 0) {
-        try {
-            if ($StateWriteAttempted -and (Test-Path -LiteralPath $ProcessStatePath -PathType Leaf)) {
-                Remove-Item -LiteralPath $ProcessStatePath -Force -ErrorAction Stop
-            }
-        } catch {
-            $stateError = "Unable to remove failed-attempt state: $($_.Exception.Message)"
+    try {
+        $rollbackParams = @{
+            ProcessRecords = $ProcessRecords
+            ProjectRoot = $ProjectRoot
+            TimeoutMilliseconds = $TimeoutMilliseconds
         }
-    } else {
-        $apiPid = 0
-        $webPid = 0
-        foreach ($record in $ProcessRecords) {
-            $id = [int]$record.id
-            if ($survivors -notcontains $id) {
-                continue
+        $rollback = Stop-StartedProcessTrees @rollbackParams
+        $survivors = @($rollback.survivor_processes)
+        $rollbackErrors = @($rollback.errors)
+        $stateError = $null
+        if ($survivors.Count -eq 0) {
+            try {
+                if ($StateWriteAttempted -and (Test-Path -LiteralPath $ProcessStatePath -PathType Leaf)) {
+                    Remove-Item -LiteralPath $ProcessStatePath -Force -ErrorAction Stop
+                }
+            } catch {
+                $stateError = "Unable to remove failed-attempt state: $($_.Exception.Message)"
             }
-            if ([string]$record.role -eq "api") {
-                $apiPid = $id
-            } elseif ([string]$record.role -eq "web") {
-                $webPid = $id
+        } else {
+            $apiPid = 0
+            $webPid = 0
+            foreach ($survivor in $survivors) {
+                if ([string]$survivor.role -eq "api") {
+                    $apiPid = [int]$survivor.pid
+                } elseif ([string]$survivor.role -eq "web") {
+                    $webPid = [int]$survivor.pid
+                }
+            }
+            $recoveryState = @{
+                project_root = $ProjectRoot
+                api_pid = $apiPid
+                web_pid = $webPid
+                recovery_processes = $survivors
+                created_at = $CreatedAt
+            } | ConvertTo-Json -Depth 4
+            try {
+                $stateDir = Split-Path -Parent $ProcessStatePath
+                New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+                [System.IO.File]::WriteAllText($ProcessStatePath, $recoveryState, [System.Text.UTF8Encoding]::new($false))
+            } catch {
+                $stateError = "Recovery state write failed: $($_.Exception.Message)"
             }
         }
-        $recoveryState = @{
-            project_root = $ProjectRoot
-            api_pid = $apiPid
-            web_pid = $webPid
-            recovery_pids = $survivors
-            created_at = $CreatedAt
-        } | ConvertTo-Json
+        $parts = @("Delivery process startup failed: $OriginalError")
+        if ($rollbackErrors.Count -gt 0) {
+            $parts += "Rollback errors: $($rollbackErrors -join '; ')"
+        }
+        if ($survivors.Count -gt 0) {
+            $parts += "Survivor PIDs: $(@($survivors | ForEach-Object { $_.pid }) -join ', ')"
+            if (-not $stateError) {
+                $parts += "Recovery state preserved: $ProcessStatePath"
+            }
+        }
+        if ($stateError) {
+            $parts += $stateError
+        }
+        return [pscustomobject]@{
+            success = ($rollback.success -and -not $stateError)
+            survivor_ids = @($survivors | ForEach-Object { $_.pid })
+            survivor_processes = $survivors
+            errors = @($rollbackErrors + @($stateError) | Where-Object { $_ })
+            message = ($parts -join ". ")
+        }
+    } catch {
+        $internalError = $_.Exception.Message
+        $fallback = @($ProcessRecords | ForEach-Object { [pscustomobject]@{ pid = [int]$_.id; start_time_ticks = [long]$_.start_time_ticks; role = [string]$_.role } } | Where-Object { $_.pid -gt 0 })
+        $stateError = $null
         try {
             $stateDir = Split-Path -Parent $ProcessStatePath
             New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-            [System.IO.File]::WriteAllText(
-                $ProcessStatePath,
-                $recoveryState,
-                [System.Text.UTF8Encoding]::new($false)
-            )
+            $recoveryState = @{ project_root = $ProjectRoot; api_pid = 0; web_pid = 0; recovery_processes = $fallback; created_at = $CreatedAt } | ConvertTo-Json -Depth 4
+            [System.IO.File]::WriteAllText($ProcessStatePath, $recoveryState, [System.Text.UTF8Encoding]::new($false))
         } catch {
             $stateError = "Recovery state write failed: $($_.Exception.Message)"
         }
-    }
-
-    $parts = @("Delivery process startup failed: $OriginalError")
-    if ($rollbackErrors.Count -gt 0) {
-        $parts += "Rollback errors: $($rollbackErrors -join '; ')"
-    }
-    if ($survivors.Count -gt 0) {
-        $parts += "Survivor PIDs: $($survivors -join ', ')"
-        if (-not $stateError) {
-            $parts += "Recovery state preserved: $ProcessStatePath"
+        $message = "Delivery process startup failed: $OriginalError. Rollback internal failure: $internalError"
+        if ($fallback.Count -gt 0) {
+            $message += ". Survivor PIDs: $(@($fallback | ForEach-Object { $_.pid }) -join ', ')"
         }
-    }
-    if ($stateError) {
-        $parts += $stateError
-    }
-    return [pscustomobject]@{
-        success = ($rollback.success -and -not $stateError)
-        survivor_ids = $survivors
-        errors = @($rollbackErrors + @($stateError) | Where-Object { $_ })
-        message = ($parts -join ". ")
+        if ($stateError) {
+            $message += ". $stateError"
+        }
+        return [pscustomobject]@{
+            success = $false
+            survivor_ids = @($fallback | ForEach-Object { $_.pid })
+            survivor_processes = $fallback
+            errors = @("Rollback internal failure: $internalError", $stateError | Where-Object { $_ })
+            message = $message
+        }
     }
 }
 
@@ -409,8 +492,21 @@ $stateWriteAttempted = $true
         CreatedAt = $createdAt
         StateWriteAttempted = $stateWriteAttempted
     }
-    $rollback = Invoke-DeliveryStartupRollback @rollbackParams
-    Stop-WithDiagnostic $rollback.message
+    try {
+        $rollback = Invoke-DeliveryStartupRollback @rollbackParams
+        $rollbackDiagnostic = $rollback.message
+    } catch {
+        $rollbackInternalError = $_.Exception.Message
+        $fallback = @($startedProcesses | ForEach-Object { [pscustomobject]@{ pid = [int]$_.id; start_time_ticks = [long]$_.start_time_ticks; role = [string]$_.role } })
+        $rollbackDiagnostic = "Delivery process startup failed: $startupError. Rollback internal failure: $rollbackInternalError"
+        try {
+            $recoveryState = @{ project_root = $projectRoot; api_pid = 0; web_pid = 0; recovery_processes = $fallback; created_at = $createdAt } | ConvertTo-Json -Depth 4
+            [System.IO.File]::WriteAllText($processStatePath, $recoveryState, [System.Text.UTF8Encoding]::new($false))
+        } catch {
+            $rollbackDiagnostic += ". Recovery state write failed: $($_.Exception.Message)"
+        }
+    }
+    Stop-WithDiagnostic $rollbackDiagnostic
 }
 
 $apiReady = $false
