@@ -166,6 +166,34 @@ def test_behavior_report_failure_preserves_original_video_artifacts(tmp_path, mo
         assert Path(artifact).exists()
 
 
+def test_behavior_report_cleanup_failure_is_also_nonblocking(tmp_path, monkeypatch):
+    install(monkeypatch)
+    monkeypatch.setattr(pipeline.cv2, "putText", lambda *args: args[0])
+    monkeypatch.setattr(
+        pipeline,
+        "write_behavior_timeline",
+        lambda *args, **kwargs: (_ for _ in ()).throw(OSError("disk full")),
+    )
+    original_unlink = Path.unlink
+
+    def locked_behavior_file(path, *args, **kwargs):
+        if path.name.endswith("_behavior.csv"):
+            raise OSError("file locked")
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", locked_behavior_file)
+
+    result = pipeline.process_tracked_video(
+        DynamicModel(), tmp_path / "in.mp4", tmp_path / "out", .2, .5,
+        behavior_runtime=PendingRuntime(),
+    )
+
+    assert result.behavior_model_status == "failed"
+    assert "disk full" in result.behavior_model_error
+    assert "file locked" in result.behavior_model_error
+    assert result.trajectory_csv.is_file()
+
+
 def test_behavior_durations_follow_track_timestamps_and_repeat_last_interval():
     observations = [
         BehaviorObservation(0, 0.0, 7, 2, "grazing", "采食", .8, True, "v1"),
@@ -191,3 +219,19 @@ def test_single_behavior_observation_has_zero_duration():
 
     assert rows[0]["duration_seconds"] == 0.0
     assert rows[0]["percentage"] == 0.0
+
+
+def test_reused_observation_instance_does_not_collide_duration_keys():
+    grazing = BehaviorObservation(
+        0, 0.0, 7, 2, "grazing", "采食", .8, True, "v1"
+    )
+    walking = BehaviorObservation(
+        20, 1.0, 7, 3, "walking", "行走", .9, True, "v1"
+    )
+
+    rows = build_behavior_summary([grazing, grazing, walking], fps=20.0)
+
+    durations = {
+        row["label"]: row["duration_seconds"] for row in rows
+    }
+    assert durations == {"grazing": 1.0, "walking": 1.0}

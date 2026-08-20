@@ -79,28 +79,28 @@ def build_behavior_summary(
         normalized.append(_normalized(value, confidence_threshold))
 
     by_track = defaultdict(list)
-    for item in normalized:
-        by_track[item.track_id].append(item)
-    durations = {}
-    for track_id, items in by_track.items():
-        items.sort(key=lambda item: (item.time_seconds, item.frame_index))
+    for position, item in enumerate(normalized):
+        by_track[item.track_id].append((position, item))
+    durations = [0.0] * len(normalized)
+    for items in by_track.values():
+        items.sort(key=lambda value: (value[1].time_seconds, value[1].frame_index))
         last_positive_interval = 0.0
-        for index, item in enumerate(items[:-1]):
-            interval = items[index + 1].time_seconds - item.time_seconds
+        for index, (position, item) in enumerate(items[:-1]):
+            interval = items[index + 1][1].time_seconds - item.time_seconds
             duration = interval if interval > 0 else 0.0
-            durations[id(item)] = duration
+            durations[position] = duration
             if duration > 0:
                 last_positive_interval = duration
-        durations[id(items[-1])] = last_positive_interval if len(items) > 1 else 0.0
+        durations[items[-1][0]] = last_positive_interval if len(items) > 1 else 0.0
 
     grouped = defaultdict(lambda: {"confidences": [], "duration": 0.0})
     totals = defaultdict(float)
-    for item in normalized:
+    for position, item in enumerate(normalized):
         key = (
             item.track_id, item.label_id, item.label, item.display_name,
             item.health_eligible, item.model_version,
         )
-        duration = durations[id(item)]
+        duration = durations[position]
         grouped[key]["confidences"].append(item.confidence)
         grouped[key]["duration"] += duration
         totals[item.track_id] += duration

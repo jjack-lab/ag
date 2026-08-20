@@ -432,9 +432,19 @@ def process_tracked_video(
             behavior_csv, behavior_summary_csv, behavior_report_json = candidates
         except Exception as exc:
             LOGGER.exception("Behavior reports disabled for this video")
+            cleanup_errors = []
             for path in candidates:
-                path.unlink(missing_ok=True)
+                try:
+                    path.unlink(missing_ok=True)
+                except OSError as cleanup_error:
+                    cleanup_errors.append(
+                        "{}: {}".format(path.name, cleanup_error)
+                    )
             report_error = "{}: {}".format(type(exc).__name__, exc)
+            if cleanup_errors:
+                report_error = "{}; cleanup failed: {}".format(
+                    report_error, "; ".join(cleanup_errors)
+                )
             behavior_error = (
                 "{}; {}".format(behavior_error, report_error)
                 if behavior_error else report_error
