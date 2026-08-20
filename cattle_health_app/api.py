@@ -92,9 +92,12 @@ def create_app(
 
     @app.get("/api/models")
     def models():
+        current_behavior_artifact = getattr(
+            media_processor, "behavior_artifact", behavior_artifact
+        )
         return {
             "detector": detector_artifact.to_dict(),
-            "behavior": behavior_artifact.to_dict(),
+            "behavior": current_behavior_artifact.to_dict(),
         }
 
     @app.get("/api/alerts")
