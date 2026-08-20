@@ -51,13 +51,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\stop_delivery.ps1
 
 运行日志位于 `data/logs`：API 分别写入 `api.stdout.log` 和 `api.stderr.log`，Web 分别写入 `web.stdout.log` 和 `web.stderr.log`。
 
-- 每次启动都会覆盖上一轮的四个日志文件。
-- 启动失败时，脚本会自动显示每个非空日志的最后 40 行。
+- 每次进入服务启动阶段（启动 API/Web）都会覆盖上一轮的四个日志文件；若预检、依赖或端口检查提前失败，则保留上一轮日志。
+- API/Web 未通过就绪检查时，脚本会自动显示每个非空日志的最后 40 行；更早的预检或端口错误会直接显示在控制台。
 - 停止服务不会删除日志，便于结束运行后排查。
 
 启动预检会输出 `detector` 和 `behavior` 的状态、路径与 SHA-256：
 
-- `detector` 缺失会阻断启动，因为检测模型是交付运行的必需项。
+- 检测模型缺失会阻断启动（`detector` 是交付运行的必需项）。
 - 行为模型缺失时，`behavior` 状态显示 `unavailable`，但不阻断 YOLO 检测、跟踪、轨迹和原有规则健康分析。
 
 行为模型仍属于研究演示能力，健康风险结果仍只用于辅助筛查，不是兽医疾病诊断。

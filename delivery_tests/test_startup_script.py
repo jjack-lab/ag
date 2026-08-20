@@ -9,14 +9,28 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_runtime_docs_name_logs_and_nonfatal_behavior_preflight():
+    required_phrases = (
+        "data/logs",
+        "api.stdout.log",
+        "api.stderr.log",
+        "web.stdout.log",
+        "web.stderr.log",
+        "进入服务启动阶段",
+        "未通过就绪检查",
+        "最后 40 行",
+        "停止服务不会删除日志",
+        "检测模型缺失会阻断",
+        "`behavior` 状态显示 `unavailable`",
+        "不阻断",
+        "研究演示",
+        "不是兽医疾病诊断",
+    )
+
     for filename in ("README.md", "README_DELIVERY.md"):
         documentation = (PROJECT_ROOT / filename).read_text(encoding="utf-8")
 
-        assert "data/logs" in documentation
-        assert "api.stderr.log" in documentation
-        assert "web.stderr.log" in documentation
-        assert "行为模型" in documentation
-        assert "不阻断" in documentation
+        for phrase in required_phrases:
+            assert phrase in documentation, f"{filename} must contain {phrase!r}"
 
 
 def test_startup_script_discovers_python_without_machine_specific_path():
