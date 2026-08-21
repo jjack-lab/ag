@@ -4,6 +4,8 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -662,3 +664,96 @@ $state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | 
     assert 7001 in payload["recovery_ids"]
     assert "web start exploded" in payload["message"]
     assert "descendant identity" in payload["message"].lower()
+
+@pytest.mark.parametrize("throwing_property", ["ProcessId", "ParentProcessId"])
+def test_startup_rollback_keeps_root_anchor_when_descendant_cim_identity_throws(tmp_path, throwing_property):
+    state_path = tmp_path / "descendant-cim-race-state.json"
+    start_script = PROJECT_ROOT / "start_delivery.ps1"
+    rollback_functions = "\n".join(
+        _extract_powershell_function(start_script, name)
+        for name in ("Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
+    )
+    child_identity = (
+        "ParentProcessId = 7101"
+        if throwing_property == "ProcessId"
+        else "ProcessId = 7102"
+    )
+    harness = f"""
+$ErrorActionPreference = "Stop"
+{rollback_functions}
+$script:rootAlive = $true
+$script:stopped = @()
+$script:projectRoot = {_ps_quote(tmp_path)}
+$script:rootStart = [DateTime]::UtcNow
+function Get-CimInstance {{
+    [CmdletBinding()]
+    param([string]$ClassName)
+    $root = [pscustomobject]@{{
+        ProcessId = 7101
+        ParentProcessId = 1
+        CommandLine = "$script:projectRoot\\api.exe"
+        CreationDate = $script:rootStart
+    }}
+    $child = [pscustomobject]@{{
+        {child_identity}
+        CommandLine = "$script:projectRoot\\child.exe"
+        CreationDate = $script:rootStart
+    }}
+    $child | Add-Member -MemberType ScriptProperty -Name {_ps_quote(throwing_property)} -Value {{ throw "descendant CIM identity race" }}
+    @($root, $child)
+}}
+function Get-Process {{
+    [CmdletBinding()]
+    param([int]$Id)
+    if ($Id -eq 7101 -and $script:rootAlive) {{
+        return [pscustomobject]@{{ Id = $Id; StartTime = $script:rootStart }}
+    }}
+    return $null
+}}
+function Stop-Process {{
+    [CmdletBinding()]
+    param([int]$Id, [switch]$Force)
+    $script:stopped += $Id
+    if ($Id -eq 7101) {{ $script:rootAlive = $false }}
+}}
+$record = [pscustomobject]@{{
+    id = 7101
+    role = "api"
+    start_time_ticks = $script:rootStart.Ticks
+    process = $null
+}}
+$params = @{{
+    OriginalError = "web start exploded"
+    ProcessRecords = @($record)
+    ProjectRoot = $script:projectRoot
+    ProcessStatePath = {_ps_quote(state_path)}
+    CreatedAt = $script:rootStart.ToString("o")
+    StateWriteAttempted = $true
+    TimeoutMilliseconds = 20
+}}
+$result = Invoke-DeliveryStartupRollback @params
+$state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | ConvertFrom-Json
+$recovery = @($state.recovery_processes)[0]
+[pscustomobject]@{{
+    success = $result.success
+    message = $result.message
+    root_alive = $script:rootAlive
+    stopped = @($script:stopped)
+    recovery_pid = $recovery.pid
+    recovery_ticks = $recovery.start_time_ticks
+    expected_ticks = $script:rootStart.Ticks
+    recovery_role = $recovery.role
+}} | ConvertTo-Json -Compress
+"""
+    result = _run_powershell_harness(tmp_path, harness)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert payload["success"] is False
+    assert payload["root_alive"] is True
+    assert 7101 not in payload["stopped"]
+    assert payload["recovery_pid"] == 7101
+    assert payload["recovery_ticks"] == payload["expected_ticks"]
+    assert payload["recovery_role"] == "api"
+    assert "web start exploded" in payload["message"]
+    assert "descendant CIM identity" in payload["message"]

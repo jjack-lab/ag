@@ -143,12 +143,24 @@ function Stop-StartedProcessTrees {
 
     while ($pending.Count -gt 0) {
         $parent = $pending.Dequeue()
-        foreach ($child in $snapshot | Where-Object { [int]$_.ParentProcessId -eq [int]$parent.id }) {
+        foreach ($child in $snapshot) {
             try {
-                $childId = [int]$child.ProcessId
-                $childParentId = [int]$child.ParentProcessId
+                $childParentProcessId = $child.ParentProcessId
+                if ($null -eq $childParentProcessId) {
+                    throw "Descendant CIM identity property was unavailable."
+                }
+                $childParentId = [int]$childParentProcessId
+                if ($childParentId -ne [int]$parent.id) {
+                    continue
+                }
+                $childProcessId = $child.ProcessId
+                if ($null -eq $childProcessId) {
+                    throw "Descendant CIM identity property was unavailable."
+                }
+                $childId = [int]$childProcessId
             } catch {
                 $errors += "Unable to read descendant CIM identity: $($_.Exception.Message)"
+                $blockedAnchorIds = @($blockedAnchorIds + [int]$parent.anchor_id | Select-Object -Unique)
                 continue
             }
             if ($targets.id -contains $childId) {
