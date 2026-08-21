@@ -518,6 +518,7 @@ $script:stopped = @()
 $script:projectRoot = {_ps_quote(tmp_path)}
 $script:rootStart = [DateTime]::UtcNow
 $script:childGetCalls = 0
+$script:identityReadFailures = 0
 function Get-CimInstance {{
     [CmdletBinding()]
     param([string]$ClassName)
@@ -547,9 +548,8 @@ function Get-Process {{
     if ($script:childGetCalls -gt 1) {{
         return [pscustomobject]@{{ Id = $Id; StartTime = $script:rootStart.AddMinutes(1) }}
     }}
-    $value = [pscustomobject]@{{ Id = $Id }}
-    $value | Add-Member -MemberType ScriptProperty -Name StartTime -Value {{ throw "descendant identity race" }}
-    return $value
+    $script:identityReadFailures++
+    throw "descendant identity race"
 }}
 function Stop-Process {{
     [CmdletBinding()]
@@ -579,6 +579,8 @@ $result = Invoke-DeliveryStartupRollback @params
     root_alive = $script:rootAlive
     stopped = @($script:stopped)
     state_exists = Test-Path -LiteralPath {_ps_quote(state_path)}
+    identity_read_failures = $script:identityReadFailures
+    child_get_calls = $script:childGetCalls
 }} | ConvertTo-Json -Compress
 """
     result = _run_powershell_harness(tmp_path, harness)
@@ -590,6 +592,8 @@ $result = Invoke-DeliveryStartupRollback @params
     assert 7001 in payload["stopped"]
     assert 7002 not in payload["stopped"]
     assert payload["state_exists"] is False
+    assert payload["identity_read_failures"] == 1
+    assert payload["child_get_calls"] == 2
     assert "web start exploded" in payload["message"]
 
 @pytest.mark.parametrize("throwing_property", ["ProcessId", "ParentProcessId"])
