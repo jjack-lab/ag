@@ -51,6 +51,51 @@ function Show-DeliveryLogTail {
     }
 }
 
+function Get-DeliveryProcessIdentityState {
+    param(
+        [int]$Id,
+        [object]$ExpectedStartTicks = $null
+    )
+
+    $hasExpectedIdentity = $null -ne $ExpectedStartTicks
+    $lastError = $null
+    for ($attempt = 0; $attempt -lt 2; $attempt++) {
+        try {
+            $live = Get-Process -Id $Id -ErrorAction SilentlyContinue
+        } catch {
+            $lastError = $_.Exception.Message
+            if ($attempt -eq 0) {
+                continue
+            }
+            return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
+        }
+        if (-not $live) {
+            return [pscustomobject]@{ state = "exited"; start_time_ticks = $null; error = $null }
+        }
+        try {
+            $startTime = $live.StartTime
+            if ($null -eq $startTime) {
+                throw "Process StartTime was unavailable."
+            }
+            $ticks = [long]$startTime.ToUniversalTime().Ticks
+        } catch {
+            $lastError = $_.Exception.Message
+            if ($attempt -eq 0) {
+                continue
+            }
+            return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
+        }
+        if ($attempt -gt 0 -and -not $hasExpectedIdentity) {
+            return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
+        }
+        if ($hasExpectedIdentity -and $ticks -ne [long]$ExpectedStartTicks) {
+            return [pscustomobject]@{ state = "exited"; start_time_ticks = $ticks; error = $null }
+        }
+        return [pscustomobject]@{ state = "same_identity_alive"; start_time_ticks = $ticks; error = $null }
+    }
+    return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
+}
+
 function Stop-StartedProcessTrees {
     param(
         [object[]]$ProcessRecords,
@@ -92,21 +137,18 @@ function Stop-StartedProcessTrees {
         if ($id -le 0) {
             continue
         }
-        $live = Get-Process -Id $id -ErrorAction SilentlyContinue
-        if (-not $live) {
-            continue
-        }
         $snapshotProcess = $snapshot | Where-Object { [int]$_.ProcessId -eq $id } | Select-Object -First 1
         $expectedTicks = [long]$record.start_time_ticks
-        try {
-            $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
-        } catch {
-            $errors += "Unable to read process identity for PID $($id): $($_.Exception.Message)"
-            $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = $expectedTicks; role = [string]$record.role }
+        $identity = Get-DeliveryProcessIdentityState -Id $id -ExpectedStartTicks $expectedTicks
+        if ($identity.state -eq "exited") {
+            if ($null -ne $identity.start_time_ticks) {
+                $errors += "Process identity mismatch for PID $id; original instance already exited."
+            }
             continue
         }
-        if ($actualTicks -ne $expectedTicks) {
-            $errors += "Process identity mismatch for PID $id; original instance already exited."
+        if ($identity.state -eq "unverifiable") {
+            $errors += "Unable to read process identity for PID $($id): $($identity.error)"
+            $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = $expectedTicks; role = [string]$record.role }
             continue
         }
         if (-not $snapshotProcess) {
@@ -166,17 +208,16 @@ function Stop-StartedProcessTrees {
             if ($targets.id -contains $childId) {
                 continue
             }
-            $live = Get-Process -Id $childId -ErrorAction SilentlyContinue
-            if (-not $live) {
+            $identity = Get-DeliveryProcessIdentityState -Id $childId
+            if ($identity.state -eq "exited") {
                 continue
             }
-            try {
-                $childTicks = [long]$live.StartTime.ToUniversalTime().Ticks
-            } catch {
-                $errors += "Unable to read descendant identity for PID $($childId): $($_.Exception.Message)"
-                $blockedAnchorIds += [int]$parent.anchor_id
+            if ($identity.state -eq "unverifiable") {
+                $errors += "Unable to read descendant identity for PID $($childId): $($identity.error)"
+                $blockedAnchorIds = @($blockedAnchorIds + [int]$parent.anchor_id | Select-Object -Unique)
                 continue
             }
+            $childTicks = [long]$identity.start_time_ticks
             $target = [pscustomobject]@{
                 id = $childId
                 parent_id = $childParentId
@@ -200,19 +241,16 @@ function Stop-StartedProcessTrees {
             }
             continue
         }
-        $live = Get-Process -Id $id -ErrorAction SilentlyContinue
-        if (-not $live) {
+        $identity = Get-DeliveryProcessIdentityState -Id $id -ExpectedStartTicks ([long]$target.start_time_ticks)
+        if ($identity.state -eq "exited") {
+            if ($null -ne $identity.start_time_ticks) {
+                $errors += "Process identity mismatch for PID $id before termination; original instance already exited."
+            }
             continue
         }
-        try {
-            $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
-        } catch {
-            $errors += "Unable to re-read process identity for PID $($id): $($_.Exception.Message)"
+        if ($identity.state -eq "unverifiable") {
+            $errors += "Unable to re-read process identity for PID $($id): $($identity.error)"
             $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = [long]$target.start_time_ticks; role = [string]$target.role }
-            continue
-        }
-        if ($actualTicks -ne [long]$target.start_time_ticks) {
-            $errors += "Process identity mismatch for PID $id before termination; original instance already exited."
             continue
         }
         $waitTargets += $target
@@ -224,23 +262,23 @@ function Stop-StartedProcessTrees {
     }
 
     $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMilliseconds)
+    $waitUnverifiable = @()
     do {
         $remaining = @()
         foreach ($target in $waitTargets) {
-            $live = Get-Process -Id ([int]$target.id) -ErrorAction SilentlyContinue
-            if (-not $live) {
+            $identity = Get-DeliveryProcessIdentityState -Id ([int]$target.id) -ExpectedStartTicks ([long]$target.start_time_ticks)
+            if ($identity.state -eq "exited") {
                 continue
             }
-            try {
-                $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
-            } catch {
-                $errors += "Unable to confirm rollback exit for PID $($target.id): $($_.Exception.Message)"
-                $remaining += $target
+            if ($identity.state -eq "unverifiable") {
+                $errors += "Unable to confirm rollback exit for PID $($target.id): $($identity.error)"
+                $waitUnverifiable += $target
                 continue
             }
-            if ($actualTicks -eq [long]$target.start_time_ticks) {
-                $remaining += $target
-            }
+            $remaining += $target
+        }
+        if ($waitUnverifiable.Count -gt 0) {
+            break
         }
         if ($remaining.Count -eq 0) {
             break
@@ -248,9 +286,12 @@ function Stop-StartedProcessTrees {
         Start-Sleep -Milliseconds 100
     } while ([DateTime]::UtcNow -lt $deadline)
 
-    if ($remaining.Count -gt 0) {
+    if ($remaining.Count -gt 0 -and $waitUnverifiable.Count -eq 0) {
         $remainingIds = @($remaining | ForEach-Object { $_.id })
         $errors += "Timed out waiting for rollback PIDs to exit: $($remainingIds -join ', ')"
+    }
+    $remaining = @($remaining + $waitUnverifiable | Sort-Object id, start_time_ticks -Unique)
+    if ($remaining.Count -gt 0) {
         $survivors += @($remaining | ForEach-Object { [pscustomobject]@{ pid = [int]$_.id; start_time_ticks = [long]$_.start_time_ticks; role = [string]$_.role } })
     }
     $survivors = @($survivors | Sort-Object pid, start_time_ticks -Unique)

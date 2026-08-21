@@ -22,6 +22,51 @@ function Get-DescendantProcessIds {
     return @($seen)
 }
 
+function Get-DeliveryProcessIdentityState {
+    param(
+        [int]$Id,
+        [object]$ExpectedStartTicks = $null
+    )
+
+    $hasExpectedIdentity = $null -ne $ExpectedStartTicks
+    $lastError = $null
+    for ($attempt = 0; $attempt -lt 2; $attempt++) {
+        try {
+            $live = Get-Process -Id $Id -ErrorAction SilentlyContinue
+        } catch {
+            $lastError = $_.Exception.Message
+            if ($attempt -eq 0) {
+                continue
+            }
+            return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
+        }
+        if (-not $live) {
+            return [pscustomobject]@{ state = "exited"; start_time_ticks = $null; error = $null }
+        }
+        try {
+            $startTime = $live.StartTime
+            if ($null -eq $startTime) {
+                throw "Process StartTime was unavailable."
+            }
+            $ticks = [long]$startTime.ToUniversalTime().Ticks
+        } catch {
+            $lastError = $_.Exception.Message
+            if ($attempt -eq 0) {
+                continue
+            }
+            return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
+        }
+        if ($attempt -gt 0 -and -not $hasExpectedIdentity) {
+            return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
+        }
+        if ($hasExpectedIdentity -and $ticks -ne [long]$ExpectedStartTicks) {
+            return [pscustomobject]@{ state = "exited"; start_time_ticks = $ticks; error = $null }
+        }
+        return [pscustomobject]@{ state = "same_identity_alive"; start_time_ticks = $ticks; error = $null }
+    }
+    return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
+}
+
 function Wait-DeliveryProcessesExit {
     param(
         [int[]]$ProcessIds,
@@ -30,7 +75,7 @@ function Wait-DeliveryProcessesExit {
     )
 
     if (-not $ProcessIds -or $ProcessIds.Count -eq 0) {
-        return $true
+        return [pscustomobject]@{ success = $true; unverifiable_ids = @(); remaining_ids = @() }
     }
     $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMilliseconds)
     do {
@@ -39,26 +84,26 @@ function Wait-DeliveryProcessesExit {
             if (-not $ExpectedStartTicks.ContainsKey([string]$id)) {
                 continue
             }
-            $live = Get-Process -Id $id -ErrorAction SilentlyContinue
-            if (-not $live) {
+            $identity = Get-DeliveryProcessIdentityState -Id $id -ExpectedStartTicks ([long]$ExpectedStartTicks[[string]$id])
+            if ($identity.state -eq "exited") {
                 continue
             }
-            try {
-                $ticks = [long]$live.StartTime.ToUniversalTime().Ticks
-            } catch {
-                return $false
-            }
-            if ($ExpectedStartTicks.ContainsKey([string]$id) -and $ticks -ne [long]$ExpectedStartTicks[[string]$id]) {
-                continue
+            if ($identity.state -eq "unverifiable") {
+                return [pscustomobject]@{
+                    success = $false
+                    unverifiable_ids = @($id)
+                    remaining_ids = @()
+                    error = $identity.error
+                }
             }
             $remaining += $id
         }
         if ($remaining.Count -eq 0) {
-            return $true
+            return [pscustomobject]@{ success = $true; unverifiable_ids = @(); remaining_ids = @() }
         }
         Start-Sleep -Milliseconds 100
     } while ([DateTime]::UtcNow -lt $deadline)
-    return $false
+    return [pscustomobject]@{ success = $false; unverifiable_ids = @(); remaining_ids = $remaining }
 }
 
 if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) {
@@ -100,18 +145,20 @@ foreach ($id in $rootIds) {
     try {
         $commandLine = [string]$process.CommandLine
         $creationDate = ([DateTime]$process.CreationDate).ToUniversalTime()
-        if ($recoveryIdentityById.ContainsKey([string]$id)) {
-            $live = Get-Process -Id $id -ErrorAction Stop
-            $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
-            $expectedTicks = [long]$recoveryIdentityById[[string]$id].start_time_ticks
-            if ($actualTicks -ne $expectedTicks) {
-                Write-Error "PID $id no longer matches the recovery identity; refusing to stop."
-                exit 1
-            }
-        }
     } catch {
         Write-Error "Unable to verify process identity for PID $($id); state was preserved: $($_.Exception.Message)"
         exit 1
+    }
+    if ($recoveryIdentityById.ContainsKey([string]$id)) {
+        $expectedTicks = [long]$recoveryIdentityById[[string]$id].start_time_ticks
+        $identity = Get-DeliveryProcessIdentityState -Id $id -ExpectedStartTicks $expectedTicks
+        if ($identity.state -eq "exited") {
+            continue
+        }
+        if ($identity.state -eq "unverifiable") {
+            Write-Error "Unable to verify process identity for PID $($id); state was preserved: $($identity.error)"
+            exit 1
+        }
     }
     if ($commandLine -notlike "*$projectRoot*" -or $creationDate -lt $createdAt) {
         Write-Error "PID $id is not owned by this delivery instance; refusing to stop."
@@ -123,34 +170,41 @@ foreach ($id in $rootIds) {
 $ids = Get-DescendantProcessIds -RootIds $ownedRootIds | Sort-Object -Descending
 $waitIdentityById = @{}
 foreach ($id in $ids) {
-    $live = Get-Process -Id $id -ErrorAction SilentlyContinue
-    if (-not $live) {
+    if ($recoveryIdentityById.ContainsKey([string]$id)) {
+        $expectedTicks = [long]$recoveryIdentityById[[string]$id].start_time_ticks
+        $identity = Get-DeliveryProcessIdentityState -Id $id -ExpectedStartTicks $expectedTicks
+    } else {
+        $identity = Get-DeliveryProcessIdentityState -Id $id
+    }
+    if ($identity.state -eq "exited") {
         continue
     }
-    try {
-        $waitIdentityById[[string]$id] = [long]$live.StartTime.ToUniversalTime().Ticks
-    } catch {
-        Write-Error "Unable to capture process identity for PID $($id); state was preserved: $($_.Exception.Message)"
+    if ($identity.state -eq "unverifiable") {
+        Write-Error "Unable to capture process identity for PID $($id); state was preserved: $($identity.error)"
         exit 1
     }
+    $waitIdentityById[[string]$id] = [long]$identity.start_time_ticks
 }
 foreach ($id in $ids) {
-    $live = Get-Process -Id $id -ErrorAction SilentlyContinue
-    if (-not $live) {
+    if (-not $waitIdentityById.ContainsKey([string]$id)) {
         continue
     }
-    try {
-        $actualTicks = [long]$live.StartTime.ToUniversalTime().Ticks
-    } catch {
-        Write-Error "Unable to re-check process identity for PID $($id); state was preserved: $($_.Exception.Message)"
+    $identity = Get-DeliveryProcessIdentityState -Id $id -ExpectedStartTicks ([long]$waitIdentityById[[string]$id])
+    if ($identity.state -eq "exited") {
+        continue
+    }
+    if ($identity.state -eq "unverifiable") {
+        Write-Error "Unable to re-check process identity for PID $($id); state was preserved: $($identity.error)"
         exit 1
-    }
-    if ($actualTicks -ne [long]$waitIdentityById[[string]$id]) {
-        continue
     }
     Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
 }
-if (-not (Wait-DeliveryProcessesExit -ProcessIds $ids -ExpectedStartTicks $waitIdentityById)) {
+$waitResult = Wait-DeliveryProcessesExit -ProcessIds $ids -ExpectedStartTicks $waitIdentityById
+if (-not $waitResult.success) {
+    if (@($waitResult.unverifiable_ids).Count -gt 0) {
+        Write-Error "Unable to verify delivery process exit for PIDs $(@($waitResult.unverifiable_ids) -join ', '); state was preserved: $statePath ($($waitResult.error))"
+        exit 1
+    }
     Write-Error "Timed out waiting for delivery processes to exit; state was preserved: $statePath"
     exit 1
 }

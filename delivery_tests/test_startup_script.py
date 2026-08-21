@@ -209,21 +209,47 @@ def test_stop_script_waits_for_owned_controlled_process(tmp_path):
         }
         state_path.write_text(json.dumps(state), encoding="utf-8")
 
-        result = subprocess.run(
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                str(project / "stop_delivery.ps1"),
-            ],
-            cwd=project,
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
+        harness = f"""
+$ErrorActionPreference = "Stop"
+$script:controlledPid = {process.pid}
+$script:stopRequested = $false
+$script:raceInjected = $false
+function Get-Process {{
+    [CmdletBinding()]
+    param([int]$Id)
+    $live = Microsoft.PowerShell.Management\\Get-Process -Id $Id -ErrorAction SilentlyContinue
+    if ($Id -eq $script:controlledPid -and $script:stopRequested -and -not $script:raceInjected -and $live) {{
+        $script:raceInjected = $true
+        $proxy = [pscustomobject]@{{ Id = $Id }}
+        $proxy | Add-Member -MemberType ScriptProperty -Name StartTime -Value {{
+            Microsoft.PowerShell.Management\\Stop-Process -Id $script:controlledPid -Force -ErrorAction SilentlyContinue
+            Microsoft.PowerShell.Management\\Wait-Process -Id $script:controlledPid -Timeout 5 -ErrorAction SilentlyContinue
+            throw "controlled stop exit race"
+        }}
+        return $proxy
+    }}
+    return $live
+}}
+function Stop-Process {{
+    [CmdletBinding()]
+    param([int]$Id, [switch]$Force)
+    if ($Id -eq $script:controlledPid) {{
+        $script:stopRequested = $true
+        return
+    }}
+    Microsoft.PowerShell.Management\\Stop-Process -Id $Id -Force:$Force -ErrorAction SilentlyContinue
+}}
+. {_ps_quote(project / "stop_delivery.ps1")}
+[pscustomobject]@{{
+    race_injected = $script:raceInjected
+    state_exists = Test-Path -LiteralPath {_ps_quote(state_path)}
+}} | ConvertTo-Json -Compress
+"""
+        result = _run_powershell_harness(project, harness)
         assert result.returncode == 0, result.stdout + result.stderr
+        payload = json.loads(result.stdout.strip().splitlines()[-1])
+        assert payload["race_injected"] is True
+        assert payload["state_exists"] is False
         process.wait(timeout=2)
         assert process.poll() is not None
         assert not state_path.exists()
@@ -238,7 +264,7 @@ def test_startup_rollback_reports_survivor_identity_mismatch_and_preserves_state
     start_script = PROJECT_ROOT / "start_delivery.ps1"
     rollback_functions = "\n".join(
         _extract_powershell_function(start_script, name)
-        for name in ("Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
+        for name in ("Get-DeliveryProcessIdentityState", "Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
     )
     harness = f"""
 $ErrorActionPreference = "Stop"
@@ -337,11 +363,42 @@ def test_startup_rollback_stops_owned_controlled_process(tmp_path):
     sleeper = tmp_path / "rollback-sleeper.ps1"
     sleeper.write_text("Start-Sleep -Seconds 60\n", encoding="utf-8")
     start_script = PROJECT_ROOT / "start_delivery.ps1"
-    rollback_function = _extract_powershell_function(start_script, "Stop-StartedProcessTrees")
+    rollback_function = "\n".join(
+        _extract_powershell_function(start_script, name)
+        for name in ("Get-DeliveryProcessIdentityState", "Stop-StartedProcessTrees")
+    )
     harness = f"""
 $ErrorActionPreference = "Stop"
 {rollback_function}
 $process = Start-Process powershell.exe -ArgumentList @("-NoProfile", "-File", {_ps_quote(sleeper)}) -WindowStyle Hidden -PassThru
+$script:controlledPid = $process.Id
+$script:stopRequested = $false
+$script:raceInjected = $false
+function Get-Process {{
+    [CmdletBinding()]
+    param([int]$Id)
+    $live = Microsoft.PowerShell.Management\\Get-Process -Id $Id -ErrorAction SilentlyContinue
+    if ($Id -eq $script:controlledPid -and $script:stopRequested -and -not $script:raceInjected -and $live) {{
+        $script:raceInjected = $true
+        $proxy = [pscustomobject]@{{ Id = $Id }}
+        $proxy | Add-Member -MemberType ScriptProperty -Name StartTime -Value {{
+            Microsoft.PowerShell.Management\\Stop-Process -Id $script:controlledPid -Force -ErrorAction SilentlyContinue
+            Microsoft.PowerShell.Management\\Wait-Process -Id $script:controlledPid -Timeout 5 -ErrorAction SilentlyContinue
+            throw "controlled rollback exit race"
+        }}
+        return $proxy
+    }}
+    return $live
+}}
+function Stop-Process {{
+    [CmdletBinding()]
+    param([int]$Id, [switch]$Force)
+    if ($Id -eq $script:controlledPid) {{
+        $script:stopRequested = $true
+        return
+    }}
+    Microsoft.PowerShell.Management\\Stop-Process -Id $Id -Force:$Force -ErrorAction SilentlyContinue
+}}
 try {{
     $record = [pscustomobject]@{{
         id = $process.Id
@@ -356,11 +413,12 @@ try {{
         survivors = @($result.survivor_ids)
         errors = @($result.errors)
         has_exited = $process.HasExited
+        race_injected = $script:raceInjected
     }} | ConvertTo-Json -Compress
 }} finally {{
     $process.Refresh()
     if (-not $process.HasExited) {{
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        Microsoft.PowerShell.Management\\Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
     }}
 }}
 """
@@ -368,12 +426,13 @@ try {{
 
     assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert payload["race_injected"] is True
     assert payload["success"] is True
     assert payload["survivors"] == []
     assert payload["errors"] == []
     assert payload["has_exited"] is True
 
-def test_stop_recovery_state_rejects_reused_pid_then_stops_exact_survivor(tmp_path):
+def test_stop_recovery_state_ignores_reused_pid_then_stops_exact_survivor(tmp_path):
     project = tmp_path / "recovery-stop-harness"
     data_dir = project / "data"
     data_dir.mkdir(parents=True)
@@ -424,9 +483,9 @@ def test_stop_recovery_state_rejects_reused_pid_then_stops_exact_survivor(tmp_pa
             text=True,
             timeout=15,
         )
-        assert mismatch.returncode != 0
+        assert mismatch.returncode == 0, mismatch.stdout + mismatch.stderr
         assert process.poll() is None
-        assert state_path.exists()
+        assert not state_path.exists()
 
         state["recovery_processes"][0]["start_time_ticks"] = exact_ticks
         state_path.write_text(json.dumps(state), encoding="utf-8")
@@ -457,7 +516,7 @@ def test_startup_rollback_preserves_original_error_when_identity_property_races(
     start_script = PROJECT_ROOT / "start_delivery.ps1"
     rollback_functions = "\n".join(
         _extract_powershell_function(start_script, name)
-        for name in ("Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
+        for name in ("Get-DeliveryProcessIdentityState", "Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
     )
     harness = f"""
 $ErrorActionPreference = "Stop"
@@ -517,7 +576,8 @@ $state = Get-Content -LiteralPath {_ps_quote(state_path)} -Raw -Encoding UTF8 | 
     assert "state write exploded" in payload["message"]
     assert "Unable to read process identity" in payload["message"]
 
-def test_stop_ignores_reused_pid_when_identity_was_not_captured(tmp_path):
+def test_stop_ignores_reused_recovery_pid_after_exact_verification(tmp_path):
+    expected_ticks = 638000000000000000
     project = tmp_path / "stop-reuse-harness"
     data_dir = project / "data"
     data_dir.mkdir(parents=True)
@@ -529,7 +589,10 @@ def test_stop_ignores_reused_pid_when_identity_was_not_captured(tmp_path):
                 "project_root": str(project),
                 "api_pid": 6161,
                 "web_pid": 0,
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "recovery_processes": [
+                    {"pid": 6161, "start_time_ticks": expected_ticks, "role": "api"}
+                ],
+                "created_at": "2000-01-01T00:00:00+00:00",
             }
         ),
         encoding="utf-8",
@@ -539,7 +602,7 @@ $ErrorActionPreference = "Stop"
 $script:getCalls = 0
 $script:stopCalls = 0
 $script:projectRoot = {_ps_quote(project)}
-$script:expectedStart = [DateTime]::UtcNow
+$script:expectedStart = [DateTime]::new({expected_ticks}, [DateTimeKind]::Utc)
 function Get-CimInstance {{
     [CmdletBinding()]
     param([string]$ClassName, [string]$Filter)
@@ -555,7 +618,7 @@ function Get-Process {{
     param([int]$Id)
     $script:getCalls++
     if ($script:getCalls -eq 1) {{
-        return $null
+        return [pscustomobject]@{{ Id = $Id; StartTime = $script:expectedStart }}
     }}
     [pscustomobject]@{{
         Id = $Id
@@ -580,12 +643,12 @@ function Stop-Process {{
     assert payload["stop_calls"] == 0
     assert payload["state_exists"] is False
 
-def test_startup_rollback_keeps_root_anchor_when_descendant_identity_read_fails(tmp_path):
+def test_startup_rollback_keeps_root_anchor_when_descendant_identity_retry_is_reused(tmp_path):
     state_path = tmp_path / "descendant-race-state.json"
     start_script = PROJECT_ROOT / "start_delivery.ps1"
     rollback_functions = "\n".join(
         _extract_powershell_function(start_script, name)
-        for name in ("Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
+        for name in ("Get-DeliveryProcessIdentityState", "Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
     )
     harness = f"""
 $ErrorActionPreference = "Stop"
@@ -594,6 +657,7 @@ $script:rootAlive = $true
 $script:stopped = @()
 $script:projectRoot = {_ps_quote(tmp_path)}
 $script:rootStart = [DateTime]::UtcNow
+$script:childGetCalls = 0
 function Get-CimInstance {{
     [CmdletBinding()]
     param([string]$ClassName)
@@ -618,6 +682,10 @@ function Get-Process {{
     if ($Id -eq 7001) {{
         if (-not $script:rootAlive) {{ return $null }}
         return [pscustomobject]@{{ Id = $Id; StartTime = $script:rootStart }}
+    }}
+    $script:childGetCalls++
+    if ($script:childGetCalls -gt 1) {{
+        return [pscustomobject]@{{ Id = $Id; StartTime = $script:rootStart.AddMinutes(1) }}
     }}
     $value = [pscustomobject]@{{ Id = $Id }}
     $value | Add-Member -MemberType ScriptProperty -Name StartTime -Value {{ throw "descendant identity race" }}
@@ -671,7 +739,7 @@ def test_startup_rollback_keeps_root_anchor_when_descendant_cim_identity_throws(
     start_script = PROJECT_ROOT / "start_delivery.ps1"
     rollback_functions = "\n".join(
         _extract_powershell_function(start_script, name)
-        for name in ("Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
+        for name in ("Get-DeliveryProcessIdentityState", "Stop-StartedProcessTrees", "Invoke-DeliveryStartupRollback")
     )
     child_identity = (
         "ParentProcessId = 7101"
