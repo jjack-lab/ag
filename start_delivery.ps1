@@ -54,7 +54,8 @@ function Show-DeliveryLogTail {
 function Get-DeliveryProcessIdentityState {
     param(
         [int]$Id,
-        [object]$ExpectedStartTicks = $null
+        [object]$ExpectedStartTicks = $null,
+        [int]$ExpectedTickPrecision = 1
     )
 
     $hasExpectedIdentity = $null -ne $ExpectedStartTicks
@@ -88,8 +89,16 @@ function Get-DeliveryProcessIdentityState {
         if ($attempt -gt 0 -and -not $hasExpectedIdentity) {
             return [pscustomobject]@{ state = "unverifiable"; start_time_ticks = $null; error = $lastError }
         }
-        if ($hasExpectedIdentity -and $ticks -ne [long]$ExpectedStartTicks) {
-            return [pscustomobject]@{ state = "exited"; start_time_ticks = $ticks; error = $null }
+        if ($hasExpectedIdentity) {
+            $expectedTicks = [long]$ExpectedStartTicks
+            $comparableTicks = $ticks
+            if ($ExpectedTickPrecision -gt 1) {
+                $expectedTicks -= $expectedTicks % $ExpectedTickPrecision
+                $comparableTicks -= $comparableTicks % $ExpectedTickPrecision
+            }
+            if ($comparableTicks -ne $expectedTicks) {
+                return [pscustomobject]@{ state = "exited"; start_time_ticks = $ticks; error = $null }
+            }
         }
         return [pscustomobject]@{ state = "same_identity_alive"; start_time_ticks = $ticks; error = $null }
     }
@@ -160,6 +169,7 @@ function Stop-StartedProcessTrees {
             $commandLine = [string]$snapshotProcess.CommandLine
             $parentId = [int]$snapshotProcess.ParentProcessId
             $creationDate = [DateTime]$snapshotProcess.CreationDate
+            $snapshotTicks = [long]$creationDate.ToUniversalTime().Ticks
         } catch {
             $errors += "Unable to read CIM identity for PID $($id): $($_.Exception.Message)"
             $survivors += [pscustomobject]@{ pid = $id; start_time_ticks = $expectedTicks; role = [string]$record.role }
@@ -173,6 +183,7 @@ function Stop-StartedProcessTrees {
             id = $id
             parent_id = $parentId
             creation_date = $creationDate
+            snapshot_start_time_ticks = $snapshotTicks
             start_time_ticks = $expectedTicks
             role = [string]$record.role
             anchor_id = $id
@@ -200,6 +211,8 @@ function Stop-StartedProcessTrees {
                     throw "Descendant CIM identity property was unavailable."
                 }
                 $childId = [int]$childProcessId
+                $childCreationDate = [DateTime]$child.CreationDate
+                $childExpectedTicks = [long]$childCreationDate.ToUniversalTime().Ticks
             } catch {
                 $errors += "Unable to read descendant CIM identity: $($_.Exception.Message)"
                 $blockedAnchorIds = @($blockedAnchorIds + [int]$parent.anchor_id | Select-Object -Unique)
@@ -208,7 +221,10 @@ function Stop-StartedProcessTrees {
             if ($targets.id -contains $childId) {
                 continue
             }
-            $identity = Get-DeliveryProcessIdentityState -Id $childId
+            $identity = Get-DeliveryProcessIdentityState `
+                -Id $childId `
+                -ExpectedStartTicks $childExpectedTicks `
+                -ExpectedTickPrecision 10
             if ($identity.state -eq "exited") {
                 continue
             }
@@ -222,6 +238,7 @@ function Stop-StartedProcessTrees {
                 id = $childId
                 parent_id = $childParentId
                 start_time_ticks = $childTicks
+                snapshot_start_time_ticks = $childExpectedTicks
                 role = "descendant"
                 anchor_id = [int]$parent.anchor_id
                 depth = [int]$parent.depth + 1
@@ -534,8 +551,20 @@ $state = @{
     project_root = $projectRoot
     api_pid = $apiProcess.Id
     web_pid = $webProcess.Id
+    processes = @(
+        [pscustomobject]@{
+            pid = $apiProcess.Id
+            role = "api"
+            start_time_ticks = [long]$apiProcessRecord.start_time_ticks
+        }
+        [pscustomobject]@{
+            pid = $webProcess.Id
+            role = "web"
+            start_time_ticks = [long]$webProcessRecord.start_time_ticks
+        }
+    )
     created_at = $createdAt
-} | ConvertTo-Json
+} | ConvertTo-Json -Depth 4
 $stateDir = Split-Path -Parent $processStatePath
 New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
 $stateWriteAttempted = $true
