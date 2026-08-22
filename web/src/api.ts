@@ -28,6 +28,13 @@ export type BehaviorSummaryRow = {
   model_version: string;
 };
 
+export type TrajectoryAnomaly = {
+  track_id: number;
+  is_outlier: boolean;
+  anomaly_score: number;
+  top_contributors?: string[];
+};
+
 export type TrackingResult = {
   video_path: string;
   trajectory_csv: string;
@@ -43,6 +50,11 @@ export type TrackingResult = {
   behavior_model_version?: string | null;
   behavior_model_error?: string | null;
   behavior_summary?: BehaviorSummaryRow[];
+  trajectory_anomaly_csv?: string | null;
+  trajectory_anomaly_count?: number;
+  trajectory_anomaly_status?: "ok" | "skipped" | "failed" | "unavailable";
+  trajectory_anomaly_reason?: string | null;
+  trajectory_anomalies?: TrajectoryAnomaly[];
 };
 
 export type VideoJob = {

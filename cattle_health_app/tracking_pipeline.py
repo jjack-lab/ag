@@ -9,6 +9,10 @@ from typing import Optional, Sequence
 
 import cv2
 
+from cattle_health_app.anomaly.detector import (
+    detect_trajectory_anomalies,
+    write_anomaly_csv,
+)
 from cattle_health_app.behavior.reporting import (
     BehaviorObservation,
     build_behavior_summary,
@@ -47,6 +51,11 @@ class TrackingVideoResult:
     behavior_model_error: Optional[str] = None
     behavior_summary: list = field(default_factory=list)
     decode_error_count: int = 0
+    trajectory_anomaly_csv: Optional[Path] = None
+    trajectory_anomaly_count: int = 0
+    trajectory_anomaly_status: str = "unavailable"
+    trajectory_anomaly_reason: Optional[str] = None
+    trajectory_anomalies: list = field(default_factory=list)
 
     def to_dict(self, media_root=None) -> dict:
         root = Path(media_root).resolve() if media_root else None
@@ -104,6 +113,11 @@ class TrackingVideoResult:
             "behavior_model_error": self.behavior_model_error,
             "behavior_summary": product_summary,
             "decode_error_count": self.decode_error_count,
+            "trajectory_anomaly_csv": display(self.trajectory_anomaly_csv),
+            "trajectory_anomaly_count": self.trajectory_anomaly_count,
+            "trajectory_anomaly_status": self.trajectory_anomaly_status,
+            "trajectory_anomaly_reason": self.trajectory_anomaly_reason,
+            "trajectory_anomalies": self.trajectory_anomalies,
         }
 
 
@@ -451,6 +465,38 @@ def process_tracked_video(
             )
             behavior_status = "failed"
             summary = []
+
+    # Herd-level trajectory anomaly detection (Isolation Forest).
+    anomaly_csv = None
+    anomaly_count = 0
+    anomaly_status = "unavailable"
+    anomaly_reason = None
+    anomaly_payload = []
+    if rows:
+        report = detect_trajectory_anomalies(rows, fps=fps)
+        anomaly_status = report.status
+        anomaly_reason = report.reason
+        if report.status == "ok":
+            anomaly_csv = root / "{}_trajectory_anomaly.csv".format(source.stem)
+            try:
+                write_anomaly_csv(anomaly_csv, report)
+                anomaly_count = report.outlier_count
+                anomaly_payload = [
+                    {
+                        "track_id": track.track_id,
+                        "is_outlier": track.is_outlier,
+                        "anomaly_score": track.anomaly_score,
+                        "top_contributors": list(track.top_contributors),
+                    }
+                    for track in report.tracks
+                ]
+            except Exception as exc:
+                LOGGER.exception("Trajectory anomaly report disabled for this video")
+                anomaly_status = "failed"
+                anomaly_reason = "{}: {}".format(type(exc).__name__, exc)
+                anomaly_csv = None
+                anomaly_payload = []
+
     return TrackingVideoResult(
         video_path=video_path,
         trajectory_csv=trajectory_csv,
@@ -468,4 +514,9 @@ def process_tracked_video(
         behavior_model_error=behavior_error,
         behavior_summary=summary,
         decode_error_count=decode_error_count,
+        trajectory_anomaly_csv=anomaly_csv,
+        trajectory_anomaly_count=anomaly_count,
+        trajectory_anomaly_status=anomaly_status,
+        trajectory_anomaly_reason=anomaly_reason,
+        trajectory_anomalies=anomaly_payload,
     )

@@ -294,6 +294,9 @@ export default function RecognitionStudio() {
           <div className="result-artifacts" aria-label="追踪结果文件">
             <span>
               {tracking.frame_count} 帧 · {tracking.alert_count} 条规则告警
+              {tracking.trajectory_anomaly_count
+                ? ` · ${tracking.trajectory_anomaly_count} 条轨迹异常`
+                : ""}
             </span>
             <a
               href={resultMediaUrl(tracking.health_report_html)}
@@ -314,8 +317,62 @@ export default function RecognitionStudio() {
             <a href={resultMediaUrl(tracking.health_summary_csv)} download>
               健康汇总 CSV
             </a>
+            {tracking.trajectory_anomaly_csv && (
+              <a href={resultMediaUrl(tracking.trajectory_anomaly_csv)} download>
+                轨迹异常 CSV
+              </a>
+            )}
             <small>若浏览器无法直接播放结果视频，请使用“下载结果视频”。</small>
           </div>
+        )}
+        {tracking?.trajectory_anomaly_status === "ok" && (
+          <section
+            className="behavior-result"
+            aria-label="轨迹异常检测结果"
+          >
+            <header>
+              <div>
+                <strong>轨迹异常检测</strong>
+                <span>Isolation Forest · 与牛群整体对比</span>
+              </div>
+              <small>
+                发现 {tracking.trajectory_anomaly_count ?? 0} 头活动模式偏离牛群
+              </small>
+            </header>
+            {(tracking.trajectory_anomalies || [])
+              .filter((row) => row.is_outlier)
+              .map((row) => (
+                <article className="behavior-track" key={row.track_id}>
+                  <div>
+                    <strong>视频内 ID {row.track_id}</strong>
+                    <small>
+                      异常得分 {(row.anomaly_score * 100).toFixed(1)}%
+                    </small>
+                  </div>
+                  <div className="behavior-table">
+                    <div>
+                      <span>主要差异特征</span>
+                      <strong>
+                        {(row.top_contributors || []).join("、") || "—"}
+                      </strong>
+                      <small>建议人工复核活动与采食情况</small>
+                    </div>
+                  </div>
+                </article>
+              ))}
+          </section>
+        )}
+        {tracking?.trajectory_anomaly_status === "skipped" && (
+          <p className="behavior-unavailable">
+            轨迹异常检测已跳过（{tracking.trajectory_anomaly_reason || "牛只数量不足"}
+            ），规则健康分析不受影响。
+          </p>
+        )}
+        {tracking?.trajectory_anomaly_status === "failed" && (
+          <p className="behavior-unavailable">
+            轨迹异常检测运行失败，其他结果已保留。
+            {tracking.trajectory_anomaly_reason && ` ${tracking.trajectory_anomaly_reason}`}
+          </p>
         )}
         {tracking?.behavior_model_status === "ready" && (
           <section className="behavior-result" aria-label="行为识别结果">
