@@ -39,6 +39,8 @@ Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -
 - `2026-08-23`: Official Kaggle metadata shows CBVD-5 is now version 11 under CC0 and totals 11,642,084,084 bytes. The old `video_cut` assumption is obsolete: 687 continuous MP4 files are under `videos/videos` and total 3,480,105,107 bytes; `miniannotations` plus the root VIA CSV keep the approved subset at 3,485,904,149 bytes. Use those version-11 paths. The subset remains below `5 GiB`, so the primary dataset and frozen external-test protocol are unchanged.
 - `2026-08-23`: Replaced materialized duplicate clip MP4 files with hash-bound virtual clip specifications over immutable source videos. Each manifest row stores the source path and SHA-256, time window, normalized crop, and transformation record; the experiment loader applies those operations at read time. This avoids consuming the remaining `5 GiB` budget with redundant derivatives while preserving deterministic samples, source-group isolation, visual auditability, and the frozen external-test protocol.
 - `2026-08-23`: The project contains the frozen checkpoint, calibration artifact, and a 2,897-row CVB validation logits cache, but not the corresponding CVB validation videos or previously measured video-quality rows. A learned video-quality gate therefore cannot be fitted without inventing evidence or using forbidden CBVD-5 test labels. Keep the implemented validation-only Logistic gate for future use when the CVB media is restored; for this real run, freeze a clearly named heuristic quality guard from absolute image/track bounds before reading external metrics. Report it as exploratory and do not claim a learned quality-gate improvement. Temperature calibration and the existing CVB-selected fixed rejection policy remain unchanged.
+- `2026-08-23`: Freeze and commit the tested Task 12 runner before launching the first label-scored CBVD-5 inference. This adds a reproducibility checkpoint between dry-run protocol validation and metric generation; it does not change the external samples, calibration, rejection thresholds, quality rules, stress seed, or metrics.
+- `2026-08-23`: Pre-run code review blocked the first label-scored inference until three evidence-integrity gaps are closed: move mutable run status out of the immutable protocol so dry-run/formal-run/resume share one fingerprint; bind every stress cache to its degradation, severity, selected-sample digest, and transformation evidence; and include the design-required NLL, ECE, Brier, per-class precision/recall/F1, and inference timing. These are reporting/cache corrections only; frozen samples, labels, model, calibration, rejection thresholds, heuristic rules, and seed remain unchanged.
 
 ### Task 1: External dataset registry and provenance contract
 
@@ -456,13 +458,13 @@ Commit: `data: register external cattle behavior benchmark subset`
 - Modify: `docs/experiments/2026-08-23-cross-domain-behavior-results.md`
 - Modify: `docs/data/2026-08-23-public-cattle-video-data-record.md`
 
-- [ ] **Step 1: Run dry-run protocol validation**
+- [x] **Step 1: Run dry-run protocol validation**
 
 Verify checkpoint SHA-256, calibration/checkpoint binding, manifest hash, class mapping, output location, CUDA/CPU selection, and available disk space.
 
 - [ ] **Step 2: Run zero-shot strict and extended baselines once**
 
-Do not change thresholds after seeing results. Preserve per-sample logits and quality evidence.
+Do not change thresholds after seeing results. Preserve per-sample logits, quality evidence, and inference timing. The immutable protocol fingerprint must remain identical across dry-run, formal execution, and `--resume`; mutable status belongs in `preflight.json`/`run_state.json`.
 
 - [ ] **Step 3: Apply the frozen quality policy without external-label fitting**
 
@@ -470,11 +472,11 @@ Use the learned Logistic gate only if CVB validation video-quality rows with a v
 
 - [ ] **Step 4: Run controlled degradations**
 
-Use the same selected source clips and fixed seed for all variants and levels.
+Use the same selected source clips and fixed seed for all variants and levels. Persist the selected stress subset hash. Bind each stress cache to degradation name, severity, subset hash, and recorded transformations; reject copied or swapped condition caches.
 
 - [ ] **Step 5: Generate reports and check numerical invariants**
 
-Confirm counts reconcile across prediction/metric files, coverage is within `[0,1]`, confusion-matrix totals match eligible samples, and calibration does not change argmax predictions.
+Confirm counts reconcile across prediction/metric files, coverage is within `[0,1]`, confusion-matrix totals match eligible samples, and calibration does not change argmax predictions. Report tier-aware Macro-F1 plus NLL, ECE, Brier score, per-class precision/recall/F1, and inference timing.
 
 - [ ] **Step 6: Evaluate the few-shot Go/No-Go gate**
 

@@ -2,6 +2,8 @@ import csv
 import json
 from pathlib import Path
 
+import pytest
+
 from cattle_health_app.behavior.cross_domain_reporting import write_cross_domain_report
 
 
@@ -86,6 +88,21 @@ def _protocol():
     }
 
 
+def _timing():
+    return {
+        "schema_version": 1,
+        "protocol_fingerprint": "d" * 64,
+        "baseline": {
+            "wall_seconds": 2.0,
+            "logical_sample_count": 2,
+            "physical_clip_count": 2,
+            "logical_samples_per_second": 1.0,
+            "device": "cpu",
+        },
+        "stress": [],
+    }
+
+
 def test_reporting_writes_machine_readable_and_paper_ready_artifacts(tmp_path):
     output = tmp_path / "report"
     stress = [
@@ -106,6 +123,7 @@ def test_reporting_writes_machine_readable_and_paper_ready_artifacts(tmp_path):
         evaluation=_evaluation(),
         stress_rows=stress,
         class_names=("grazing", "drinking"),
+        inference_timing=_timing(),
     )
 
     expected = {
@@ -135,6 +153,7 @@ def test_protocol_table_keeps_sample_count_next_to_every_metric(tmp_path):
         evaluation=_evaluation(),
         stress_rows=[],
         class_names=("grazing", "drinking"),
+        inference_timing=_timing(),
     )
 
     with (output / "protocol_comparison.csv").open(
@@ -147,6 +166,21 @@ def test_protocol_table_keeps_sample_count_next_to_every_metric(tmp_path):
     assert quality["coverage"] == "0.5"
     assert quality["selective_risk"] == "0.0"
 
+    with (output / "per_class_metrics.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        per_class = list(csv.DictReader(handle))
+    uncalibrated = next(
+        row
+        for row in per_class
+        if row["variant"] == "uncalibrated" and row["class_name"] == "grazing"
+    )
+    assert uncalibrated["support"] == "2"
+    assert uncalibrated["accepted_support"] == "2"
+    assert float(uncalibrated["precision"]) == 1.0
+    assert float(uncalibrated["recall"]) == 0.5
+    assert float(uncalibrated["f1"]) == pytest.approx(2 / 3)
+
 
 def test_summary_states_claim_boundaries_and_external_sample_count(tmp_path):
     output = tmp_path / "report"
@@ -156,6 +190,7 @@ def test_summary_states_claim_boundaries_and_external_sample_count(tmp_path):
         evaluation=_evaluation(),
         stress_rows=[],
         class_names=("grazing", "drinking"),
+        inference_timing=_timing(),
     )
 
     markdown = (output / "summary.md").read_text("utf-8")
@@ -163,6 +198,8 @@ def test_summary_states_claim_boundaries_and_external_sample_count(tmp_path):
     assert "不支持" in markdown
     assert "疾病诊断" in markdown
     assert "外部测试集" in markdown
+    metrics = json.loads((output / "metrics.json").read_text("utf-8"))
+    assert metrics["inference_timing"]["baseline"]["wall_seconds"] == 2.0
 
 
 def test_committed_result_document_starts_in_honest_not_run_state():

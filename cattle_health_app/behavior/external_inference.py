@@ -124,3 +124,63 @@ def collect_external_predictions(
         if progress:
             progress(len(output), len(rows))
     return tuple(output)
+
+
+def _physical_clip_key(sample: ExternalVideoSample):
+    return (
+        sample.sample_id,
+        sample.source_video_path,
+        sample.source_sha256,
+        float(sample.start_second),
+        float(sample.end_second),
+        tuple(float(value) for value in sample.crop_box),
+        sample.mapped_label,
+    )
+
+
+def collect_external_predictions_reusing_physical_clips(
+    samples: Iterable[ExternalVideoSample],
+    project_root,
+    *,
+    predictor: Callable[[Sequence[Sequence[np.ndarray]]], np.ndarray],
+    batch_size: int = 4,
+    frame_transform: Optional[
+        Callable[[Tuple[np.ndarray, ...], ExternalVideoSample], Sequence[np.ndarray]]
+    ] = None,
+    progress: Optional[Callable[[int, int], None]] = None,
+) -> Tuple[ExternalPrediction, ...]:
+    """Infer a physical clip once when strict and extended tiers share it."""
+
+    rows = tuple(samples)
+    if not rows:
+        raise ExternalInferenceError("external samples must not be empty")
+    logical_keys = [(row.mapping_tier, row.sample_id) for row in rows]
+    if len(set(logical_keys)) != len(logical_keys):
+        raise ExternalInferenceError(
+            "sample_id must be unique within each mapping tier"
+        )
+    canonical = {}
+    for row in rows:
+        canonical.setdefault(_physical_clip_key(row), row)
+    inferred = collect_external_predictions(
+        tuple(canonical.values()),
+        project_root,
+        predictor=predictor,
+        batch_size=batch_size,
+        frame_transform=frame_transform,
+        progress=progress,
+    )
+    by_physical_key = {
+        key: prediction for key, prediction in zip(canonical, inferred)
+    }
+    output = []
+    for row in rows:
+        prediction = by_physical_key[_physical_clip_key(row)]
+        output.append(
+            replace(
+                prediction,
+                sample_id=row.sample_id,
+                mapping_tier=row.mapping_tier,
+            )
+        )
+    return tuple(output)

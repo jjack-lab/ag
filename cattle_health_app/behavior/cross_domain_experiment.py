@@ -11,6 +11,7 @@ from typing import Iterable, Mapping, Sequence, Tuple
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score
 
 from cattle_health_app.behavior.uncertainty import (
     probabilities_from_logits,
@@ -178,6 +179,61 @@ class QualityGate:
         return payload
 
 
+@dataclass(frozen=True)
+class HeuristicQualityGate:
+    """Absolute quality guard frozen without fitting any label-bearing rows."""
+
+    checkpoint_sha256: str
+    frozen_before_manifest_sha256: str
+    minimum_brightness: float = 0.05
+    maximum_brightness: float = 0.95
+    maximum_dark_ratio: float = 0.85
+    maximum_overexposed_ratio: float = 0.70
+    minimum_laplacian_variance: float = 1e-5
+    minimum_track_continuity: float = 0.95
+    maximum_track_truncation_ratio: float = 0.75
+    policy_kind: str = "predeclared_heuristic"
+    uses_external_labels: bool = False
+
+    def accept(self, rows: Iterable[Mapping[str, float]]) -> np.ndarray:
+        fields = (
+            "mean_brightness",
+            "mean_dark_ratio",
+            "mean_overexposed_ratio",
+            "mean_laplacian_variance",
+            "track_continuity",
+            "track_truncation_ratio",
+        )
+        matrix = _feature_matrix(rows, fields)
+        return (
+            (matrix[:, 0] >= self.minimum_brightness)
+            & (matrix[:, 0] <= self.maximum_brightness)
+            & (matrix[:, 1] <= self.maximum_dark_ratio)
+            & (matrix[:, 2] <= self.maximum_overexposed_ratio)
+            & (matrix[:, 3] >= self.minimum_laplacian_variance)
+            & (matrix[:, 4] >= self.minimum_track_continuity)
+            & (matrix[:, 5] <= self.maximum_track_truncation_ratio)
+        )
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def freeze_heuristic_quality_gate(
+    *, checkpoint_sha256: str, frozen_before_manifest_sha256: str
+) -> HeuristicQualityGate:
+    """Create the documented fallback without accepting labels or feature rows."""
+
+    return HeuristicQualityGate(
+        checkpoint_sha256=_validated_sha256(
+            checkpoint_sha256, "checkpoint_sha256"
+        ),
+        frozen_before_manifest_sha256=_validated_sha256(
+            frozen_before_manifest_sha256, "frozen_before_manifest_sha256"
+        ),
+    )
+
+
 def _validated_targets(targets, count: int) -> np.ndarray:
     values = np.asarray(targets)
     if values.ndim != 1 or len(values) != count or values.dtype != np.bool_:
@@ -292,6 +348,46 @@ VARIANT_NAMES = (
 )
 
 
+def _probability_metrics(probabilities, labels, accepted) -> dict:
+    selected = np.asarray(accepted, dtype=np.bool_)
+    if not selected.any():
+        return {
+            "probability_metric_sample_count": 0,
+            "accuracy": None,
+            "nll": None,
+            "ece": None,
+            "brier": None,
+        }
+    values = probabilities[selected]
+    targets = labels[selected]
+    predictions = values.argmax(axis=1)
+    confidence = values.max(axis=1)
+    correct = predictions == targets
+    epsilon = np.finfo(np.float64).tiny
+    nll = -np.log(np.clip(values[np.arange(len(values)), targets], epsilon, 1.0))
+    one_hot = np.zeros_like(values)
+    one_hot[np.arange(len(values)), targets] = 1.0
+    brier = np.square(values - one_hot).sum(axis=1)
+    ece = 0.0
+    edges = np.linspace(0.0, 1.0, 16)
+    for index in range(len(edges) - 1):
+        lower, upper = edges[index], edges[index + 1]
+        in_bin = (confidence >= lower) & (
+            confidence <= upper if index == len(edges) - 2 else confidence < upper
+        )
+        if in_bin.any():
+            ece += float(in_bin.mean()) * abs(
+                float(correct[in_bin].mean()) - float(confidence[in_bin].mean())
+            )
+    return {
+        "probability_metric_sample_count": int(len(values)),
+        "accuracy": float(correct.mean()),
+        "nll": float(nll.mean()),
+        "ece": float(ece),
+        "brier": float(brier.mean()),
+    }
+
+
 def evaluate_variants(
     predictions: Sequence[ExternalPrediction],
     *,
@@ -306,9 +402,11 @@ def evaluate_variants(
     rows = tuple(predictions)
     if not rows:
         raise ProtocolViolation("external predictions must not be empty")
-    sample_ids = [row.sample_id for row in rows]
-    if len(sample_ids) != len(set(sample_ids)):
-        raise ProtocolViolation("external prediction sample_id values must be unique")
+    sample_keys = [(row.mapping_tier, row.sample_id) for row in rows]
+    if len(sample_keys) != len(set(sample_keys)):
+        raise ProtocolViolation(
+            "external prediction sample_id values must be unique within each mapping tier"
+        )
     class_counts = {len(row.logits) for row in rows}
     if len(class_counts) != 1:
         raise ProtocolViolation("all external logits must use the same class count")
@@ -349,14 +447,37 @@ def evaluate_variants(
         if not selected.any():
             continue
         labels = np.asarray([row.true_label for row in rows], dtype=np.int64)[selected]
+        eligible_label_ids = sorted(int(value) for value in np.unique(labels))
         metrics[tier] = {}
         for variant in VARIANT_NAMES:
-            metrics[tier][variant] = selective_metrics(
+            selected_acceptance = acceptance[variant][selected]
+            metric = selective_metrics(
                 variant_probabilities[variant][selected],
                 labels,
-                acceptance[variant][selected],
+                selected_acceptance,
                 uncertain_label_ids=(),
             )
+            metric.update(
+                _probability_metrics(
+                    variant_probabilities[variant][selected],
+                    labels,
+                    selected_acceptance,
+                )
+            )
+            if selected_acceptance.any():
+                predictions = variant_probabilities[variant][selected][
+                    selected_acceptance
+                ].argmax(axis=1)
+                metric["selective_macro_f1"] = float(
+                    f1_score(
+                        labels[selected_acceptance],
+                        predictions,
+                        labels=eligible_label_ids,
+                        average="macro",
+                        zero_division=0,
+                    )
+                )
+            metrics[tier][variant] = metric
 
     audit_rows = []
     for index, row in enumerate(rows):

@@ -61,15 +61,18 @@ def _validated_predictions(predictions, class_names: Sequence[str]):
     if class_count < 2 or len(set(class_names)) != class_count:
         raise ReportingError("class_names must contain at least two unique labels")
     rows = []
-    sample_ids = set()
+    sample_keys = set()
     for source in predictions:
         if not isinstance(source, Mapping):
             raise ReportingError("prediction rows must be mappings")
         sample_id = source.get("sample_id")
         tier = source.get("mapping_tier")
         true_label = source.get("true_label")
-        if not isinstance(sample_id, str) or not sample_id or sample_id in sample_ids:
-            raise ReportingError("prediction sample_id values must be unique and non-empty")
+        sample_key = (tier, sample_id)
+        if not isinstance(sample_id, str) or not sample_id or sample_key in sample_keys:
+            raise ReportingError(
+                "prediction sample_id values must be unique within each mapping tier"
+            )
         if tier not in {"strict", "extended"}:
             raise ReportingError("prediction mapping_tier must be strict or extended")
         if isinstance(true_label, bool) or not isinstance(true_label, int) or not 0 <= true_label < class_count:
@@ -83,7 +86,7 @@ def _validated_predictions(predictions, class_names: Sequence[str]):
         calibrated = _validated_probability_row(
             source.get("calibrated_probabilities"), class_count, "calibrated_probabilities"
         )
-        sample_ids.add(sample_id)
+        sample_keys.add(sample_key)
         rows.append(
             {
                 "source": source,
@@ -164,9 +167,13 @@ def _protocol_rows(metrics):
         "sample_count",
         "accepted_count",
         "coverage",
+        "accuracy",
         "selective_accuracy",
         "selective_macro_f1",
         "selective_risk",
+        "nll",
+        "ece",
+        "brier",
     )
     rows = []
     for tier in ("strict", "extended"):
@@ -183,27 +190,52 @@ def _protocol_rows(metrics):
 
 def _per_class_rows(rows, class_names):
     output = []
-    variant = "calibrated_quality_rejection"
     for tier in ("strict", "extended"):
         tier_rows = [row for row in rows if row["mapping_tier"] == tier]
         if not tier_rows:
             continue
-        for class_id, class_name in enumerate(class_names):
-            selected = [row for row in tier_rows if row["true_label"] == class_id]
-            accepted = [row for row in selected if row["accepted"][variant]]
-            correct = sum(int(row["calibrated"].argmax()) == class_id for row in accepted)
-            output.append(
-                {
-                    "mapping_tier": tier,
-                    "variant": variant,
-                    "class_id": class_id,
-                    "class_name": class_name,
-                    "support": len(selected),
-                    "accepted": len(accepted),
-                    "correct": correct,
-                    "accepted_accuracy": correct / float(len(accepted)) if accepted else None,
-                }
-            )
+        for variant in VARIANTS:
+            probability_field = "raw" if variant == "uncalibrated" else "calibrated"
+            accepted_rows = [row for row in tier_rows if row["accepted"][variant]]
+            for class_id, class_name in enumerate(class_names):
+                selected = [row for row in tier_rows if row["true_label"] == class_id]
+                if not selected:
+                    continue
+                accepted_true = [
+                    row for row in accepted_rows if row["true_label"] == class_id
+                ]
+                predicted = [
+                    row
+                    for row in accepted_rows
+                    if int(row[probability_field].argmax()) == class_id
+                ]
+                correct = sum(
+                    int(row[probability_field].argmax()) == class_id
+                    for row in accepted_true
+                )
+                precision = correct / float(len(predicted)) if predicted else 0.0
+                recall = correct / float(len(accepted_true)) if accepted_true else 0.0
+                f1 = (
+                    2.0 * precision * recall / (precision + recall)
+                    if precision + recall
+                    else 0.0
+                )
+                output.append(
+                    {
+                        "mapping_tier": tier,
+                        "variant": variant,
+                        "class_id": class_id,
+                        "class_name": class_name,
+                        "support": len(selected),
+                        "accepted_support": len(accepted_true),
+                        "class_coverage": len(accepted_true) / float(len(selected)),
+                        "predicted": len(predicted),
+                        "correct": correct,
+                        "precision": precision,
+                        "recall": recall,
+                        "f1": f1,
+                    }
+                )
     return output
 
 
@@ -328,7 +360,29 @@ def _save_stress(path: Path, rows):
     plt.close(figure)
 
 
-def _summary_markdown(protocol, metrics, counts) -> str:
+def _validated_inference_timing(payload):
+    if not isinstance(payload, Mapping) or payload.get("schema_version") != 1:
+        raise ReportingError("inference_timing schema_version must be 1")
+    baseline = payload.get("baseline")
+    if not isinstance(baseline, Mapping):
+        raise ReportingError("inference_timing must contain baseline timing")
+    for field in (
+        "wall_seconds",
+        "logical_sample_count",
+        "physical_clip_count",
+        "logical_samples_per_second",
+    ):
+        value = baseline.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ReportingError("baseline timing fields must be numeric")
+        if not math.isfinite(float(value)) or float(value) < 0:
+            raise ReportingError("baseline timing fields must be finite and nonnegative")
+    if not isinstance(payload.get("stress"), list):
+        raise ReportingError("inference_timing stress must be a list")
+    return dict(payload)
+
+
+def _summary_markdown(protocol, metrics, counts, inference_timing) -> str:
     lines = [
         "# CVB → CBVD-5 跨域牛只行为鲁棒性结果",
         "",
@@ -339,6 +393,12 @@ def _summary_markdown(protocol, metrics, counts) -> str:
         "- 外部测试集：{} {}。".format(protocol.get("dataset_id", "unknown"), protocol.get("dataset_version", "unknown")),
         "- 模型哈希：`{}`。".format(str(protocol.get("checkpoint_sha256", ""))[:12]),
         "- 外部测试标签只用于最终计分，不用于校准、阈值或质量门训练。",
+        "- 基线端到端推理耗时：{} 秒（逻辑样本 {}，物理片段 {}，设备 {}）。".format(
+            inference_timing["baseline"]["wall_seconds"],
+            inference_timing["baseline"]["logical_sample_count"],
+            inference_timing["baseline"]["physical_clip_count"],
+            inference_timing["baseline"].get("device", "unknown"),
+        ),
         "",
         "## 结果摘要",
         "",
@@ -348,18 +408,22 @@ def _summary_markdown(protocol, metrics, counts) -> str:
             continue
         lines.append("### {} 映射（n={}）".format(tier, counts[tier]))
         lines.append("")
-        lines.append("| 协议 | 样本数 | 接受数 | 覆盖率 | 选择性风险 | Macro-F1 |")
-        lines.append("|---|---:|---:|---:|---:|---:|")
+        lines.append("| 协议 | 样本数 | 接受数 | 覆盖率 | Accuracy | Macro-F1 | NLL | ECE | Brier | 选择性风险 |")
+        lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
         for variant in VARIANTS:
             row = metrics[tier][variant]
             lines.append(
-                "| {} | {} | {} | {} | {} | {} |".format(
+                "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
                     variant,
                     row.get("sample_count"),
                     row.get("accepted_count"),
                     row.get("coverage"),
-                    row.get("selective_risk"),
+                    row.get("accuracy"),
                     row.get("selective_macro_f1"),
+                    row.get("nll"),
+                    row.get("ece"),
+                    row.get("brier"),
+                    row.get("selective_risk"),
                 )
             )
         lines.append("")
@@ -384,6 +448,7 @@ def write_cross_domain_report(
     evaluation: Mapping[str, object],
     stress_rows: Iterable[Mapping[str, object]],
     class_names: Sequence[str],
+    inference_timing: Mapping[str, object],
 ) -> dict:
     """Write the complete auditable report bundle and return its compact summary."""
 
@@ -396,6 +461,7 @@ def write_cross_domain_report(
     if not isinstance(metrics, Mapping):
         raise ReportingError("evaluation metrics must be a mapping")
     counts = _validate_metric_counts(metrics, rows)
+    validated_timing = _validated_inference_timing(inference_timing)
     output = Path(output_root)
     output.mkdir(parents=True, exist_ok=True)
 
@@ -413,7 +479,11 @@ def write_cross_domain_report(
     per_class = _per_class_rows(rows, class_names)
     _write_csv(
         output / "per_class_metrics.csv",
-        ("mapping_tier", "variant", "class_id", "class_name", "support", "accepted", "correct", "accepted_accuracy"),
+        (
+            "mapping_tier", "variant", "class_id", "class_name", "support",
+            "accepted_support", "class_coverage", "predicted", "correct",
+            "precision", "recall", "f1",
+        ),
         per_class,
     )
     risk_rows = _risk_coverage_rows(rows)
@@ -434,6 +504,7 @@ def write_cross_domain_report(
         "sample_counts": counts,
         "checkpoint_sha256": protocol.get("checkpoint_sha256"),
         "metrics": metrics,
+        "inference_timing": validated_timing,
         "claim_boundaries": [
             "behavior recognition robustness only",
             "not disease diagnosis",
@@ -447,10 +518,12 @@ def write_cross_domain_report(
             "protocol": dict(protocol),
             "sample_counts": counts,
             "metrics": metrics,
+            "inference_timing": validated_timing,
             "claim_boundaries": summary["claim_boundaries"],
         },
     )
     (output / "summary.md").write_text(
-        _summary_markdown(protocol, metrics, counts), encoding="utf-8"
+        _summary_markdown(protocol, metrics, counts, validated_timing),
+        encoding="utf-8",
     )
     return summary

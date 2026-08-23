@@ -9,6 +9,7 @@ from cattle_health_app.behavior.cross_domain_experiment import (
     ProtocolViolation,
     evaluate_variants,
     fit_quality_gate,
+    freeze_heuristic_quality_gate,
     load_frozen_protocol,
 )
 
@@ -85,6 +86,37 @@ def test_fitted_gate_records_the_frozen_training_evidence():
     assert gate.accept(rows).dtype == np.bool_
 
 
+def test_predeclared_quality_guard_uses_absolute_rules_without_labels():
+    gate = freeze_heuristic_quality_gate(
+        checkpoint_sha256="a" * 64,
+        frozen_before_manifest_sha256="b" * 64,
+    )
+    rows = [
+        {
+            "mean_brightness": 0.45,
+            "mean_dark_ratio": 0.10,
+            "mean_overexposed_ratio": 0.05,
+            "mean_laplacian_variance": 0.02,
+            "track_continuity": 1.0,
+            "track_truncation_ratio": 0.0,
+        },
+        {
+            "mean_brightness": 0.02,
+            "mean_dark_ratio": 0.95,
+            "mean_overexposed_ratio": 0.0,
+            "mean_laplacian_variance": 0.0,
+            "track_continuity": 1.0,
+            "track_truncation_ratio": 0.0,
+        },
+    ]
+
+    assert gate.accept(rows).tolist() == [True, False]
+    payload = gate.to_dict()
+    assert payload["policy_kind"] == "predeclared_heuristic"
+    assert payload["uses_external_labels"] is False
+    assert payload["frozen_before_manifest_sha256"] == "b" * 64
+
+
 def test_frozen_protocol_rejects_calibration_hash_mismatch(tmp_path):
     checkpoint = tmp_path / "model.pt"
     checkpoint.write_bytes(b"frozen-checkpoint")
@@ -127,7 +159,7 @@ def test_variants_are_exact_and_mapping_tiers_remain_separate():
     predictions = [
         _prediction("strict-correct", "strict", 0, 0, 0.9),
         _prediction("strict-wrong", "strict", 0, 1, 0.8),
-        _prediction("extended-correct", "extended", 1, 1, 0.7),
+        _prediction("strict-correct", "extended", 1, 1, 0.7),
     ]
     gate = fit_quality_gate(
         [_features(0.9, 1.0), _features(0.8, 0.9), _features(0.2, 0.4), _features(0.1, 0.3)],
@@ -157,6 +189,17 @@ def test_variants_are_exact_and_mapping_tiers_remain_separate():
     assert set(result["metrics"]["strict"]) == expected
     assert result["metrics"]["strict"]["uncalibrated"]["sample_count"] == 2
     assert result["metrics"]["strict"]["uncalibrated"]["selective_risk"] == pytest.approx(0.5)
+    assert result["metrics"]["strict"]["uncalibrated"][
+        "selective_macro_f1"
+    ] == pytest.approx(2 / 3)
+    assert result["metrics"]["strict"]["uncalibrated"]["accuracy"] == pytest.approx(
+        0.5
+    )
+    for field in ("nll", "ece", "brier"):
+        assert np.isfinite(result["metrics"]["strict"]["uncalibrated"][field])
     assert result["metrics"]["extended"]["uncalibrated"]["sample_count"] == 1
+    assert result["metrics"]["extended"]["uncalibrated"][
+        "selective_macro_f1"
+    ] == pytest.approx(1.0)
     assert len(result["predictions"][0]["raw_probabilities"]) == 12
     assert result["predictions"][0]["mapping_tier"] == "strict"

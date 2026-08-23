@@ -8,6 +8,7 @@ from cattle_health_app.behavior.external_video_dataset import (
 from cattle_health_app.behavior.external_inference import (
     ExternalInferenceError,
     collect_external_predictions,
+    collect_external_predictions_reusing_physical_clips,
 )
 
 
@@ -68,3 +69,35 @@ def test_collect_predictions_rejects_invalid_model_shape(monkeypatch, tmp_path):
         collect_external_predictions(
             [sample], tmp_path, predictor=lambda clips: np.zeros((1, 2)), batch_size=1
         )
+
+
+def test_mapping_tiers_reuse_the_same_physical_clip_inference(monkeypatch, tmp_path):
+    strict = _sample("shared", "strict", "grazing")
+    extended = _sample("shared", "extended", "grazing")
+    frames = tuple(np.full((16, 16, 3), 100, np.uint8) for _ in range(16))
+    decoded_ids = []
+
+    def decode(sample, project_root):
+        decoded_ids.append((sample.mapping_tier, sample.sample_id))
+        return DecodedVirtualClip(sample, frames, tuple(range(16)), 1)
+
+    monkeypatch.setattr(
+        "cattle_health_app.behavior.external_inference.decode_virtual_clip", decode
+    )
+    inferred_batch_sizes = []
+
+    def predictor(clips):
+        inferred_batch_sizes.append(len(clips))
+        return np.zeros((len(clips), 12), dtype=np.float64)
+
+    result = collect_external_predictions_reusing_physical_clips(
+        [strict, extended], tmp_path, predictor=predictor, batch_size=4
+    )
+
+    assert decoded_ids == [("strict", "shared")]
+    assert inferred_batch_sizes == [1]
+    assert [(row.mapping_tier, row.sample_id) for row in result] == [
+        ("strict", "shared"),
+        ("extended", "shared"),
+    ]
+    assert result[0].logits == result[1].logits
