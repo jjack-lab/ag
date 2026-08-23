@@ -30,6 +30,12 @@ Create focused modules:
 
 Tests mirror each module in `delivery_tests/`. Frontend/API changes occur only after result JSON exists.
 
+## Execution order and change log
+
+Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 11 -> 12 -> 13 -> 14`.
+
+- `2026-08-23`: Moved the metadata/license inspection gate (Task 10) ahead of the CBVD-5 parser (Task 3). The original numeric order could have encouraged implementing an annotation adapter from assumptions. The revised order verifies the official file list, license, and a small official annotation/metadata sample before the parser contract is finalized. The `5 GiB` cap, frozen-test protocol, label-mapping boundaries, and VLM deferral are unchanged.
+
 ### Task 1: External dataset registry and provenance contract
 
 **Files:**
@@ -172,7 +178,7 @@ Expected: import failure for `cbvd5`.
 
 - [ ] **Step 3: Implement canonical records and parser adapters**
 
-Define `SourceAnnotation`, `MappedAnnotation`, `ExcludedAnnotation`, and a parser selected from inspected CBVD-5 files. Keep input-specific column names inside the adapter and expose one canonical iterator. Implement both `strict` and `extended` mapping tables without changing `cvb_labels.py`.
+Define `SourceAnnotation`, `MappedAnnotation`, `ExcludedAnnotation`, and an adapter matching the official annotation/metadata sample verified in Task 10. Keep input-specific column names inside the adapter and expose one canonical iterator. Implement both `strict` and `extended` mapping tables without changing `cvb_labels.py`.
 
 - [ ] **Step 4: Verify GREEN and commit**
 
@@ -382,7 +388,7 @@ Run: `python -m pytest delivery_tests/test_cross_domain_behavior_reporting.py -q
 
 Commit: `feat: report cross-domain behavior robustness results`
 
-### Task 10: Inspect official data metadata and update the plan before download
+### Task 10: Inspect official data metadata and update the plan before parser implementation or media download
 
 **Files:**
 - Modify: `data/external/registry.json`
@@ -392,7 +398,7 @@ Commit: `feat: report cross-domain behavior robustness results`
 
 - [ ] **Step 1: Run metadata-only inspection**
 
-Use the official Kaggle API/CLI or public dataset page to list files, sizes, versions, and license without downloading media. Do not store credentials in the repository.
+Use the official Kaggle API/CLI or public dataset page to list files, sizes, versions, and license without downloading media. After the license gate passes, acquire only the smallest official annotation/metadata file needed to verify the parser schema; record its size and hash against the same `5 GiB` budget. Do not store credentials in the repository.
 
 - [ ] **Step 2: Apply the acquisition gate**
 
