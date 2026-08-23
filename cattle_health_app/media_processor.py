@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import replace
 from pathlib import Path
 from threading import Lock
@@ -8,6 +9,10 @@ import cv2
 import torch
 
 from cattle_health_app.behavior.runtime import BehaviorRuntime, TorchBehaviorClassifier
+from cattle_health_app.behavior.calibration import (
+    default_calibration_path,
+    load_behavior_calibration,
+)
 from cattle_health_app.media_inference import detect_image
 from cattle_health_app.model_registry import (
     resolve_behavior_model,
@@ -28,7 +33,24 @@ def _build_behavior_runtime(path: Path):
         if preferred == "cpu":
             raise
         classifier = TorchBehaviorClassifier.from_checkpoint(path, device="cpu", amp=False)
-    return BehaviorRuntime(classifier)
+    calibration_path = default_calibration_path(path)
+    if not calibration_path.is_file():
+        if os.environ.get("AGRINEBULA_BEHAVIOR_CALIBRATION"):
+            raise FileNotFoundError(
+                f"configured behavior calibration is missing: {calibration_path}"
+            )
+        return BehaviorRuntime(classifier)
+    calibration = load_behavior_calibration(
+        calibration_path,
+        checkpoint_path=path,
+        model_version=classifier.model_version,
+    )
+    classifier.temperature = calibration.temperature
+    return BehaviorRuntime(
+        classifier,
+        confidence_threshold=calibration.min_confidence,
+        max_normalized_entropy=calibration.max_normalized_entropy,
+    )
 
 
 class LocalMediaProcessor:

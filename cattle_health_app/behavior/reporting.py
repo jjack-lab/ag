@@ -14,6 +14,8 @@ from typing import Iterable, Mapping, Optional, Sequence
 TIMELINE_FIELDS = (
     "frame_index", "time_seconds", "track_id", "label_id", "label",
     "display_name", "confidence", "health_eligible", "model_version",
+    "calibrated_confidence", "normalized_entropy", "rejection_reason",
+    "calibration_temperature",
 )
 SUMMARY_FIELDS = (
     "track_id", "label_id", "label", "display_name", "duration_seconds",
@@ -36,6 +38,10 @@ class BehaviorObservation:
     confidence: float
     health_eligible: bool
     model_version: str
+    calibrated_confidence: Optional[float] = None
+    normalized_entropy: Optional[float] = None
+    rejection_reason: Optional[str] = None
+    calibration_temperature: float = 1.0
 
     def __post_init__(self) -> None:
         if isinstance(self.frame_index, bool) or not isinstance(self.frame_index, int) or self.frame_index < 0:
@@ -46,6 +52,15 @@ class BehaviorObservation:
             raise ValueError("time_seconds must be finite and nonnegative")
         if not math.isfinite(float(self.confidence)) or not 0 <= self.confidence <= 1:
             raise ValueError("confidence must be finite and in [0, 1]")
+        for field, value in (
+            ("calibrated_confidence", self.calibrated_confidence),
+            ("normalized_entropy", self.normalized_entropy),
+        ):
+            if value is not None and (not math.isfinite(float(value)) or not 0 <= value <= 1):
+                raise ValueError(f"{field} must be finite and in [0, 1] or None")
+        if (not math.isfinite(float(self.calibration_temperature)) or
+                self.calibration_temperature <= 0):
+            raise ValueError("calibration_temperature must be finite and positive")
 
 
 def _normalized(observation, threshold):
@@ -59,7 +74,9 @@ def _normalized(observation, threshold):
     return BehaviorObservation(
         observation.frame_index, observation.time_seconds, observation.track_id,
         1, "none", "无法确定", observation.confidence, False,
-        observation.model_version,
+        observation.model_version, observation.calibrated_confidence,
+        observation.normalized_entropy, observation.rejection_reason,
+        observation.calibration_temperature,
     )
 
 

@@ -42,6 +42,10 @@ class BehaviorPrediction:
     smoothed_display_name: str
     smoothed_confidence: float
     model_version: str
+    calibrated_confidence: Optional[float] = None
+    normalized_entropy: Optional[float] = None
+    rejection_reason: Optional[str] = None
+    calibration_temperature: float = 1.0
 
 
 class TrackClipBuffer:
@@ -130,6 +134,7 @@ class TorchBehaviorClassifier:
         model_version: str = DEFAULT_MODEL_VERSION,
         input_size: int = 224,
         amp: bool = True,
+        temperature: float = 1.0,
     ):
         if not isinstance(model, nn.Module):
             raise TypeError("model must be a torch.nn.Module")
@@ -148,10 +153,14 @@ class TorchBehaviorClassifier:
             raise ValueError("input_size must be a positive integer")
         if type(amp) is not bool:
             raise TypeError("amp must be a boolean")
+        if (isinstance(temperature, bool) or not isinstance(temperature, (int, float)) or
+                not math.isfinite(temperature) or temperature <= 0):
+            raise ValueError("temperature must be finite and positive")
         self.device = validated_device
         self.model_version = model_version
         self.input_size = input_size
         self.amp = amp
+        self.temperature = float(temperature)
         self.model = model.to(self.device).eval()
 
     @classmethod
@@ -181,7 +190,7 @@ class TorchBehaviorClassifier:
                 )
             if not torch.isfinite(logits).all():
                 raise ValueError("behavior model logits must be finite")
-            probabilities = torch.softmax(logits.float(), dim=1)
+            probabilities = torch.softmax(logits.float() / self.temperature, dim=1)
         return probabilities.cpu()
 
 
@@ -204,6 +213,7 @@ class BehaviorRuntime:
         max_batch_size: int = 16,
         switch_margin: float = 0.05,
         switch_confirmations: int = 2,
+        max_normalized_entropy: float = 1.0,
     ):
         if classifier is None or not callable(getattr(classifier, "predict", None)):
             raise TypeError("classifier must provide predict(clips)")
@@ -211,6 +221,11 @@ class BehaviorRuntime:
             raise ValueError("alpha must be in (0, 1]")
         if not math.isfinite(confidence_threshold) or not 0 <= confidence_threshold <= 1:
             raise ValueError("confidence_threshold must be in [0, 1]")
+        if (isinstance(max_normalized_entropy, bool) or
+                not isinstance(max_normalized_entropy, (int, float)) or
+                not math.isfinite(max_normalized_entropy) or
+                not 0 <= max_normalized_entropy <= 1):
+            raise ValueError("max_normalized_entropy must be in [0, 1]")
         if not math.isfinite(fps) or fps <= 0:
             raise ValueError("fps must be finite and positive")
         if ttl_frames is None:
@@ -235,9 +250,11 @@ class BehaviorRuntime:
         self.stride = stride
         self.alpha = float(alpha)
         self.confidence_threshold = float(confidence_threshold)
+        self.max_normalized_entropy = float(max_normalized_entropy)
         self.ttl_frames = ttl_frames
         self.max_tracks = max_tracks
         self.model_version = getattr(classifier, "model_version", "unknown")
+        self.calibration_temperature = float(getattr(classifier, "temperature", 1.0))
         self.max_batch_size = max_batch_size
         self.switch_margin = float(switch_margin)
         self.switch_confirmations = switch_confirmations
@@ -499,8 +516,28 @@ class BehaviorRuntime:
 
         stable_id = state.stable_label_id
         confidence = float(state.probabilities[stable_id - 1])
-        label_id = stable_id if confidence >= self.confidence_threshold else UNCERTAIN_LABEL_ID
+        policy_confidence = smoothed_confidence
+        temporal_unstable = (
+            stable_id != smoothed_id and confidence < self.confidence_threshold
+        )
+        positive = state.probabilities[state.probabilities > 0]
+        entropy = float(-(positive * np.log(positive)).sum() / math.log(CLASS_COUNT))
+        accepted = (
+            policy_confidence >= self.confidence_threshold and
+            entropy <= self.max_normalized_entropy and
+            not temporal_unstable
+        )
+        label_id = stable_id if accepted else UNCERTAIN_LABEL_ID
         label = CVB_LABELS[label_id]
+        rejection_reasons = []
+        if policy_confidence < self.confidence_threshold:
+            rejection_reasons.append("low_confidence")
+        if entropy > self.max_normalized_entropy:
+            rejection_reasons.append("high_entropy")
+        if temporal_unstable:
+            rejection_reasons.append("temporal_switch_pending")
+        if not rejection_reasons and label.uncertain:
+            rejection_reasons.append("dataset_uncertain_label")
         raw_label = CVB_LABELS[raw_label_id]
         smoothed_label = CVB_LABELS[smoothed_id]
         return BehaviorPrediction(
@@ -521,4 +558,8 @@ class BehaviorRuntime:
             smoothed_display_name=smoothed_label.display_name,
             smoothed_confidence=smoothed_confidence,
             model_version=self.model_version,
+            calibrated_confidence=policy_confidence,
+            normalized_entropy=entropy,
+            rejection_reason="+".join(rejection_reasons) or None,
+            calibration_temperature=self.calibration_temperature,
         )

@@ -184,6 +184,26 @@ def test_selective_metrics_use_null_when_nothing_is_accepted():
     assert metrics["selective_risk"] is None
 
 
+def test_selective_metrics_exclude_predictions_of_dataset_uncertain_classes():
+    probabilities = np.array(
+        [[0.1, 0.1, 0.8], [0.1, 0.8, 0.1]], dtype=np.float64
+    )
+    labels = np.array([0, 1], dtype=np.int64)
+
+    metrics = selective_metrics(
+        probabilities,
+        labels,
+        np.array([True, True]),
+        uncertain_label_ids=(2,),
+    )
+
+    assert metrics["threshold_accepted_count"] == 2
+    assert metrics["accepted_count"] == 1
+    assert metrics["coverage"] == pytest.approx(0.5)
+    assert metrics["actionable_coverage"] == pytest.approx(0.5)
+    assert metrics["rejection_recall_for_unsafe"] == pytest.approx(1.0)
+
+
 def policy_fixture():
     probabilities = np.array(
         [

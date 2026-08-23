@@ -86,6 +86,26 @@ def test_tracking_associates_predictions_and_publishes_behavior_artifacts(tmp_pa
     assert result.behavior_csv.is_file() and result.behavior_report_json.is_file()
 
 
+def test_tracking_summary_uses_runtime_calibrated_threshold(tmp_path, monkeypatch):
+    install_video_fakes(monkeypatch)
+
+    class CalibratedRuntime(Runtime):
+        confidence_threshold = 0.25
+
+        def observe_batch(self, values):
+            prediction = super().observe_batch(values)[0]
+            prediction.confidence = 0.30
+            return [prediction]
+
+    result = pipeline.process_tracked_video(
+        Model(), tmp_path / "in.mp4", tmp_path / "out", .2, .5,
+        behavior_runtime=CalibratedRuntime(),
+    )
+
+    assert result.behavior_summary[0]["label"] == "grazing"
+    assert result.behavior_summary[0]["health_eligible"] is True
+
+
 def test_no_runtime_and_failed_runtime_are_explicit_without_fabricated_predictions(tmp_path, monkeypatch):
     install_video_fakes(monkeypatch)
     unavailable = pipeline.process_tracked_video(Model(), tmp_path / "a.mp4", tmp_path / "a", .2, .5)

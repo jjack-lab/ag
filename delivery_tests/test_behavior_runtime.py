@@ -111,6 +111,8 @@ def test_hysteresis_switches_after_sustained_new_behavior():
     assert pending.health_eligible is False
     assert pending.confidence == pytest.approx(0.1)
     assert pending.smoothed_confidence == pytest.approx(0.9)
+    assert pending.calibrated_confidence == pytest.approx(0.9)
+    assert pending.rejection_reason == "temporal_switch_pending"
     assert switched.label_id == 3
 
 
@@ -255,6 +257,30 @@ def test_classifier_reuses_evaluation_transform_and_returns_cpu_probabilities(mo
     assert output.sum().item() == pytest.approx(1.0)
 
 
+def test_classifier_applies_temperature_before_softmax(monkeypatch):
+    monkeypatch.setattr(
+        "cattle_health_app.behavior.runtime.evaluation_transform",
+        lambda frames, size=224: torch.zeros(3, len(frames), size, size),
+    )
+
+    class Model(torch.nn.Module):
+        def forward(self, clips):
+            logits = torch.zeros((clips.shape[0], 12), device=clips.device)
+            logits[:, 1] = 2.0
+            return logits
+
+    plain = TorchBehaviorClassifier(Model(), temperature=1.0)
+    calibrated = TorchBehaviorClassifier(Model(), temperature=0.5)
+    clip = [[crop() for _ in range(16)]]
+
+    plain_probabilities = plain.predict(clip)
+    calibrated_probabilities = calibrated.predict(clip)
+
+    assert plain_probabilities.argmax(dim=1).tolist() == [1]
+    assert calibrated_probabilities.argmax(dim=1).tolist() == [1]
+    assert calibrated_probabilities[0, 1] > plain_probabilities[0, 1]
+
+
 def test_classifier_validates_probability_shape_from_runtime():
     class BadClassifier:
         def predict(self, clips):
@@ -340,6 +366,37 @@ def test_timestamp_is_nonnegative_and_monotonic_per_track():
 def test_amp_requires_an_actual_boolean():
     with pytest.raises(TypeError, match="amp"):
         TorchBehaviorClassifier(torch.nn.Identity(), amp=1)
+
+
+@pytest.mark.parametrize("temperature", [0, -1, float("inf"), float("nan")])
+def test_classifier_rejects_invalid_temperature(temperature):
+    with pytest.raises(ValueError, match="temperature"):
+        TorchBehaviorClassifier(torch.nn.Identity(), temperature=temperature)
+
+
+def test_runtime_joint_policy_rejects_high_entropy_prediction():
+    class DiffuseClassifier:
+        model_version = "test-v1"
+
+        def predict(self, clips):
+            row = [0.3] + [0.7 / 11] * 11
+            return [row for _ in clips]
+
+    runtime = BehaviorRuntime(
+        DiffuseClassifier(),
+        clip_frames=1,
+        confidence_threshold=0.25,
+        max_normalized_entropy=0.7,
+    )
+
+    prediction = runtime.observe(1, 0, crop())
+
+    assert prediction.raw_confidence == pytest.approx(0.3)
+    assert prediction.display_name == "无法确定"
+    assert prediction.health_eligible is False
+    assert prediction.calibrated_confidence == pytest.approx(0.3)
+    assert prediction.normalized_entropy > 0.7
+    assert prediction.rejection_reason == "high_entropy"
 
 
 def test_classifier_rejects_nonfinite_logits():

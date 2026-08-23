@@ -229,11 +229,13 @@ def selective_metrics(
 
     values = _validated_probabilities(probabilities)
     targets = _validated_labels(labels, len(values), values.shape[1])
-    accepted_mask = _validated_accepted(accepted, len(values))
+    threshold_accepted = _validated_accepted(accepted, len(values))
     uncertain_ids = _validated_uncertain_ids(
         uncertain_label_ids, values.shape[1]
     )
     predictions = values.argmax(axis=1)
+    predicted_uncertain = np.isin(predictions, uncertain_ids)
+    accepted_mask = threshold_accepted & ~predicted_uncertain
     correct = predictions == targets
     uncertain_truth = np.isin(targets, uncertain_ids)
     unsafe = uncertain_truth | ~correct
@@ -291,6 +293,7 @@ def selective_metrics(
 
     return {
         "sample_count": int(len(values)),
+        "threshold_accepted_count": int(threshold_accepted.sum()),
         "accepted_count": accepted_count,
         "rejected_count": rejected_count,
         "coverage": float(accepted_mask.mean()),

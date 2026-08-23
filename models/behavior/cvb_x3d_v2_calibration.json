@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "model_version": "cvb-x3d-v1",
+  "checkpoint_sha256": "731c6ed39dcf002915e888c829e1f86727f815331a2b3c21d06a17d40d62a08e",
+  "validation_manifest_sha256": "2f77aa5c86717a207c83abc0078e8da0a114812b1ba1ee919b306277dc35a638",
+  "validation_selection": {
+    "sampling_method": "class_stratified_sample_id_sha256",
+    "sampling_seed": 20260823,
+    "max_samples_per_class": 512,
+    "source_sample_count": 28942,
+    "selected_sample_count": 2897,
+    "sample_ids_sha256": "fe28f01670ef786be6f98dd2dbf2bcfcd00a09726a7781b384c48cffb760ceac"
+  },
+  "selection_split": "validation",
+  "temperature": 0.3334679763052262,
+  "policy": {
+    "min_confidence": 0.45,
+    "max_normalized_entropy": 0.85,
+    "minimum_actionable_coverage": 0.6,
+    "validation_actionable_coverage": 0.6287321505841627,
+    "validation_selective_macro_f1": 0.2923607718406322,
+    "validation_selective_risk": 0.33555420956995763,
+    "selection_split": "validation"
+  }
+}

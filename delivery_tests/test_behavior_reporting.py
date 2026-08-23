@@ -32,13 +32,21 @@ def test_low_confidence_and_uncertain_labels_are_normalized_to_one_uncertain_buc
 
 
 def test_csv_and_json_writers_publish_structured_artifacts(tmp_path):
-    observations = [obs(0, 3, 3, "walking", "行走", .75, True)]
+    observations = [BehaviorObservation(
+        0, 0.0, 3, 3, "walking", "行走", .75, True, "v1",
+        calibrated_confidence=.75, normalized_entropy=.42,
+        rejection_reason=None, calibration_temperature=.33,
+    )]
     rows = build_behavior_summary(observations, 20)
     timeline, summary, report = tmp_path / "timeline.csv", tmp_path / "summary.csv", tmp_path / "report.json"
     write_behavior_timeline(timeline, observations)
     write_behavior_summary(summary, rows)
     write_behavior_report(report, observations, rows, "ready", "v1", 20)
-    assert list(csv.DictReader(timeline.open(encoding="utf-8-sig")))[0]["display_name"] == "行走"
+    timeline_row = list(csv.DictReader(timeline.open(encoding="utf-8-sig")))[0]
+    assert timeline_row["display_name"] == "行走"
+    assert timeline_row["calibrated_confidence"] == "0.75"
+    assert timeline_row["normalized_entropy"] == "0.42"
+    assert timeline_row["calibration_temperature"] == "0.33"
     assert list(csv.DictReader(summary.open(encoding="utf-8-sig")))[0]["mean_confidence"] == "0.75"
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert payload["behavior_model_status"] == "ready"

@@ -207,6 +207,10 @@ def _prediction_observation(prediction, fps, threshold, frame_index=None):
             prediction.confidence,
             False,
             prediction.model_version,
+            getattr(prediction, "calibrated_confidence", prediction.confidence),
+            getattr(prediction, "normalized_entropy", None),
+            getattr(prediction, "rejection_reason", None),
+            getattr(prediction, "calibration_temperature", 1.0),
         )
     return BehaviorObservation(
         observation_frame,
@@ -218,6 +222,10 @@ def _prediction_observation(prediction, fps, threshold, frame_index=None):
         prediction.confidence,
         True,
         prediction.model_version,
+        getattr(prediction, "calibrated_confidence", prediction.confidence),
+        getattr(prediction, "normalized_entropy", None),
+        getattr(prediction, "rejection_reason", None),
+        getattr(prediction, "calibration_temperature", 1.0),
     )
 
 
@@ -430,7 +438,9 @@ def process_tracked_video(
             root / "{}_behavior_report.json".format(source.stem),
         )
         try:
-            summary = build_behavior_summary(behavior_rows, fps)
+            summary = build_behavior_summary(
+                behavior_rows, fps, confidence_threshold=threshold
+            )
             write_behavior_timeline(candidates[0], behavior_rows)
             write_behavior_summary(candidates[1], summary)
             write_behavior_report(
