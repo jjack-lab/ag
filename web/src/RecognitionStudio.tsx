@@ -16,6 +16,7 @@ import {
   resultMediaUrl,
   VideoJob,
 } from "./api";
+import CrossDomainResults from "./CrossDomainResults";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
@@ -437,6 +438,7 @@ export default function RecognitionStudio() {
           </p>
         )}
       </div>
+      <CrossDomainResults />
     </section>
   );
 }

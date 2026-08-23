@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
 import os
 from pathlib import Path
 from shutil import copyfileobj
@@ -8,6 +9,7 @@ from typing import Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -23,6 +25,106 @@ from cattle_health_app.repository import SQLiteRepository
 
 MAX_UPLOAD_BYTES = int(os.environ.get("AGRINEBULA_MAX_UPLOAD_MB", "512")) * 1024 * 1024
 UPLOAD_CHUNK_BYTES = 1024 * 1024
+CROSS_DOMAIN_VARIANTS = {
+    "uncalibrated",
+    "calibrated",
+    "calibrated_fixed_rejection",
+    "calibrated_quality_rejection",
+}
+CROSS_DOMAIN_FIGURES = {
+    "confusion_matrix": "confusion_matrix.png",
+    "risk_coverage": "risk_coverage.png",
+    "stress_curves": "stress_curves.png",
+}
+
+
+def _validated_cross_domain_summary(payload):
+    if not isinstance(payload, dict) or payload.get("status") not in {
+        "not_run",
+        "blocked",
+        "complete",
+    }:
+        raise ValueError("status must be not_run, blocked, or complete")
+    status = payload["status"]
+    if status != "complete":
+        limitations = payload.get("claim_boundaries", payload.get("limitations", []))
+        if not isinstance(limitations, list) or any(
+            not isinstance(item, str) for item in limitations
+        ):
+            raise ValueError("limitations must be a list of text")
+        return {
+            "status": status,
+            "dataset_id": payload.get("dataset_id", "cbvd5"),
+            "dataset_version": payload.get("dataset_version", "11"),
+            "sample_counts": {},
+            "model_hash_prefix": None,
+            "variant_metrics": {},
+            "limitations": limitations,
+        }
+    protocol = payload.get("protocol")
+    counts = payload.get("sample_counts")
+    metrics = payload.get("metrics")
+    limitations = payload.get("claim_boundaries")
+    if not isinstance(protocol, dict):
+        raise ValueError("complete result requires protocol")
+    checkpoint_hash = protocol.get("checkpoint_sha256")
+    if (
+        not isinstance(checkpoint_hash, str)
+        or len(checkpoint_hash) != 64
+        or any(char not in "0123456789abcdefABCDEF" for char in checkpoint_hash)
+    ):
+        raise ValueError("complete result requires checkpoint_sha256")
+    if not isinstance(counts, dict) or not counts:
+        raise ValueError("complete result requires sample_counts")
+    if not isinstance(metrics, dict) or set(metrics) != set(counts):
+        raise ValueError("metrics tiers must match sample_counts")
+    safe_metrics = {}
+    for tier, count in counts.items():
+        if tier not in {"strict", "extended"} or isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+            raise ValueError("sample_counts must contain positive strict/extended counts")
+        tier_metrics = metrics[tier]
+        if not isinstance(tier_metrics, dict) or set(tier_metrics) != CROSS_DOMAIN_VARIANTS:
+            raise ValueError("each tier must contain the four frozen variants")
+        safe_metrics[tier] = {}
+        for variant in sorted(CROSS_DOMAIN_VARIANTS):
+            row = tier_metrics[variant]
+            if not isinstance(row, dict) or row.get("sample_count") != count:
+                raise ValueError("variant sample_count mismatch")
+            coverage = row.get("coverage")
+            risk = row.get("selective_risk")
+            if not isinstance(coverage, (int, float)) or isinstance(coverage, bool) or not 0 <= coverage <= 1:
+                raise ValueError("variant coverage must be within [0, 1]")
+            if risk is not None and (
+                not isinstance(risk, (int, float))
+                or isinstance(risk, bool)
+                or not 0 <= risk <= 1
+            ):
+                raise ValueError("variant selective_risk must be within [0, 1]")
+            safe_metrics[tier][variant] = {
+                key: row.get(key)
+                for key in (
+                    "sample_count",
+                    "accepted_count",
+                    "coverage",
+                    "selective_accuracy",
+                    "selective_macro_f1",
+                    "selective_risk",
+                )
+                if key in row
+            }
+    if not isinstance(limitations, list) or any(
+        not isinstance(item, str) for item in limitations
+    ):
+        raise ValueError("claim_boundaries must be a list of text")
+    return {
+        "status": "complete",
+        "dataset_id": protocol.get("dataset_id"),
+        "dataset_version": protocol.get("dataset_version"),
+        "sample_counts": counts,
+        "model_hash_prefix": checkpoint_hash[:12].lower(),
+        "variant_metrics": safe_metrics,
+        "limitations": limitations,
+    }
 
 
 class ResolveAlertRequest(BaseModel):
@@ -36,6 +138,7 @@ def create_app(
     job_service=None,
     detector_artifact=None,
     behavior_artifact=None,
+    cross_domain_result_root: str | Path | None = None,
 ):
     media_processor = media_processor or LocalMediaProcessor()
     media_root = Path(media_root)
@@ -43,6 +146,11 @@ def create_app(
     result_dir = media_root / "results"
     upload_dir.mkdir(parents=True, exist_ok=True)
     result_dir.mkdir(parents=True, exist_ok=True)
+    cross_domain_result_root = Path(
+        cross_domain_result_root
+        if cross_domain_result_root is not None
+        else Path("outputs") / "cross_domain" / "cvb_to_cbvd5"
+    ).expanduser().resolve()
     detector_artifact = detector_artifact or resolve_detector_model(
         explicit_path=media_processor.model_path
     )
@@ -99,6 +207,48 @@ def create_app(
             "detector": detector_artifact.to_dict(),
             "behavior": current_behavior_artifact.to_dict(),
         }
+
+    @app.get("/api/experiments/cross-domain-behavior")
+    def cross_domain_behavior_results():
+        metrics_path = cross_domain_result_root / "metrics.json"
+        if not metrics_path.is_file():
+            return {
+                "status": "not_run",
+                "dataset_id": "cbvd5",
+                "dataset_version": "11",
+                "sample_counts": {},
+                "model_hash_prefix": None,
+                "variant_metrics": {},
+                "limitations": ["真实外部实验尚未完成"],
+                "figure_urls": {},
+            }
+        try:
+            payload = json.loads(metrics_path.read_text(encoding="utf-8"))
+            validated = _validated_cross_domain_summary(payload)
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as error:
+            raise HTTPException(
+                status_code=503,
+                detail="跨域实验结果文件无效: {}".format(error),
+            ) from error
+        figures = {}
+        for stem, filename in CROSS_DOMAIN_FIGURES.items():
+            if (cross_domain_result_root / filename).is_file():
+                figures[stem] = (
+                    "/api/experiments/cross-domain-behavior/figures/{}".format(
+                        filename
+                    )
+                )
+        validated["figure_urls"] = figures
+        return validated
+
+    @app.get("/api/experiments/cross-domain-behavior/figures/{filename}")
+    def cross_domain_behavior_figure(filename: str):
+        if filename not in CROSS_DOMAIN_FIGURES.values():
+            raise HTTPException(status_code=404, detail="Figure not found")
+        path = cross_domain_result_root / filename
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="Figure not found")
+        return FileResponse(path, media_type="image/png")
 
     @app.get("/api/alerts")
     def list_alerts(status: Optional[str] = None):

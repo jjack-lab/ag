@@ -116,6 +116,25 @@ button { cursor: pointer; }
 .behavior-result a { color: var(--green); text-decoration: none; }
 .behavior-result a:focus-visible { outline: 3px solid rgba(163,230,53,.8); outline-offset: 3px; }
 .behavior-unavailable { margin: 12px 0 0; padding: 12px 14px; border: 1px solid rgba(251,191,36,.25); border-radius: 14px; color: #fde68a; background: rgba(251,191,36,.06); }
+.cross-domain-results { grid-column: 1 / -1; margin-top: 8px; padding: 18px; border: 1px solid rgba(96,165,250,.24); border-radius: 18px; background: rgba(30,64,175,.08); }
+.cross-domain-results > header, .cross-domain-meta { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.cross-domain-results > header p { margin: 0 0 4px; color: #93c5fd; font-size: 10px; letter-spacing: .14em; }
+.cross-domain-results > header h3 { margin: 0; }
+.cross-domain-results > header > span, .cross-domain-meta, .cross-domain-results footer { color: var(--muted); font-size: 11px; }
+.cross-domain-state { display: grid; gap: 6px; margin: 16px 0; padding: 14px; border-radius: 14px; background: rgba(255,255,255,.04); color: var(--muted); }
+.cross-domain-state strong { color: white; }
+.cross-domain-state.blocked { border: 1px solid rgba(251,191,36,.25); }
+.cross-domain-meta { margin: 15px 0; }
+.cross-domain-tier { margin-top: 14px; }
+.cross-domain-tier h4 { margin: 0 0 8px; }
+.cross-domain-table { overflow-x: auto; }
+.cross-domain-table > div { min-width: 420px; display: grid; grid-template-columns: minmax(180px,1fr) 100px 120px; gap: 14px; padding: 8px 10px; border-top: 1px solid rgba(255,255,255,.07); }
+.cross-domain-table .head { color: var(--muted); font-size: 11px; }
+.quality-gate-note { margin: 14px 0; color: #bfdbfe; font-size: 12px; }
+.cross-domain-figures { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }
+.cross-domain-figures img { width: 100%; border-radius: 12px; background: white; }
+.cross-domain-limitations { color: var(--muted); font-size: 11px; }
+.cross-domain-results footer { margin-top: 14px; }
 .empty-result { display: grid; justify-items: center; gap: 9px; color: rgba(255,255,255,.34); text-align: center; }
 .empty-result strong { color: rgba(255,255,255,.68); font-size: 14px; }
 .empty-result span { font-size: 11px; }

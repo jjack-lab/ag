@@ -76,6 +76,39 @@ export type ImageRecognitionResult = {
   result_url: string;
 };
 
+export type CrossDomainVariantMetric = {
+  sample_count: number;
+  accepted_count?: number;
+  coverage: number;
+  selective_accuracy?: number | null;
+  selective_macro_f1?: number | null;
+  selective_risk: number | null;
+};
+
+export type CrossDomainExperimentResult = {
+  status: "not_run" | "blocked" | "complete";
+  dataset_id: string;
+  dataset_version: string;
+  sample_counts: Partial<Record<"strict" | "extended", number>>;
+  model_hash_prefix: string | null;
+  variant_metrics: Partial<
+    Record<
+      "strict" | "extended",
+      Record<
+        | "uncalibrated"
+        | "calibrated"
+        | "calibrated_fixed_rejection"
+        | "calibrated_quality_rejection",
+        CrossDomainVariantMetric
+      >
+    >
+  >;
+  limitations: string[];
+  figure_urls: Partial<
+    Record<"confusion_matrix" | "risk_coverage" | "stress_curves", string>
+  >;
+};
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
   let payload: unknown;
@@ -136,6 +169,10 @@ export function createVideoJob(
 
 export function fetchVideoJob(id: string): Promise<VideoJob> {
   return request(`/api/jobs/${id}`);
+}
+
+export function fetchCrossDomainExperiment(): Promise<CrossDomainExperimentResult> {
+  return request("/api/experiments/cross-domain-behavior");
 }
 
 export function resultMediaUrl(path: string): string {
