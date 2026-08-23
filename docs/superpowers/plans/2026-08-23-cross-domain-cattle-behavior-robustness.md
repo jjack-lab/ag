@@ -37,6 +37,7 @@ Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -
 - `2026-08-23`: Moved the metadata/license inspection gate (Task 10) ahead of the CBVD-5 parser (Task 3). The original numeric order could have encouraged implementing an annotation adapter from assumptions. The revised order verifies the official file list, license, and a small official annotation/metadata sample before the parser contract is finalized. The `5 GiB` cap, frozen-test protocol, label-mapping boundaries, and VLM deferral are unchanged.
 - `2026-08-23`: Baseline tests revealed two independent Windows path limits: Python 3.8 needs `-X utf8` to decode the project path, while PyTorch 2.0 native file I/O and Windows PowerShell 5 still cannot operate on selected temporary paths below the non-ASCII parent. A `subst` experiment was rejected because `Path.resolve()` returns the physical path. Use the user's previously authorized `F:\codex-test-temp` only as an ephemeral ASCII Git worktree for baseline/final full-suite verification, then remove it. All implementation edits, downloaded datasets, manifests, caches, and experiment outputs remain under `F:\new大创`; scientific semantics are unchanged.
 - `2026-08-23`: Official Kaggle metadata shows CBVD-5 is now version 11 under CC0 and totals 11,642,084,084 bytes. The old `video_cut` assumption is obsolete: 687 continuous MP4 files are under `videos/videos` and total 3,480,105,107 bytes; `miniannotations` plus the root VIA CSV keep the approved subset at 3,485,904,149 bytes. Use those version-11 paths. The subset remains below `5 GiB`, so the primary dataset and frozen external-test protocol are unchanged.
+- `2026-08-23`: Replaced materialized duplicate clip MP4 files with hash-bound virtual clip specifications over immutable source videos. Each manifest row stores the source path and SHA-256, time window, normalized crop, and transformation record; the experiment loader applies those operations at read time. This avoids consuming the remaining `5 GiB` budget with redundant derivatives while preserving deterministic samples, source-group isolation, visual auditability, and the frozen external-test protocol.
 
 ### Task 1: External dataset registry and provenance contract
 
@@ -432,9 +433,9 @@ Stop automatically at the byte budget. Record source URL, ETag/version when expo
 
 Keep archives. Write file inventory before parsing. Never rewrite original media.
 
-- [ ] **Step 4: Generate strict and extended manifests**
+- [ ] **Step 4: Generate strict and extended virtual-clip manifests**
 
-Write `source_videos.csv`, `evaluation_clips_strict.csv`, `evaluation_clips_extended.csv`, `excluded_samples.csv`, and `manifest_summary.json`.
+Write `source_videos.csv`, `evaluation_clips_strict.csv`, `evaluation_clips_extended.csv`, `excluded_samples.csv`, and `manifest_summary.json`. Clip rows reference immutable source videos and carry deterministic time-window/crop transformations instead of duplicating MP4 media; verify the source SHA-256 before decoding.
 
 - [ ] **Step 5: Audit samples visually and structurally**
 
