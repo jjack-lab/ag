@@ -4,7 +4,7 @@
 
 本文件回答三个问题：项目引用了什么数据集、文件存放在哪里、对数据进行了哪些操作。它与 `data/external/registry.json`、各数据集 `manifests/` 下的机器可读清单共同构成数据溯源证据。
 
-当前状态：`not_downloaded`。截至 2026-08-23，本轮跨域实验尚未下载新的外部视频，也尚未生成外部实验结果。登记候选不等于已经使用。
+当前状态：`metadata_verified`。截至 2026-08-23，本轮已下载三份小型官方标注/标签文件用于确认解析结构，尚未下载外部视频，也尚未生成外部实验结果。登记候选不等于已经用于模型评测。
 
 ## 数据存放边界
 
@@ -23,7 +23,7 @@
 | 数据集 | 官方来源 | 许可状态 | 计划用途 | 当前操作 |
 |---|---|---|---|---|
 | CVB | DOI `10.25919/3g3t-p068` | 已登记 CC BY-NC-SA 4.0 | 现有模型训练域、校准域和域内基线 | 本轮未重新下载 |
-| CBVD-5 | Scientific Reports 论文与 Kaggle version 8 | 下载前再次核验 Kaggle 数据许可 | 首选外部测试域 | 尚未下载 |
+| CBVD-5 | Scientific Reports 论文与 Kaggle version 11 | Kaggle 官方页：CC0 Public Domain | 首选外部测试域 | 已核验元数据与标注结构；视频尚未下载 |
 | MmCows | 官方 GitHub 与 Hugging Face 数据卡 | 数据卡 CC BY-NC-SA 4.0 | CBVD-5 受阻时的后备数据；未来多模态 | 尚未下载 |
 | CattleEyeView | 官方 GitHub | 仓库代码许可不能替代数据许可 | 后续顶视检测/跟踪候选 | 本轮不使用 |
 
@@ -39,12 +39,16 @@
 | 时间 | 数据集 | 操作 | 输入 | 输出 | 大小/SHA-256 | 结果 |
 |---|---|---|---|---|---|---|
 | 2026-08-23 | 全部候选 | 创建机器可读登记表 | 官方论文/数据页信息 | `data/external/registry.json` | 由 Git 记录 | 完成；未下载媒体 |
+| 2026-08-23 | CBVD-5 v11 | 读取官方数据集元数据 | Kaggle 公开 API | `data/external/cbvd5/manifests/official_dataset_metadata_v11.json` | 8,592 B；`e3a6338572af50e7884c42f1a2f0da4c0f303126ec7e3e88682b1ba7f6f2079f` | 许可 CC0；全量 11,642,084,084 B |
+| 2026-08-23 | CBVD-5 v11 | 下载 VIA 原始标注 | `CBVD-5.csv` | `data/external/cbvd5/archives/CBVD-5.csv` | 2,409,930 B；`da271e825931eb36e4877b61280b2a0ac0019918b692a8b27355f16ada9c0aa9` | 完成；仅用于结构核验 |
+| 2026-08-23 | CBVD-5 v11 | 下载 AVA 训练标注 | `miniannotations/ava_train_v2.1.csv` | `data/external/cbvd5/archives/ava_train_v2.1.csv` | 1,733,774 B；`fad18b34f43c2f7efbbe5dfbdc3b10c27dbc7bca5306076e8ad61a32ccdef920` | 完成；确认 8 列 AVA 结构 |
+| 2026-08-23 | CBVD-5 v11 | 下载标签映射 | `miniannotations/labelmap.txt` | `data/external/cbvd5/archives/labelmap.txt` | 67 B；`78ae410e0005ffca882e0709e0ebc31b7fbab3fb80be3809eff37a28404125ba` | 完成；1站立、2卧躺、3采食、4饮水、5反刍 |
 
 实际下载后，每个压缩包、标注文件和最终使用视频都必须在此追加记录，不覆盖历史行。
 
 ## 标签与处理操作
 
-尚未执行。计划中的操作顺序为：官方元数据核验、按文件下载、SHA-256、非破坏性解压、文件盘点、标注解析、严格/扩展标签映射、按原视频/摄像机/时间段分组、单牛片段生成、质量计算、冻结模型推理和可控退化实验。
+已完成官方元数据核验和标注结构检查。AVA 行为行结构为 `video_id,timestamp,x1,y1,x2,y2,action_id,entity_id`；同一个框可有姿态与反刍两个原子标签。计划中的后续操作为：按文件下载连续 MP4、SHA-256、文件盘点、标注解析、严格/扩展标签映射、按原视频/摄像机/时间段分组、单牛片段生成、质量计算、冻结模型推理和可控退化实验。
 
 模型预测不得用于替代人工原标签。语义不能唯一对齐的样本写入 `excluded_samples.csv`。
 
@@ -59,6 +63,7 @@
 |---|---|---|---|---|
 | 2026-08-23 | 可先实现解析器再核验远端文件 | 未取得真实文件结构前实现解析器会引入猜测 | 把官方元数据/许可门槛提前到解析器之前 | 无；5 GiB、冻结外测和标签边界不变 |
 | 2026-08-23 | 全量测试可直接在中文项目路径运行 | PyTorch 2.0 原生文件 I/O 和 Windows PowerShell 5 对部分中文临时路径不兼容 | 仅全量验证使用此前获批的临时 ASCII 工作树，验证后删除 | 无；实现、数据和实验输出仍在项目内 |
+| 2026-08-23 | CBVD-5 version 8 含 `video_cut` | 官方当前版本为11；连续 MP4 位于 `videos/videos`，687个共3,480,105,107 B；全量数据11,642,084,084 B | 固定 version 11，只批准 `videos/videos`、`miniannotations` 和根 VIA CSV，共3,485,904,149 B | 无；仍低于5 GiB，外部测试协议不变 |
 
 ## 复现命令
 

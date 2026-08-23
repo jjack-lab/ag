@@ -1,0 +1,43 @@
+{
+  "dataset_id": "cbvd5",
+  "dataset_version": 11,
+  "official_access_url": "https://www.kaggle.com/datasets/fandaoerji/cbvd-5cow-behavior-video-dataset/versions/11",
+  "license_name": "CC0: Public Domain",
+  "metadata_retrieved_at": "2026-08-23",
+  "dataset_total_bytes": 11642084084,
+  "download_budget_bytes": 5368709120,
+  "approved_subset": {
+    "paths": [
+      "videos/videos",
+      "miniannotations",
+      "CBVD-5.csv"
+    ],
+    "video_files": 687,
+    "video_bytes": 3480105107,
+    "annotation_bytes": 3389112,
+    "via_csv_bytes": 2409930,
+    "planned_total_bytes": 3485904149
+  },
+  "downloaded_schema_evidence": [
+    {
+      "path": "archives/CBVD-5.csv",
+      "bytes": 2409930,
+      "sha256": "da271e825931eb36e4877b61280b2a0ac0019918b692a8b27355f16ada9c0aa9"
+    },
+    {
+      "path": "archives/ava_train_v2.1.csv",
+      "bytes": 1733774,
+      "sha256": "fad18b34f43c2f7efbbe5dfbdc3b10c27dbc7bca5306076e8ad61a32ccdef920"
+    },
+    {
+      "path": "archives/labelmap.txt",
+      "bytes": 67,
+      "sha256": "78ae410e0005ffca882e0709e0ebc31b7fbab3fb80be3809eff37a28404125ba"
+    }
+  ],
+  "official_metadata": {
+    "path": "manifests/official_dataset_metadata_v11.json",
+    "bytes": 8592,
+    "sha256": "e3a6338572af50e7884c42f1a2f0da4c0f303126ec7e3e88682b1ba7f6f2079f"
+  }
+}

@@ -17,12 +17,12 @@
     {
       "dataset_id": "cbvd5",
       "name": "CBVD-5 Cow Behavior Video Dataset",
-      "version": "kaggle-version-8-candidate",
+      "version": "kaggle-version-11",
       "official_url": "https://www.nature.com/articles/s41598-024-65953-x",
-      "access_url": "https://www.kaggle.com/datasets/fandaoerji/cbvd-5cow-behavior-video-dataset/versions/8",
-      "license_name": "CC0 candidate; verify on official data page",
-      "license_url": "",
-      "license_status": "verify_before_download",
+      "access_url": "https://www.kaggle.com/datasets/fandaoerji/cbvd-5cow-behavior-video-dataset/versions/11",
+      "license_name": "CC0 1.0 Universal (Public Domain Dedication)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_status": "verified",
       "intended_use": "external_test_only_until_separate_adaptation_protocol",
       "storage_root": "data/external/cbvd5",
       "max_download_bytes": 5368709120

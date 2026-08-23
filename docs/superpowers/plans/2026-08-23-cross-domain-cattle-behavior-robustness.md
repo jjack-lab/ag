@@ -36,6 +36,7 @@ Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -
 
 - `2026-08-23`: Moved the metadata/license inspection gate (Task 10) ahead of the CBVD-5 parser (Task 3). The original numeric order could have encouraged implementing an annotation adapter from assumptions. The revised order verifies the official file list, license, and a small official annotation/metadata sample before the parser contract is finalized. The `5 GiB` cap, frozen-test protocol, label-mapping boundaries, and VLM deferral are unchanged.
 - `2026-08-23`: Baseline tests revealed two independent Windows path limits: Python 3.8 needs `-X utf8` to decode the project path, while PyTorch 2.0 native file I/O and Windows PowerShell 5 still cannot operate on selected temporary paths below the non-ASCII parent. A `subst` experiment was rejected because `Path.resolve()` returns the physical path. Use the user's previously authorized `F:\codex-test-temp` only as an ephemeral ASCII Git worktree for baseline/final full-suite verification, then remove it. All implementation edits, downloaded datasets, manifests, caches, and experiment outputs remain under `F:\new大创`; scientific semantics are unchanged.
+- `2026-08-23`: Official Kaggle metadata shows CBVD-5 is now version 11 under CC0 and totals 11,642,084,084 bytes. The old `video_cut` assumption is obsolete: 687 continuous MP4 files are under `videos/videos` and total 3,480,105,107 bytes; `miniannotations` plus the root VIA CSV keep the approved subset at 3,485,904,149 bytes. Use those version-11 paths. The subset remains below `5 GiB`, so the primary dataset and frozen external-test protocol are unchanged.
 
 ### Task 1: External dataset registry and provenance contract
 
@@ -337,7 +338,7 @@ Support:
 
 ```text
 prepare_external_behavior_data.py inspect --dataset cbvd5
-prepare_external_behavior_data.py acquire --dataset cbvd5 --file video_cut
+prepare_external_behavior_data.py acquire --dataset cbvd5 --file videos/videos
 prepare_external_behavior_data.py prepare --dataset cbvd5 --tier strict
 ```
 
