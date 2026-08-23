@@ -8,6 +8,7 @@ from cattle_health_app.behavior.uncertainty import (
     normalized_entropy,
     probabilities_from_logits,
     rejection_mask,
+    select_rejection_policy,
     selective_metrics,
 )
 
@@ -181,3 +182,98 @@ def test_selective_metrics_use_null_when_nothing_is_accepted():
     assert metrics["selective_accuracy"] is None
     assert metrics["selective_macro_f1"] is None
     assert metrics["selective_risk"] is None
+
+
+def policy_fixture():
+    probabilities = np.array(
+        [
+            [0.90, 0.05, 0.05],
+            [0.55, 0.40, 0.05],
+            [0.10, 0.80, 0.10],
+            [0.45, 0.50, 0.05],
+            [0.40, 0.50, 0.10],
+            [0.20, 0.20, 0.60],
+        ],
+        dtype=np.float64,
+    )
+    labels = np.array([0, 0, 1, 1, 0, 2], dtype=np.int64)
+    return probabilities, labels
+
+
+def test_policy_search_maximizes_macro_f1_at_required_actionable_coverage():
+    probabilities, labels = policy_fixture()
+
+    policy = select_rejection_policy(
+        probabilities,
+        labels,
+        confidence_grid=[0.0, 0.55],
+        entropy_grid=[1.0],
+        minimum_actionable_coverage=0.60,
+        uncertain_label_ids=(2,),
+    )
+
+    assert policy.min_confidence == pytest.approx(0.55)
+    assert policy.max_normalized_entropy == pytest.approx(1.0)
+    assert policy.minimum_actionable_coverage == pytest.approx(0.60)
+    assert policy.validation_actionable_coverage == pytest.approx(0.60)
+    assert policy.validation_selective_macro_f1 == pytest.approx(1.0)
+    assert policy.validation_selective_risk == pytest.approx(0.0)
+    assert policy.to_dict()["selection_split"] == "validation"
+
+
+def test_policy_search_is_deterministic_for_unsorted_grids():
+    probabilities, labels = policy_fixture()
+
+    first = select_rejection_policy(
+        probabilities,
+        labels,
+        confidence_grid=[0.55, 0.0, 0.55],
+        entropy_grid=[1.0, 0.99],
+        minimum_actionable_coverage=0.60,
+        uncertain_label_ids=(2,),
+    )
+    second = select_rejection_policy(
+        probabilities,
+        labels,
+        confidence_grid=[0.0, 0.55],
+        entropy_grid=[0.99, 1.0],
+        minimum_actionable_coverage=0.60,
+        uncertain_label_ids=(2,),
+    )
+
+    assert first == second
+
+
+def test_policy_search_fails_instead_of_relaxing_coverage():
+    probabilities, labels = policy_fixture()
+
+    with pytest.raises(ValueError, match="coverage"):
+        select_rejection_policy(
+            probabilities,
+            labels,
+            confidence_grid=[0.95],
+            entropy_grid=[0.0],
+            minimum_actionable_coverage=0.60,
+            uncertain_label_ids=(2,),
+        )
+
+
+@pytest.mark.parametrize(
+    "confidence_grid,entropy_grid,coverage,match",
+    [([], [1.0], 0.6, "confidence_grid"), ([0.5], [], 0.6, "entropy_grid"),
+     ([0.5], [1.0], 1.1, "minimum_actionable_coverage")],
+)
+def test_policy_search_validates_candidate_space(
+    confidence_grid, entropy_grid, coverage, match
+):
+    probabilities, labels = policy_fixture()
+
+    with pytest.raises(ValueError, match=match):
+        select_rejection_policy(
+            probabilities,
+            labels,
+            confidence_grid,
+            entropy_grid,
+            minimum_actionable_coverage=coverage,
+            uncertain_label_ids=(2,),
+        )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import asdict, dataclass
 
 import numpy as np
 import torch
@@ -315,3 +316,90 @@ def selective_metrics(
         ),
         "per_class": per_class,
     }
+
+
+@dataclass(frozen=True)
+class RejectionPolicy:
+    """A rejection policy selected exclusively from validation predictions."""
+
+    min_confidence: float
+    max_normalized_entropy: float
+    minimum_actionable_coverage: float
+    validation_actionable_coverage: float
+    validation_selective_macro_f1: float
+    validation_selective_risk: float
+    selection_split: str = "validation"
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def _validated_grid(values, name: str) -> tuple[float, ...]:
+    try:
+        items = list(values)
+    except TypeError as exc:
+        raise TypeError(f"{name} must be an iterable of thresholds") from exc
+    if not items:
+        raise ValueError(f"{name} must contain at least one threshold")
+    return tuple(sorted({_unit_interval(item, name) for item in items}))
+
+
+def select_rejection_policy(
+    probabilities,
+    labels,
+    confidence_grid,
+    entropy_grid,
+    minimum_actionable_coverage: float = 0.60,
+    uncertain_label_ids=(0, 9, 10),
+) -> RejectionPolicy:
+    """Select a deterministic joint rejection policy using validation data."""
+
+    values = _validated_probabilities(probabilities)
+    targets = _validated_labels(labels, len(values), values.shape[1])
+    confidence_values = _validated_grid(confidence_grid, "confidence_grid")
+    entropy_values = _validated_grid(entropy_grid, "entropy_grid")
+    minimum_coverage = _unit_interval(
+        minimum_actionable_coverage, "minimum_actionable_coverage"
+    )
+    uncertain_ids = _validated_uncertain_ids(
+        uncertain_label_ids, values.shape[1]
+    )
+    candidates = []
+    for confidence in confidence_values:
+        for entropy_limit in entropy_values:
+            accepted = ~rejection_mask(values, confidence, entropy_limit)
+            metrics = selective_metrics(
+                values, targets, accepted, uncertain_label_ids=uncertain_ids
+            )
+            coverage = metrics["actionable_coverage"]
+            macro_f1 = metrics["selective_macro_f1"]
+            risk = metrics["selective_risk"]
+            if (
+                coverage is None
+                or coverage + 1e-12 < minimum_coverage
+                or macro_f1 is None
+                or risk is None
+            ):
+                continue
+            policy = RejectionPolicy(
+                min_confidence=confidence,
+                max_normalized_entropy=entropy_limit,
+                minimum_actionable_coverage=minimum_coverage,
+                validation_actionable_coverage=float(coverage),
+                validation_selective_macro_f1=float(macro_f1),
+                validation_selective_risk=float(risk),
+            )
+            rank = (
+                -float(macro_f1),
+                float(risk),
+                -float(coverage),
+                confidence,
+                entropy_limit,
+            )
+            candidates.append((rank, policy))
+    if not candidates:
+        raise ValueError(
+            "no rejection policy satisfies minimum actionable coverage"
+        )
+    candidates.sort(key=lambda item: item[0])
+    return candidates[0][1]
