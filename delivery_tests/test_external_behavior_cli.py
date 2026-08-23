@@ -113,11 +113,15 @@ def test_prepare_writes_test_only_manifest_and_exclusions(tmp_path):
     video = storage / "raw" / "videos" / "videos" / "618.mp4"
     video.parent.mkdir(parents=True)
     video.write_bytes(b"video-evidence")
+    second_video = video.with_name("619.mp4")
+    second_video.write_bytes(b"second-video-evidence")
     annotation = storage / "archives" / "ava_train_v2.1.csv"
     annotation.parent.mkdir(parents=True)
     annotation.write_text(
         "618,2,0.1,0.2,0.4,0.7,1,7\n"
         "618,2,0.1,0.2,0.4,0.7,3,7\n"
+        "619,2,0.1,0.2,0.4,0.7,1,8\n"
+        "619,2,0.1,0.2,0.4,0.7,3,8\n"
         "bad,row\n",
         encoding="utf-8",
     )
@@ -137,6 +141,8 @@ def test_prepare_writes_test_only_manifest_and_exclusions(tmp_path):
             "strict",
             "--annotation",
             str(annotation),
+            "--max-per-class",
+            "1",
         ]
     )
 
@@ -148,8 +154,11 @@ def test_prepare_writes_test_only_manifest_and_exclusions(tmp_path):
     assert result == 0
     assert row["mapped_label"] == "grazing"
     assert row["split"] == "test"
-    assert row["source_video_path"].endswith("618.mp4")
-    assert (manifest_root / "source_videos.csv").is_file()
+    assert row["source_video_path"].endswith(("618.mp4", "619.mp4"))
+    with (manifest_root / "source_videos.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        assert len(list(csv.DictReader(handle))) == 1
     assert (manifest_root / "excluded_samples.csv").is_file()
     summary = json.loads((manifest_root / "manifest_summary.json").read_text("utf-8"))
     assert summary["strict"]["included_samples"] == 1

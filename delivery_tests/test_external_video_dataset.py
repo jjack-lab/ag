@@ -12,6 +12,7 @@ from cattle_health_app.behavior.external_video_dataset import (
     load_external_samples,
     measure_virtual_clip_quality,
 )
+from scripts.create_cbvd5_audit_sheets import write_jpeg
 
 
 def _video(path):
@@ -108,3 +109,11 @@ def test_manifest_rejects_non_test_rows_and_escaping_paths(tmp_path):
     manifest.write_text(text.replace("source.mp4", "../source.mp4"), encoding="utf-8")
     with pytest.raises(ExternalVideoError, match="inside project_root"):
         load_external_samples(manifest, tmp_path)
+
+
+def test_audit_jpeg_writer_supports_unicode_project_paths(tmp_path):
+    destination = tmp_path / "人工审计.jpg"
+
+    write_jpeg(destination, np.zeros((16, 16, 3), np.uint8))
+
+    assert destination.read_bytes().startswith(b"\xff\xd8")

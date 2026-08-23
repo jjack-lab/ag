@@ -1,0 +1,35 @@
+{
+  "audit_artifact_root": "outputs/cross_domain/cvb_to_cbvd5/audit",
+  "audit_rows_sha256": "23595d6d3dc292d9b4b9591a2875d236d3e92c11131dda1706d690bc737ad8da",
+  "audit_scope": "subject_presence_crop_visibility_and_posture_sanity",
+  "audited_at": "2026-08-23",
+  "dataset_id": "cbvd5",
+  "dataset_version": "kaggle-version-11",
+  "dynamic_action_confirmed_from_still": false,
+  "findings": {
+    "annotation_video_mismatch_count": 0,
+    "cattle_subject_visible_count": 60,
+    "crop_visibility_pass_count": 60,
+    "excluded_after_audit_count": 0,
+    "known_limitations": [
+      "Some samples are distant, partially occluded, or narrowly cropped.",
+      "Drinking and rumination are temporal actions and cannot be independently confirmed from a single contact-sheet frame.",
+      "The audit therefore does not replace or revise the official temporal annotation."
+    ],
+    "posture_sanity_mismatch_count": 0
+  },
+  "mapping_tier": "extended",
+  "per_class": 10,
+  "reviewed_class_counts": {
+    "drinking": 10,
+    "grazing": 10,
+    "resting-lying": 10,
+    "resting-standing": 10,
+    "ruminating-lying": 10,
+    "ruminating-standing": 10
+  },
+  "reviewed_samples": 60,
+  "selection": "lexicographically_first_sample_ids_per_class",
+  "status": "completed",
+  "uses_model_predictions": false
+}

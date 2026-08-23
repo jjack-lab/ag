@@ -38,6 +38,7 @@ Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -
 - `2026-08-23`: Baseline tests revealed two independent Windows path limits: Python 3.8 needs `-X utf8` to decode the project path, while PyTorch 2.0 native file I/O and Windows PowerShell 5 still cannot operate on selected temporary paths below the non-ASCII parent. A `subst` experiment was rejected because `Path.resolve()` returns the physical path. Use the user's previously authorized `F:\codex-test-temp` only as an ephemeral ASCII Git worktree for baseline/final full-suite verification, then remove it. All implementation edits, downloaded datasets, manifests, caches, and experiment outputs remain under `F:\new大创`; scientific semantics are unchanged.
 - `2026-08-23`: Official Kaggle metadata shows CBVD-5 is now version 11 under CC0 and totals 11,642,084,084 bytes. The old `video_cut` assumption is obsolete: 687 continuous MP4 files are under `videos/videos` and total 3,480,105,107 bytes; `miniannotations` plus the root VIA CSV keep the approved subset at 3,485,904,149 bytes. Use those version-11 paths. The subset remains below `5 GiB`, so the primary dataset and frozen external-test protocol are unchanged.
 - `2026-08-23`: Replaced materialized duplicate clip MP4 files with hash-bound virtual clip specifications over immutable source videos. Each manifest row stores the source path and SHA-256, time window, normalized crop, and transformation record; the experiment loader applies those operations at read time. This avoids consuming the remaining `5 GiB` budget with redundant derivatives while preserving deterministic samples, source-group isolation, visual auditability, and the frozen external-test protocol.
+- `2026-08-23`: The project contains the frozen checkpoint, calibration artifact, and a 2,897-row CVB validation logits cache, but not the corresponding CVB validation videos or previously measured video-quality rows. A learned video-quality gate therefore cannot be fitted without inventing evidence or using forbidden CBVD-5 test labels. Keep the implemented validation-only Logistic gate for future use when the CVB media is restored; for this real run, freeze a clearly named heuristic quality guard from absolute image/track bounds before reading external metrics. Report it as exploratory and do not claim a learned quality-gate improvement. Temperature calibration and the existing CVB-selected fixed rejection policy remain unchanged.
 
 ### Task 1: External dataset registry and provenance contract
 
@@ -423,25 +424,25 @@ Commit: `docs: verify external cattle dataset acquisition metadata`
 - Create tracked manifests under: `data/external/<dataset>/manifests/`
 - Modify: `docs/data/2026-08-23-public-cattle-video-data-record.md`
 
-- [ ] **Step 1: Run `inspect` and save the console summary in the ledger**
+- [x] **Step 1: Run `inspect` and save the console summary in the ledger**
 
-- [ ] **Step 2: Acquire only approved files**
+- [x] **Step 2: Acquire only approved files**
 
 Stop automatically at the byte budget. Record source URL, ETag/version when exposed, local size, and SHA-256.
 
-- [ ] **Step 3: Extract and inventory non-destructively**
+- [x] **Step 3: Extract and inventory non-destructively**
 
 Keep archives. Write file inventory before parsing. Never rewrite original media.
 
-- [ ] **Step 4: Generate strict and extended virtual-clip manifests**
+- [x] **Step 4: Generate strict and extended virtual-clip manifests**
 
 Write `source_videos.csv`, `evaluation_clips_strict.csv`, `evaluation_clips_extended.csv`, `excluded_samples.csv`, and `manifest_summary.json`. Clip rows reference immutable source videos and carry deterministic time-window/crop transformations instead of duplicating MP4 media; verify the source SHA-256 before decoding.
 
-- [ ] **Step 5: Audit samples visually and structurally**
+- [x] **Step 5: Audit samples visually and structurally**
 
 Inspect at least 10 deterministic samples per mapped class when available. Record annotation/video mismatch, crop quality, behavior visibility, and exclusions. Do not relabel ambiguous samples by model prediction.
 
-- [ ] **Step 6: Validate and commit manifests/ledger**
+- [x] **Step 6: Validate and commit manifests/ledger**
 
 Run all focused data tests and a manifest validation command. Commit only manifests, summaries, hashes, and documentation.
 
@@ -463,9 +464,9 @@ Verify checkpoint SHA-256, calibration/checkpoint binding, manifest hash, class 
 
 Do not change thresholds after seeing results. Preserve per-sample logits and quality evidence.
 
-- [ ] **Step 3: Fit the quality gate only on CVB validation data**
+- [ ] **Step 3: Apply the frozen quality policy without external-label fitting**
 
-Save the gate artifact and its training-manifest hash. Then apply it to the already frozen external predictions without refitting.
+Use the learned Logistic gate only if CVB validation video-quality rows with a verified manifest hash are present. In the current verified workspace they are absent, so write a `predeclared_heuristic` gate artifact with absolute image/track bounds fixed before external metrics are read, apply it without fitting, and record the missing-CVB-quality limitation. Never fit or retune from CBVD-5 labels.
 
 - [ ] **Step 4: Run controlled degradations**
 

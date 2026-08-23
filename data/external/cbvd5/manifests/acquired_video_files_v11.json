@@ -1,0 +1,4818 @@
+{
+  "dataset_id": "cbvd5",
+  "dataset_version": 11,
+  "file_count": 687,
+  "files": [
+    {
+      "local_path": "raw/videos/videos/1.mp4",
+      "relative_path": "videos/videos/1.mp4",
+      "reused": true,
+      "sha256": "453f0a91cd86a3f29f21d14e08c56d7484a8142ff631bd2d4e8cf591178f4c89",
+      "size": 5977076
+    },
+    {
+      "local_path": "raw/videos/videos/10.mp4",
+      "relative_path": "videos/videos/10.mp4",
+      "reused": false,
+      "sha256": "e7da76f4b713c2afe91cd74224bc610a9e50aeea4ddd1c75d823773b2a18e3c6",
+      "size": 4751609
+    },
+    {
+      "local_path": "raw/videos/videos/100.mp4",
+      "relative_path": "videos/videos/100.mp4",
+      "reused": false,
+      "sha256": "6e76f410110c0938506e57d3cf6d36730b17ebecac121b04d1f89c04e3aa6759",
+      "size": 6026887
+    },
+    {
+      "local_path": "raw/videos/videos/101.mp4",
+      "relative_path": "videos/videos/101.mp4",
+      "reused": false,
+      "sha256": "3396ae73af68e40f44061add4817fccddecf55f11f9d8a864aa75ddfed1a9f37",
+      "size": 6475151
+    },
+    {
+      "local_path": "raw/videos/videos/102.mp4",
+      "relative_path": "videos/videos/102.mp4",
+      "reused": false,
+      "sha256": "9f6f8f06ee5ae50dc860dce3b7536d8f4f04af0b3c3ff5ad73d1f2b14c3d6ad5",
+      "size": 6086949
+    },
+    {
+      "local_path": "raw/videos/videos/103.mp4",
+      "relative_path": "videos/videos/103.mp4",
+      "reused": false,
+      "sha256": "dbaa3cadc11ec8a0e8be9533e8e6fd625cb2a8262f58f4b08787936f80676136",
+      "size": 6472102
+    },
+    {
+      "local_path": "raw/videos/videos/104.mp4",
+      "relative_path": "videos/videos/104.mp4",
+      "reused": false,
+      "sha256": "21c1b069810decbefae51f440759fe117db12a51eb10fd17a4c68478f444b99e",
+      "size": 6288052
+    },
+    {
+      "local_path": "raw/videos/videos/105.mp4",
+      "relative_path": "videos/videos/105.mp4",
+      "reused": false,
+      "sha256": "73f55a22e4b1ec17b3e204860d043df9e7d88e0f4c646c38f0b60d886d497b03",
+      "size": 5172153
+    },
+    {
+      "local_path": "raw/videos/videos/106.mp4",
+      "relative_path": "videos/videos/106.mp4",
+      "reused": false,
+      "sha256": "47e68ecefcb29c6773d0e79a834a9521a89865a6fb15a0b68543bc6f5f0b1bd8",
+      "size": 4494554
+    },
+    {
+      "local_path": "raw/videos/videos/107.mp4",
+      "relative_path": "videos/videos/107.mp4",
+      "reused": false,
+      "sha256": "bb8fa9f1a64cd9aeb7a01aafc9a2145634f675bd1eafa5f9da9ff6c7d2250821",
+      "size": 4687502
+    },
+    {
+      "local_path": "raw/videos/videos/108.mp4",
+      "relative_path": "videos/videos/108.mp4",
+      "reused": false,
+      "sha256": "b84af8d175e02d9cacc1a7c46066ff74b3026d89a21e702fb6c5c9a9dc289781",
+      "size": 4800938
+    },
+    {
+      "local_path": "raw/videos/videos/109.mp4",
+      "relative_path": "videos/videos/109.mp4",
+      "reused": false,
+      "sha256": "dc6baabfdf2ab8ad63867a196f6861e47cd0f02ae58ce6a6d7a29e91b8af698a",
+      "size": 4772957
+    },
+    {
+      "local_path": "raw/videos/videos/11.mp4",
+      "relative_path": "videos/videos/11.mp4",
+      "reused": false,
+      "sha256": "31e380e961f1a594e8badf047161e8f58c3c3ccf455da88cc0f8c811801c3772",
+      "size": 4913203
+    },
+    {
+      "local_path": "raw/videos/videos/110.mp4",
+      "relative_path": "videos/videos/110.mp4",
+      "reused": false,
+      "sha256": "31e13451e1a42311b4ea703f068b7bfb81d521e375e977652418788b0ae8b4d5",
+      "size": 4665759
+    },
+    {
+      "local_path": "raw/videos/videos/111.mp4",
+      "relative_path": "videos/videos/111.mp4",
+      "reused": false,
+      "sha256": "344442a869fd4d62061bd23f145ba4c90694670f20c862dce76ddf605ba6b262",
+      "size": 5059461
+    },
+    {
+      "local_path": "raw/videos/videos/112.mp4",
+      "relative_path": "videos/videos/112.mp4",
+      "reused": false,
+      "sha256": "3da94c4458a4f7cf502f4ee03bd2b64c7968f2d318a5b46d8d775339a2e7215d",
+      "size": 5316203
+    },
+    {
+      "local_path": "raw/videos/videos/113.mp4",
+      "relative_path": "videos/videos/113.mp4",
+      "reused": false,
+      "sha256": "0fc793ea97ff76ae17cc4351446639730f13afabb4e125aa70cf1e1369d14c94",
+      "size": 4521877
+    },
+    {
+      "local_path": "raw/videos/videos/114.mp4",
+      "relative_path": "videos/videos/114.mp4",
+      "reused": false,
+      "sha256": "f2e98e48fe00f58e491e9f00ff85ee64aed5d5d025dec2531a22b87a996184bd",
+      "size": 4661046
+    },
+    {
+      "local_path": "raw/videos/videos/115.mp4",
+      "relative_path": "videos/videos/115.mp4",
+      "reused": false,
+      "sha256": "41a7b005c073c7c26c062856cbd3bcd66a40434a1b0bd7aa0c5ae17c0717e568",
+      "size": 4725490
+    },
+    {
+      "local_path": "raw/videos/videos/116.mp4",
+      "relative_path": "videos/videos/116.mp4",
+      "reused": false,
+      "sha256": "b30904e6567d1a7bb3e9af79674e98eca03d5c49f0397d979f3a952155904be5",
+      "size": 5003372
+    },
+    {
+      "local_path": "raw/videos/videos/117.mp4",
+      "relative_path": "videos/videos/117.mp4",
+      "reused": false,
+      "sha256": "23b7ae551db6cef469cae6d4a8f74cebad52b982c75bcd29e45fc4a59a6b85e3",
+      "size": 5556502
+    },
+    {
+      "local_path": "raw/videos/videos/118.mp4",
+      "relative_path": "videos/videos/118.mp4",
+      "reused": false,
+      "sha256": "ade6d414d6be963e7ef28dd19cd2c4748792de645d3a370da8fe30e9a86255bf",
+      "size": 6723177
+    },
+    {
+      "local_path": "raw/videos/videos/119.mp4",
+      "relative_path": "videos/videos/119.mp4",
+      "reused": false,
+      "sha256": "4656631f1a697316f8a6e2990959727cafd97d944ed0e5d6286fd46a7a545a13",
+      "size": 6619372
+    },
+    {
+      "local_path": "raw/videos/videos/12.mp4",
+      "relative_path": "videos/videos/12.mp4",
+      "reused": false,
+      "sha256": "aea75bc28a99781be5f8365fbada37be0219617dc9fb341145e8a61dac2eda43",
+      "size": 6366877
+    },
+    {
+      "local_path": "raw/videos/videos/120.mp4",
+      "relative_path": "videos/videos/120.mp4",
+      "reused": false,
+      "sha256": "7bd5d640ed8828ac8aebeffa49ffc920d15076388b6f66c7fca42c05419b1565",
+      "size": 6338514
+    },
+    {
+      "local_path": "raw/videos/videos/121.mp4",
+      "relative_path": "videos/videos/121.mp4",
+      "reused": false,
+      "sha256": "03fda33d34841b178fa6ba73bb4b20c1c31dda22d2a6cdc207d68d2a9aa227a8",
+      "size": 5795585
+    },
+    {
+      "local_path": "raw/videos/videos/122.mp4",
+      "relative_path": "videos/videos/122.mp4",
+      "reused": false,
+      "sha256": "fbca639d1590b322f910fa0192605b2259f28f417e5328693c38a977ab302465",
+      "size": 5475076
+    },
+    {
+      "local_path": "raw/videos/videos/123.mp4",
+      "relative_path": "videos/videos/123.mp4",
+      "reused": false,
+      "sha256": "bcea076b0ce495ad994ebdbbf0cebd382b546faed275746cd7fa1b6786ea53df",
+      "size": 5790024
+    },
+    {
+      "local_path": "raw/videos/videos/124.mp4",
+      "relative_path": "videos/videos/124.mp4",
+      "reused": false,
+      "sha256": "e1955425fea7e2757145369f1448349e18cc8a04929336206d9dc3e5c81d4477",
+      "size": 5875107
+    },
+    {
+      "local_path": "raw/videos/videos/125.mp4",
+      "relative_path": "videos/videos/125.mp4",
+      "reused": false,
+      "sha256": "d4356cd37b117e8387906cc52dff301c3afd1accd658a035c225fbd4dd72065a",
+      "size": 5772836
+    },
+    {
+      "local_path": "raw/videos/videos/126.mp4",
+      "relative_path": "videos/videos/126.mp4",
+      "reused": false,
+      "sha256": "cbd2a08496bedbda94eb9d005b48c72e22cdbd529b31b222dd6659c1d3887eaf",
+      "size": 6437663
+    },
+    {
+      "local_path": "raw/videos/videos/127.mp4",
+      "relative_path": "videos/videos/127.mp4",
+      "reused": false,
+      "sha256": "15e903caa166e50e1353f67931254922390eee0c65694e709fe72544ebe0223e",
+      "size": 5363443
+    },
+    {
+      "local_path": "raw/videos/videos/128.mp4",
+      "relative_path": "videos/videos/128.mp4",
+      "reused": false,
+      "sha256": "3cded2e61fcb40e7af82a71dc741363d77a9ace2fc55c49e6b1081e32c6eb3c3",
+      "size": 5621294
+    },
+    {
+      "local_path": "raw/videos/videos/129.mp4",
+      "relative_path": "videos/videos/129.mp4",
+      "reused": false,
+      "sha256": "355c1739976d1b039a59bb86e1adfb4ab14e5a5d78c6d62e3c4b05471af1a345",
+      "size": 4890750
+    },
+    {
+      "local_path": "raw/videos/videos/13.mp4",
+      "relative_path": "videos/videos/13.mp4",
+      "reused": false,
+      "sha256": "f58235c75c73f8103122e25e192860d83d3a1c675de632633d93be99ce101b3a",
+      "size": 5246639
+    },
+    {
+      "local_path": "raw/videos/videos/130.mp4",
+      "relative_path": "videos/videos/130.mp4",
+      "reused": false,
+      "sha256": "a40583bcd48680c4910161072c47e100bcecbc8a4e4f4cbb2ede55e46ab1761b",
+      "size": 5287764
+    },
+    {
+      "local_path": "raw/videos/videos/131.mp4",
+      "relative_path": "videos/videos/131.mp4",
+      "reused": false,
+      "sha256": "432135178c20717db84fbc26b35fbf718335be65ae2dfc3ff0747868a614f299",
+      "size": 4938804
+    },
+    {
+      "local_path": "raw/videos/videos/132.mp4",
+      "relative_path": "videos/videos/132.mp4",
+      "reused": false,
+      "sha256": "aa85c8948d5a40d8a1c4fa54dfeada4e083dcfdc3afca4c8ee938fe25e3cf2e6",
+      "size": 4880518
+    },
+    {
+      "local_path": "raw/videos/videos/133.mp4",
+      "relative_path": "videos/videos/133.mp4",
+      "reused": false,
+      "sha256": "fb14af4add81e1c757bbf0c9e630063db38b0c93c8456bcfe5d3efbc29dca786",
+      "size": 4987938
+    },
+    {
+      "local_path": "raw/videos/videos/134.mp4",
+      "relative_path": "videos/videos/134.mp4",
+      "reused": false,
+      "sha256": "a25777a6c5c3ba757f48b5dde13a56d1c57eef825124cd95366b79e49df0f6ba",
+      "size": 5601264
+    },
+    {
+      "local_path": "raw/videos/videos/135.mp4",
+      "relative_path": "videos/videos/135.mp4",
+      "reused": false,
+      "sha256": "0a5183172e34bbd3581938f8032cc3e21bc469e5890b75f9483c1f5ff70c84d2",
+      "size": 5704458
+    },
+    {
+      "local_path": "raw/videos/videos/136.mp4",
+      "relative_path": "videos/videos/136.mp4",
+      "reused": false,
+      "sha256": "05ae17df7a75860e0b674993b27092402d88be1d53189ebececa0a7405b372be",
+      "size": 4797248
+    },
+    {
+      "local_path": "raw/videos/videos/137.mp4",
+      "relative_path": "videos/videos/137.mp4",
+      "reused": false,
+      "sha256": "11621606d6dc9313b4d0d49c43a7e8e06f6516ec793a88795dca395a6d48180a",
+      "size": 5037886
+    },
+    {
+      "local_path": "raw/videos/videos/138.mp4",
+      "relative_path": "videos/videos/138.mp4",
+      "reused": false,
+      "sha256": "427c8d1c160ff416c21cfbb5423336a030b341a03d615f765374c3432eb435e0",
+      "size": 4697724
+    },
+    {
+      "local_path": "raw/videos/videos/139.mp4",
+      "relative_path": "videos/videos/139.mp4",
+      "reused": false,
+      "sha256": "ee340f597789e475c7ff1d06eda113580be934ae6bf069b48d92801ce93ccd34",
+      "size": 4583956
+    },
+    {
+      "local_path": "raw/videos/videos/14.mp4",
+      "relative_path": "videos/videos/14.mp4",
+      "reused": false,
+      "sha256": "668fcbaed0bc9f572bbfe84e8d97f9f123d9775d6aa8c0d7fce7d40ee7795258",
+      "size": 4908349
+    },
+    {
+      "local_path": "raw/videos/videos/140.mp4",
+      "relative_path": "videos/videos/140.mp4",
+      "reused": false,
+      "sha256": "f2aa4e3113a0439bd3bfa6b5fabddfd2c3499c09ac817c0ce9b373b576af35cb",
+      "size": 5435336
+    },
+    {
+      "local_path": "raw/videos/videos/141.mp4",
+      "relative_path": "videos/videos/141.mp4",
+      "reused": false,
+      "sha256": "c83543ff32fb1cda3805a5d8cc47019bbce743f15cc88409f22287201d1f1517",
+      "size": 5579034
+    },
+    {
+      "local_path": "raw/videos/videos/142.mp4",
+      "relative_path": "videos/videos/142.mp4",
+      "reused": false,
+      "sha256": "2e845728a1c49fc9286ddbb31b704cf1beb75c87e432cce08c05ae947487155b",
+      "size": 6049291
+    },
+    {
+      "local_path": "raw/videos/videos/143.mp4",
+      "relative_path": "videos/videos/143.mp4",
+      "reused": false,
+      "sha256": "0cceec5e3da67c30af4b0b1f80c93a5441cc4279d457cff19e32cc6dc48ce410",
+      "size": 5969797
+    },
+    {
+      "local_path": "raw/videos/videos/144.mp4",
+      "relative_path": "videos/videos/144.mp4",
+      "reused": false,
+      "sha256": "1194e26a234a51ed800792daf127a5169a42b32412f80fffff4174bde0f9b436",
+      "size": 6339005
+    },
+    {
+      "local_path": "raw/videos/videos/145.mp4",
+      "relative_path": "videos/videos/145.mp4",
+      "reused": false,
+      "sha256": "293e8a818624edd5e8b5ddd9dcf63f7e8b7170f334b24be40ae255057feccc49",
+      "size": 5881836
+    },
+    {
+      "local_path": "raw/videos/videos/146.mp4",
+      "relative_path": "videos/videos/146.mp4",
+      "reused": false,
+      "sha256": "fe0e0875c8b47f84fac6bd16c6ca091cc1d9bbf5deaca42b690bd74bd549d774",
+      "size": 5337891
+    },
+    {
+      "local_path": "raw/videos/videos/147.mp4",
+      "relative_path": "videos/videos/147.mp4",
+      "reused": false,
+      "sha256": "7eff0c1ce61beb3edc03fe7f15ce20699feecc79aeaedb943892d252d1119ede",
+      "size": 6105335
+    },
+    {
+      "local_path": "raw/videos/videos/148.mp4",
+      "relative_path": "videos/videos/148.mp4",
+      "reused": false,
+      "sha256": "8726a298581b82ee1b99354d2eced19fbf7d8e91170340c559ea0c9a94dfea87",
+      "size": 6139831
+    },
+    {
+      "local_path": "raw/videos/videos/149.mp4",
+      "relative_path": "videos/videos/149.mp4",
+      "reused": false,
+      "sha256": "4d26a024d7700f26f4272fae8abe813a0e9ba394a4dd8b748aa9d027b2a00f97",
+      "size": 5511471
+    },
+    {
+      "local_path": "raw/videos/videos/15.mp4",
+      "relative_path": "videos/videos/15.mp4",
+      "reused": false,
+      "sha256": "ef02467c614df4651c92e418816f8895517352c709ec6d636ea4fee1119923a3",
+      "size": 4600279
+    },
+    {
+      "local_path": "raw/videos/videos/150.mp4",
+      "relative_path": "videos/videos/150.mp4",
+      "reused": false,
+      "sha256": "ed7b156ec19ace490998e1a0457868792d948470bba5e10f318007c29cb972b1",
+      "size": 6141837
+    },
+    {
+      "local_path": "raw/videos/videos/151.mp4",
+      "relative_path": "videos/videos/151.mp4",
+      "reused": false,
+      "sha256": "2c4a561d2bf15e5c946cf79cb4f9ef13446e23c45b3a925c2ea8ce4b7c840862",
+      "size": 4888005
+    },
+    {
+      "local_path": "raw/videos/videos/152.mp4",
+      "relative_path": "videos/videos/152.mp4",
+      "reused": false,
+      "sha256": "a0b5852e3342822773e93c531d7d1d6f6f05329d0382466dda1cf4065d110012",
+      "size": 4682944
+    },
+    {
+      "local_path": "raw/videos/videos/153.mp4",
+      "relative_path": "videos/videos/153.mp4",
+      "reused": false,
+      "sha256": "0cf8f7d75e55cb345748335df18562f90b463b95d78dc95cf17774f34904c8dc",
+      "size": 4681144
+    },
+    {
+      "local_path": "raw/videos/videos/154.mp4",
+      "relative_path": "videos/videos/154.mp4",
+      "reused": false,
+      "sha256": "1eb6cc0be58cfc38e82d79b087907c53b64e1af23e5671488351eda40d7c0755",
+      "size": 4693346
+    },
+    {
+      "local_path": "raw/videos/videos/155.mp4",
+      "relative_path": "videos/videos/155.mp4",
+      "reused": false,
+      "sha256": "8644ecf29fd89d2976ddc3fa8aabae38c0ffb53ff6a6c36baa113c699496e5f1",
+      "size": 4626277
+    },
+    {
+      "local_path": "raw/videos/videos/156.mp4",
+      "relative_path": "videos/videos/156.mp4",
+      "reused": false,
+      "sha256": "e330941974c4a70153b492a6f11adbc7d4685cfecaedc5a9bad31565c0377a24",
+      "size": 4791726
+    },
+    {
+      "local_path": "raw/videos/videos/157.mp4",
+      "relative_path": "videos/videos/157.mp4",
+      "reused": false,
+      "sha256": "ca1f807b2577270dd4a399155c21cbc535ecd890b9e308ab4f1ff7866871f71b",
+      "size": 4634599
+    },
+    {
+      "local_path": "raw/videos/videos/158.mp4",
+      "relative_path": "videos/videos/158.mp4",
+      "reused": false,
+      "sha256": "6cb382ba7628593bf125c16e90a5c98b4d0e23dc4c48c5ae72cde5cff84c7508",
+      "size": 4881509
+    },
+    {
+      "local_path": "raw/videos/videos/159.mp4",
+      "relative_path": "videos/videos/159.mp4",
+      "reused": false,
+      "sha256": "43744333b07fad3ced7c260d7d7ef0c14c33059c30df160bfa7207de2d65b2c5",
+      "size": 4718193
+    },
+    {
+      "local_path": "raw/videos/videos/16.mp4",
+      "relative_path": "videos/videos/16.mp4",
+      "reused": false,
+      "sha256": "33aa63158a3fb0b679bd0be654572c37e23c2794574ef60567f29b7cb0de8c47",
+      "size": 4587704
+    },
+    {
+      "local_path": "raw/videos/videos/160.mp4",
+      "relative_path": "videos/videos/160.mp4",
+      "reused": false,
+      "sha256": "198195383f89449d118688502f400c5bf2c9611a84aff5beb59bd78d561af230",
+      "size": 4574220
+    },
+    {
+      "local_path": "raw/videos/videos/161.mp4",
+      "relative_path": "videos/videos/161.mp4",
+      "reused": false,
+      "sha256": "b6e679185edebde113ea2a067b7612e59b7745df1276df6303f9713f6618d8ea",
+      "size": 4511598
+    },
+    {
+      "local_path": "raw/videos/videos/162.mp4",
+      "relative_path": "videos/videos/162.mp4",
+      "reused": false,
+      "sha256": "da16ac613d3adba63a0c9ce966a249d675270cb2f8746fa188fb5dcdfa32501c",
+      "size": 4531559
+    },
+    {
+      "local_path": "raw/videos/videos/163.mp4",
+      "relative_path": "videos/videos/163.mp4",
+      "reused": false,
+      "sha256": "fa301a1c2db490f4eee211cca7757d5d7fabc4b0dce4b15b51cfb49741d4c86a",
+      "size": 4567805
+    },
+    {
+      "local_path": "raw/videos/videos/164.mp4",
+      "relative_path": "videos/videos/164.mp4",
+      "reused": false,
+      "sha256": "fa1179fdd32e25cc5286a434618f21a2d12185d338f82fccb0d16211a2a39bfa",
+      "size": 4969448
+    },
+    {
+      "local_path": "raw/videos/videos/165.mp4",
+      "relative_path": "videos/videos/165.mp4",
+      "reused": false,
+      "sha256": "334951819e3d671427e8a0f37c3b1f28bf4289d544fdf88a3f98b9a9f4fc918e",
+      "size": 5322632
+    },
+    {
+      "local_path": "raw/videos/videos/166.mp4",
+      "relative_path": "videos/videos/166.mp4",
+      "reused": false,
+      "sha256": "fae4aee6919fbb5ce3879d11112e4005db638d6b2f8ed69ebeec3165d6fa2284",
+      "size": 5161360
+    },
+    {
+      "local_path": "raw/videos/videos/167.mp4",
+      "relative_path": "videos/videos/167.mp4",
+      "reused": false,
+      "sha256": "287f68a8decf62b7b9f4005528e003a6a9a322b654a62701d0322b0cc5971ed1",
+      "size": 5165917
+    },
+    {
+      "local_path": "raw/videos/videos/168.mp4",
+      "relative_path": "videos/videos/168.mp4",
+      "reused": false,
+      "sha256": "0f04e3d81ef45246f7f8337d032c74c125c3bbe5d4fd86f0add42b2874f0562c",
+      "size": 4754814
+    },
+    {
+      "local_path": "raw/videos/videos/169.mp4",
+      "relative_path": "videos/videos/169.mp4",
+      "reused": false,
+      "sha256": "d79d5566739c41232a12d1fd21e7a2a6c0b4a4efd03bcaac40802c11bfd73f30",
+      "size": 4834022
+    },
+    {
+      "local_path": "raw/videos/videos/17.mp4",
+      "relative_path": "videos/videos/17.mp4",
+      "reused": false,
+      "sha256": "092e942f967b1c1f3437635c2f470858d3ff5f3d38c215ddde2c780130be4977",
+      "size": 4603974
+    },
+    {
+      "local_path": "raw/videos/videos/170.mp4",
+      "relative_path": "videos/videos/170.mp4",
+      "reused": false,
+      "sha256": "68505b4d762cf515a4cbad9a26f88fecb4e76b96664346e7239f8b1761b74aca",
+      "size": 4957488
+    },
+    {
+      "local_path": "raw/videos/videos/171.mp4",
+      "relative_path": "videos/videos/171.mp4",
+      "reused": false,
+      "sha256": "58dac0d1226a908af18b0765b383f15f0d3fbcf8e4e7530b6ebe2245aa33eb11",
+      "size": 4595067
+    },
+    {
+      "local_path": "raw/videos/videos/172.mp4",
+      "relative_path": "videos/videos/172.mp4",
+      "reused": false,
+      "sha256": "f3b9c050c1d5166fb1dae59360581df5380b9decf47d35e8d0c3abdef3476ad7",
+      "size": 4754311
+    },
+    {
+      "local_path": "raw/videos/videos/173.mp4",
+      "relative_path": "videos/videos/173.mp4",
+      "reused": false,
+      "sha256": "506601085dfdbb49bc4daeae61dfaeafd38e043ed93dfe2d48195cc96ad14101",
+      "size": 5956727
+    },
+    {
+      "local_path": "raw/videos/videos/174.mp4",
+      "relative_path": "videos/videos/174.mp4",
+      "reused": false,
+      "sha256": "267f770bc5600cffa4371ec14b76c6a3a7a41e7a4e80bed8365b69a9f1ca8aff",
+      "size": 6621673
+    },
+    {
+      "local_path": "raw/videos/videos/175.mp4",
+      "relative_path": "videos/videos/175.mp4",
+      "reused": false,
+      "sha256": "27dfe835e0d3a238637f5f11987c4e70137935e7da3885b48f04840d484634fd",
+      "size": 5151019
+    },
+    {
+      "local_path": "raw/videos/videos/176.mp4",
+      "relative_path": "videos/videos/176.mp4",
+      "reused": false,
+      "sha256": "9ffa61c9011c2336828acd907a6b248a9141f22946466ec6278808eb176f7ea5",
+      "size": 5718525
+    },
+    {
+      "local_path": "raw/videos/videos/177.mp4",
+      "relative_path": "videos/videos/177.mp4",
+      "reused": false,
+      "sha256": "25674eae27f676b92e1cfb2cc34d0969df6077fcc7577bc22dd07a16fae0f841",
+      "size": 5167666
+    },
+    {
+      "local_path": "raw/videos/videos/178.mp4",
+      "relative_path": "videos/videos/178.mp4",
+      "reused": false,
+      "sha256": "ff51362d489f33fcc97d3457bac9d2c18a09a77fb77901e9c422b19a1c3ca3ac",
+      "size": 5017514
+    },
+    {
+      "local_path": "raw/videos/videos/179.mp4",
+      "relative_path": "videos/videos/179.mp4",
+      "reused": false,
+      "sha256": "1c6f2e46d10f7541b8287d5afffdbec202d584ccc1edb499090a271d6f928e38",
+      "size": 5770717
+    },
+    {
+      "local_path": "raw/videos/videos/18.mp4",
+      "relative_path": "videos/videos/18.mp4",
+      "reused": false,
+      "sha256": "57f8271b6fd22de8417d72bdcfbc9cc193f839769ab9d4e0a247b259687d8d25",
+      "size": 5620612
+    },
+    {
+      "local_path": "raw/videos/videos/180.mp4",
+      "relative_path": "videos/videos/180.mp4",
+      "reused": false,
+      "sha256": "5ee114c001ab7b4fb9dfeaa9613e12db8d387dd37233014d2486f81042862e38",
+      "size": 5248891
+    },
+    {
+      "local_path": "raw/videos/videos/181.mp4",
+      "relative_path": "videos/videos/181.mp4",
+      "reused": false,
+      "sha256": "828efd6700690a2670f5f5d0c8111a4fc866e294c69615513f3013ec73e50bd8",
+      "size": 5105640
+    },
+    {
+      "local_path": "raw/videos/videos/182.mp4",
+      "relative_path": "videos/videos/182.mp4",
+      "reused": false,
+      "sha256": "8c6c115cbd9aa89d663869fc852c394a34f4655c73681f848abd5492a3afe0d0",
+      "size": 5557490
+    },
+    {
+      "local_path": "raw/videos/videos/183.mp4",
+      "relative_path": "videos/videos/183.mp4",
+      "reused": false,
+      "sha256": "1526f84408e78df67992e90bdc715c083b67c547274f3cbd1b3d137945b203f3",
+      "size": 5682268
+    },
+    {
+      "local_path": "raw/videos/videos/184.mp4",
+      "relative_path": "videos/videos/184.mp4",
+      "reused": false,
+      "sha256": "74c5ad12476a1a108e54995d5d946deda7239b39d2d9e7914117cbc470e59f71",
+      "size": 4919703
+    },
+    {
+      "local_path": "raw/videos/videos/185.mp4",
+      "relative_path": "videos/videos/185.mp4",
+      "reused": false,
+      "sha256": "4ddf59863634fe7d46026e3e6d3acadc08ed0631336f45c61a69dc7966e6f9dc",
+      "size": 5761361
+    },
+    {
+      "local_path": "raw/videos/videos/186.mp4",
+      "relative_path": "videos/videos/186.mp4",
+      "reused": false,
+      "sha256": "3a073c0d23057b3bb02eae6a7c4f91816fd94480c96a44e8ec049126caa0603e",
+      "size": 4700263
+    },
+    {
+      "local_path": "raw/videos/videos/187.mp4",
+      "relative_path": "videos/videos/187.mp4",
+      "reused": false,
+      "sha256": "e8fe077e85f449c681f8d3e0c7f2e7d25c82e9afaccf6a82ab0ebac2521f6a0a",
+      "size": 5109478
+    },
+    {
+      "local_path": "raw/videos/videos/188.mp4",
+      "relative_path": "videos/videos/188.mp4",
+      "reused": false,
+      "sha256": "2d7e0ce7b9755b31f7ef4a08b30801f7843f2147cc883131bb09e675470f13a4",
+      "size": 5959029
+    },
+    {
+      "local_path": "raw/videos/videos/189.mp4",
+      "relative_path": "videos/videos/189.mp4",
+      "reused": false,
+      "sha256": "e0254882415237a2a6fe3ccdea41cf75283375d9407b612702011e77e253193a",
+      "size": 6586861
+    },
+    {
+      "local_path": "raw/videos/videos/19.mp4",
+      "relative_path": "videos/videos/19.mp4",
+      "reused": false,
+      "sha256": "b12120888e9f0342ca9c4121968e3f7d2553cec7ecf5d1eab3ceb1e519dfa877",
+      "size": 5225924
+    },
+    {
+      "local_path": "raw/videos/videos/190.mp4",
+      "relative_path": "videos/videos/190.mp4",
+      "reused": false,
+      "sha256": "11b157aec3f7b3ff9137e073b02e33ce612b14c345f31492ff13fe6501f665ef",
+      "size": 6171127
+    },
+    {
+      "local_path": "raw/videos/videos/191.mp4",
+      "relative_path": "videos/videos/191.mp4",
+      "reused": false,
+      "sha256": "f63b79dfaf9238a19ff72f146553fe62e14fa7111e0abd6c2ff877f9128bcd64",
+      "size": 6481290
+    },
+    {
+      "local_path": "raw/videos/videos/192.mp4",
+      "relative_path": "videos/videos/192.mp4",
+      "reused": false,
+      "sha256": "6f02cbd63013587e8bd9f8f1bd981ad54ebeef8e41c4ddc81533ae18eee435d0",
+      "size": 5876886
+    },
+    {
+      "local_path": "raw/videos/videos/193.mp4",
+      "relative_path": "videos/videos/193.mp4",
+      "reused": false,
+      "sha256": "dbe75563c82a04f1c839886aea675dee745758fb70d115477839e5e550dd62df",
+      "size": 5906974
+    },
+    {
+      "local_path": "raw/videos/videos/194.mp4",
+      "relative_path": "videos/videos/194.mp4",
+      "reused": false,
+      "sha256": "d167517bcef84bfba99708a6e10d34911a6060479a2a93a6c8198e1b6cba92c7",
+      "size": 5530845
+    },
+    {
+      "local_path": "raw/videos/videos/195.mp4",
+      "relative_path": "videos/videos/195.mp4",
+      "reused": false,
+      "sha256": "5779275760f7102a3314dbb4e56b788107c69646aac5c29302e8f196b76ac9ec",
+      "size": 6791849
+    },
+    {
+      "local_path": "raw/videos/videos/196.mp4",
+      "relative_path": "videos/videos/196.mp4",
+      "reused": false,
+      "sha256": "9b010dfaf492d7e688952c3703377eabcb2d0f64a7b0632f2144fce3b9467508",
+      "size": 6557355
+    },
+    {
+      "local_path": "raw/videos/videos/197.mp4",
+      "relative_path": "videos/videos/197.mp4",
+      "reused": false,
+      "sha256": "686732f38bd28c66fe320c92a985c831d51595d6f23b59a54e2511ed08578f38",
+      "size": 5888221
+    },
+    {
+      "local_path": "raw/videos/videos/198.mp4",
+      "relative_path": "videos/videos/198.mp4",
+      "reused": false,
+      "sha256": "176a0446f4dcbdbe80e45c57881c5ed533c8e757bfa21b57f7be3886a38c209e",
+      "size": 6330662
+    },
+    {
+      "local_path": "raw/videos/videos/199.mp4",
+      "relative_path": "videos/videos/199.mp4",
+      "reused": false,
+      "sha256": "9b9113efc5f82f72eda1bbf094c46c3e4966c80710a179483a8d7cbc76d9f997",
+      "size": 6047452
+    },
+    {
+      "local_path": "raw/videos/videos/2.mp4",
+      "relative_path": "videos/videos/2.mp4",
+      "reused": false,
+      "sha256": "ab7ec8abd85d485a4043f923c21e0d19a1393db41baa9fa02a9c1266aa45bc2c",
+      "size": 5996469
+    },
+    {
+      "local_path": "raw/videos/videos/20.mp4",
+      "relative_path": "videos/videos/20.mp4",
+      "reused": false,
+      "sha256": "cde438b95b1e27a65bcdec3571b73a7f003c5bee8b0e9494349986f0f19dac87",
+      "size": 6301609
+    },
+    {
+      "local_path": "raw/videos/videos/200.mp4",
+      "relative_path": "videos/videos/200.mp4",
+      "reused": false,
+      "sha256": "10d5879562d350ced0a991609b29b3981306daa31a0ca46ff33e0b1e99ea99d8",
+      "size": 6795982
+    },
+    {
+      "local_path": "raw/videos/videos/201.mp4",
+      "relative_path": "videos/videos/201.mp4",
+      "reused": false,
+      "sha256": "f4b7998373b5f705b40dee118f971da076448a03bcd11f4856061a9592432329",
+      "size": 6218221
+    },
+    {
+      "local_path": "raw/videos/videos/202.mp4",
+      "relative_path": "videos/videos/202.mp4",
+      "reused": false,
+      "sha256": "6eb8c1a150f940ab4928a20bc454538418e17b7ae54a9d53cdde5a62991c786a",
+      "size": 5595280
+    },
+    {
+      "local_path": "raw/videos/videos/203.mp4",
+      "relative_path": "videos/videos/203.mp4",
+      "reused": false,
+      "sha256": "760d182b708221281a29c9e87b1f4f43cc4698d8cd20a5a9e8ce5bf9281de4d2",
+      "size": 6020991
+    },
+    {
+      "local_path": "raw/videos/videos/204.mp4",
+      "relative_path": "videos/videos/204.mp4",
+      "reused": false,
+      "sha256": "2e8b4215a37ad2447995381870d388acbeb8bcfbcfc8c6ab38be940837822499",
+      "size": 4781555
+    },
+    {
+      "local_path": "raw/videos/videos/205.mp4",
+      "relative_path": "videos/videos/205.mp4",
+      "reused": false,
+      "sha256": "3bd3a11c1eb829cbd1c8a672033f2c88cb17de6993c253390d1a7a69d96488e0",
+      "size": 5119813
+    },
+    {
+      "local_path": "raw/videos/videos/206.mp4",
+      "relative_path": "videos/videos/206.mp4",
+      "reused": false,
+      "sha256": "69d97a96a34f62000c213ec6230ca1736fd5a0c7374cbb138afc287a5cb538cd",
+      "size": 5308089
+    },
+    {
+      "local_path": "raw/videos/videos/207.mp4",
+      "relative_path": "videos/videos/207.mp4",
+      "reused": false,
+      "sha256": "ba60d048fcb1ec8384a638d8ffc85b3bfac7aded85bdcf24f89ea20bcbda681d",
+      "size": 5284120
+    },
+    {
+      "local_path": "raw/videos/videos/208.mp4",
+      "relative_path": "videos/videos/208.mp4",
+      "reused": false,
+      "sha256": "cb89b150b4b37f7774eadc2087262760f46090f559cbbc5750b43b3137777ebb",
+      "size": 5912268
+    },
+    {
+      "local_path": "raw/videos/videos/209.mp4",
+      "relative_path": "videos/videos/209.mp4",
+      "reused": false,
+      "sha256": "3d707ce29dce89dd5d37a805a4dc07c5d1bc4d7ba9fb7b1a8d1fb8ce5f4f9544",
+      "size": 5492570
+    },
+    {
+      "local_path": "raw/videos/videos/21.mp4",
+      "relative_path": "videos/videos/21.mp4",
+      "reused": false,
+      "sha256": "4f5ac5c30bc117f35d30187d60cc7569f970c1f7adf67b017f9c96e0b6ed9dd4",
+      "size": 5623778
+    },
+    {
+      "local_path": "raw/videos/videos/210.mp4",
+      "relative_path": "videos/videos/210.mp4",
+      "reused": false,
+      "sha256": "0b6b5a4dae65d084dc246990fb3b7c28235f2ff66d0ac084825505877a235192",
+      "size": 5826964
+    },
+    {
+      "local_path": "raw/videos/videos/211.mp4",
+      "relative_path": "videos/videos/211.mp4",
+      "reused": false,
+      "sha256": "5b40225b26d8e63909d1fb000ded410662b16821587fbdd661b868258532d925",
+      "size": 5207044
+    },
+    {
+      "local_path": "raw/videos/videos/212.mp4",
+      "relative_path": "videos/videos/212.mp4",
+      "reused": false,
+      "sha256": "9b44b6394ec1944fd9de5f509cf510c8e109f30e8e9c0d22bd9cc37528311d37",
+      "size": 5350724
+    },
+    {
+      "local_path": "raw/videos/videos/213.mp4",
+      "relative_path": "videos/videos/213.mp4",
+      "reused": false,
+      "sha256": "f2ed058f1c847fdb68a8247680da314d81d6d0c6e83e7f70a0b64b8d9287eac6",
+      "size": 5063129
+    },
+    {
+      "local_path": "raw/videos/videos/214.mp4",
+      "relative_path": "videos/videos/214.mp4",
+      "reused": false,
+      "sha256": "7028f3971caab38ab4d11753282a9102ce862e3fecf0027e5cfcbe3c2f86e4ec",
+      "size": 5734512
+    },
+    {
+      "local_path": "raw/videos/videos/215.mp4",
+      "relative_path": "videos/videos/215.mp4",
+      "reused": false,
+      "sha256": "447df0dbc61fe45c5a119f630b9901fd8bc7617e1ebfbbe332f3e93bfc51e03c",
+      "size": 4733643
+    },
+    {
+      "local_path": "raw/videos/videos/216.mp4",
+      "relative_path": "videos/videos/216.mp4",
+      "reused": false,
+      "sha256": "88d15b31d3d391bc183b2771e322c91278697af5d422d37cf4f9475403db8913",
+      "size": 4855568
+    },
+    {
+      "local_path": "raw/videos/videos/217.mp4",
+      "relative_path": "videos/videos/217.mp4",
+      "reused": false,
+      "sha256": "a5e5d985e13cd5ef5e88b4cd95fbc68d6cc9b369f8a7eee40005ca3cb17cd1fa",
+      "size": 6542467
+    },
+    {
+      "local_path": "raw/videos/videos/218.mp4",
+      "relative_path": "videos/videos/218.mp4",
+      "reused": false,
+      "sha256": "f4799d9d2a3fc4f8dfcb593783fe323898916efefe21bca222b09b0bc4bc675d",
+      "size": 6680634
+    },
+    {
+      "local_path": "raw/videos/videos/219.mp4",
+      "relative_path": "videos/videos/219.mp4",
+      "reused": false,
+      "sha256": "0787c83505fbedaa4d502af574bf3221f53b77c15895492f7c0b7ec6e97f8065",
+      "size": 6777240
+    },
+    {
+      "local_path": "raw/videos/videos/22.mp4",
+      "relative_path": "videos/videos/22.mp4",
+      "reused": false,
+      "sha256": "a3c0bebb2898b18348f8b34434ac313a12039de8dd2b17d9177c78c6c6c71cec",
+      "size": 5843867
+    },
+    {
+      "local_path": "raw/videos/videos/220.mp4",
+      "relative_path": "videos/videos/220.mp4",
+      "reused": false,
+      "sha256": "2d5767962f5004aa1b78595b035655aae2020b97894e3327ce0a600906fc8531",
+      "size": 6267813
+    },
+    {
+      "local_path": "raw/videos/videos/221.mp4",
+      "relative_path": "videos/videos/221.mp4",
+      "reused": false,
+      "sha256": "496e95c19f5851b2002df8075c7696dbeaeff7008e78c93e58d22a25f08004ae",
+      "size": 5704250
+    },
+    {
+      "local_path": "raw/videos/videos/222.mp4",
+      "relative_path": "videos/videos/222.mp4",
+      "reused": false,
+      "sha256": "0d03c059dcf7375cc6183326ead74f9bbf2b0734cb589b5d05406ca031c62a71",
+      "size": 6730766
+    },
+    {
+      "local_path": "raw/videos/videos/223.mp4",
+      "relative_path": "videos/videos/223.mp4",
+      "reused": false,
+      "sha256": "3956cfcce91ceefb16cc628d177cb4100c5dd511d7247fe00ed3933b98f9cf29",
+      "size": 6847183
+    },
+    {
+      "local_path": "raw/videos/videos/224.mp4",
+      "relative_path": "videos/videos/224.mp4",
+      "reused": false,
+      "sha256": "6655c05d16dc0d58d05721cc25356796613ed130cabe70171e8e80d41930cfd9",
+      "size": 6589090
+    },
+    {
+      "local_path": "raw/videos/videos/225.mp4",
+      "relative_path": "videos/videos/225.mp4",
+      "reused": false,
+      "sha256": "36ca732b2e0704e2b14f0e8a5757f0d78abd75ab9c3f5e0d93a561b29cf2d5f5",
+      "size": 7155813
+    },
+    {
+      "local_path": "raw/videos/videos/226.mp4",
+      "relative_path": "videos/videos/226.mp4",
+      "reused": false,
+      "sha256": "a8def87b5ed7173944b2d8dd8a1c03f1002fe22de1431282f4ca4724addbb6ef",
+      "size": 6337172
+    },
+    {
+      "local_path": "raw/videos/videos/227.mp4",
+      "relative_path": "videos/videos/227.mp4",
+      "reused": false,
+      "sha256": "406011923e5dae3a081c9ad53ffdf5341a9ae68219dedb739134ba5a86bbb739",
+      "size": 6328333
+    },
+    {
+      "local_path": "raw/videos/videos/228.mp4",
+      "relative_path": "videos/videos/228.mp4",
+      "reused": false,
+      "sha256": "24bedc2d2c2b8bd7fb54e44c47385e2201195ebafbd0c2184d17c39b03b761ed",
+      "size": 4757512
+    },
+    {
+      "local_path": "raw/videos/videos/229.mp4",
+      "relative_path": "videos/videos/229.mp4",
+      "reused": false,
+      "sha256": "e841dbcb9e857f1651f8a59713e62247b2e475a152ba097f35fa3b2c1617de94",
+      "size": 4725342
+    },
+    {
+      "local_path": "raw/videos/videos/23.mp4",
+      "relative_path": "videos/videos/23.mp4",
+      "reused": false,
+      "sha256": "28f72f815f373124af1f48a762c43373369501010ca32ce38b819046415b74ab",
+      "size": 5149248
+    },
+    {
+      "local_path": "raw/videos/videos/230.mp4",
+      "relative_path": "videos/videos/230.mp4",
+      "reused": false,
+      "sha256": "f0287593b4ef08e452ed85c92e71c2db2d41877d924efc11248dd1e1f258f9cb",
+      "size": 5534461
+    },
+    {
+      "local_path": "raw/videos/videos/231.mp4",
+      "relative_path": "videos/videos/231.mp4",
+      "reused": false,
+      "sha256": "369d6ef0ca523699f1c7e198d6aacf7761fd6d9fce6b48da46e2e94095fccc43",
+      "size": 5766476
+    },
+    {
+      "local_path": "raw/videos/videos/232.mp4",
+      "relative_path": "videos/videos/232.mp4",
+      "reused": false,
+      "sha256": "a3e2b0927d672f85e2a733b8fcb95788908b5aef1d29d4fe3def4fe9ef20db35",
+      "size": 6226080
+    },
+    {
+      "local_path": "raw/videos/videos/233.mp4",
+      "relative_path": "videos/videos/233.mp4",
+      "reused": false,
+      "sha256": "316ea5ed7574329636fb505be608a6c2ac1212cedd44c904b03b91fbe2dcfd92",
+      "size": 5382782
+    },
+    {
+      "local_path": "raw/videos/videos/234.mp4",
+      "relative_path": "videos/videos/234.mp4",
+      "reused": false,
+      "sha256": "c6c26ced29890775799ed16bc17cbcc2a4e5a88916ab3d348a98e1588bae02ef",
+      "size": 5160712
+    },
+    {
+      "local_path": "raw/videos/videos/235.mp4",
+      "relative_path": "videos/videos/235.mp4",
+      "reused": false,
+      "sha256": "16203b92ef8f47ae0e207ee2bac2ea17625c6bc3c4fbb96b31ca7bd5f007f81e",
+      "size": 5210166
+    },
+    {
+      "local_path": "raw/videos/videos/237.mp4",
+      "relative_path": "videos/videos/237.mp4",
+      "reused": false,
+      "sha256": "b8b26345fd9dba12465b41c432a38182f0e002dd14016e310ba02403f3988950",
+      "size": 4820408
+    },
+    {
+      "local_path": "raw/videos/videos/238.mp4",
+      "relative_path": "videos/videos/238.mp4",
+      "reused": false,
+      "sha256": "59fa94db68dba7e5144a1bf90ffd8334e8b97cac749d4c708d6dcd026884ea66",
+      "size": 4658690
+    },
+    {
+      "local_path": "raw/videos/videos/239.mp4",
+      "relative_path": "videos/videos/239.mp4",
+      "reused": false,
+      "sha256": "c3e39f0d0481adce12edb4044aff38aafacefdee3a6ed160dc2a094c298e326d",
+      "size": 4248085
+    },
+    {
+      "local_path": "raw/videos/videos/24.mp4",
+      "relative_path": "videos/videos/24.mp4",
+      "reused": false,
+      "sha256": "e32e75c654cf4b35497ea7050492eac0118f155b7b30c71e51c29cbf5bcda302",
+      "size": 5461462
+    },
+    {
+      "local_path": "raw/videos/videos/240.mp4",
+      "relative_path": "videos/videos/240.mp4",
+      "reused": false,
+      "sha256": "2226e3858cda7a42a86d1ed53043f74d1281be637c15455c678addd14faa18a0",
+      "size": 5381737
+    },
+    {
+      "local_path": "raw/videos/videos/241.mp4",
+      "relative_path": "videos/videos/241.mp4",
+      "reused": false,
+      "sha256": "6a23e019cb8194177a8e1b263d62d6191682eb6d45968e0f2a29550b807b51e3",
+      "size": 5385547
+    },
+    {
+      "local_path": "raw/videos/videos/242.mp4",
+      "relative_path": "videos/videos/242.mp4",
+      "reused": false,
+      "sha256": "89ebd15febf4e2b6d800b344ce91aac4dde7335332b80d40e5d2d99b0f5fbc07",
+      "size": 7097780
+    },
+    {
+      "local_path": "raw/videos/videos/243.mp4",
+      "relative_path": "videos/videos/243.mp4",
+      "reused": false,
+      "sha256": "396ff4c41d29751964092d9c53191962c86c6cd886ff4f4532cf78f26e61cf3f",
+      "size": 6324437
+    },
+    {
+      "local_path": "raw/videos/videos/244.mp4",
+      "relative_path": "videos/videos/244.mp4",
+      "reused": false,
+      "sha256": "9fb6ba0f0880c98d77bf7fd245fdb448f4ea10a2d2b8df531c4f52ddf2d4555a",
+      "size": 6829802
+    },
+    {
+      "local_path": "raw/videos/videos/245.mp4",
+      "relative_path": "videos/videos/245.mp4",
+      "reused": false,
+      "sha256": "551ec310a644aadfbc46b8316accc368653952491e8c64e1be85d27cc936e2d8",
+      "size": 7093769
+    },
+    {
+      "local_path": "raw/videos/videos/246.mp4",
+      "relative_path": "videos/videos/246.mp4",
+      "reused": false,
+      "sha256": "5cb64ef0404c64edbcd1aacf2d78193bf692b34fe2458935b4369b211de48d7e",
+      "size": 6004633
+    },
+    {
+      "local_path": "raw/videos/videos/247.mp4",
+      "relative_path": "videos/videos/247.mp4",
+      "reused": false,
+      "sha256": "143e61e59c6ddc2f1776e985a6445c2de7276797b05e3cd56d66e537f6b72f14",
+      "size": 6625493
+    },
+    {
+      "local_path": "raw/videos/videos/248.mp4",
+      "relative_path": "videos/videos/248.mp4",
+      "reused": false,
+      "sha256": "ffd5ed82e96fdef220f749cb8fec92ad32513a18bd8d5959541e2990ff2eee87",
+      "size": 5118329
+    },
+    {
+      "local_path": "raw/videos/videos/249.mp4",
+      "relative_path": "videos/videos/249.mp4",
+      "reused": false,
+      "sha256": "5d06e40fa37e91e420c27b6a514396fbafed22d2b21e94b32e228b18db619269",
+      "size": 7304989
+    },
+    {
+      "local_path": "raw/videos/videos/25.mp4",
+      "relative_path": "videos/videos/25.mp4",
+      "reused": false,
+      "sha256": "5edaee63dfe2564fac485be551d61f3448bc5b09623317ee1f66d9a787d0c8d9",
+      "size": 5537386
+    },
+    {
+      "local_path": "raw/videos/videos/250.mp4",
+      "relative_path": "videos/videos/250.mp4",
+      "reused": false,
+      "sha256": "724ce46bb3babfc7997352661cf8ef1e80c9e663d3966890067c11470e5ca2b9",
+      "size": 6237902
+    },
+    {
+      "local_path": "raw/videos/videos/251.mp4",
+      "relative_path": "videos/videos/251.mp4",
+      "reused": false,
+      "sha256": "7a73d106997389deb1f8bf6695430d56359d9757210f6a596b4b7325f7d4062a",
+      "size": 5959528
+    },
+    {
+      "local_path": "raw/videos/videos/252.mp4",
+      "relative_path": "videos/videos/252.mp4",
+      "reused": false,
+      "sha256": "9dfedaebdf05baa067d3a8ab34f91446bd61ff6a1ef64c48956a9838c15714ea",
+      "size": 5170473
+    },
+    {
+      "local_path": "raw/videos/videos/253.mp4",
+      "relative_path": "videos/videos/253.mp4",
+      "reused": false,
+      "sha256": "4566dd0dbaf8428883988daacee8b8fb4088483c591a0240aa1c9fea0ef01485",
+      "size": 5017147
+    },
+    {
+      "local_path": "raw/videos/videos/254.mp4",
+      "relative_path": "videos/videos/254.mp4",
+      "reused": false,
+      "sha256": "09f9d3b2b30142c9b868eedce91213e53c9ce1ecb262591ccaae6965f5ad2712",
+      "size": 4689175
+    },
+    {
+      "local_path": "raw/videos/videos/255.mp4",
+      "relative_path": "videos/videos/255.mp4",
+      "reused": false,
+      "sha256": "2b3b61ce0d11cdc5f4b1ff521447bc5541b5492e0519e3c5cd14f6d8959ea9f9",
+      "size": 5019723
+    },
+    {
+      "local_path": "raw/videos/videos/256.mp4",
+      "relative_path": "videos/videos/256.mp4",
+      "reused": false,
+      "sha256": "07b16af946583232ae133e1ea11a2a9bed3e904d393c494cc19c67b184cf58ea",
+      "size": 5802421
+    },
+    {
+      "local_path": "raw/videos/videos/257.mp4",
+      "relative_path": "videos/videos/257.mp4",
+      "reused": false,
+      "sha256": "b0bb50cbb3d00f91054bc236156ac7ac95fa8355b1aef02a89a16ddb4e141091",
+      "size": 4760331
+    },
+    {
+      "local_path": "raw/videos/videos/258.mp4",
+      "relative_path": "videos/videos/258.mp4",
+      "reused": false,
+      "sha256": "36fc519f34b2077c11f4acad55a3a2d6f350d7ee76419605b42ca79a4fc4816e",
+      "size": 4962540
+    },
+    {
+      "local_path": "raw/videos/videos/259.mp4",
+      "relative_path": "videos/videos/259.mp4",
+      "reused": false,
+      "sha256": "aec263d5824e466cd1140056ed54cbc9e87f1f69eda068711f581c00b0467f48",
+      "size": 5715036
+    },
+    {
+      "local_path": "raw/videos/videos/26.mp4",
+      "relative_path": "videos/videos/26.mp4",
+      "reused": false,
+      "sha256": "ab3c5b2ffebf2ae9381a05eba36b19a7b35887276abdf75b42575461c1081793",
+      "size": 5495584
+    },
+    {
+      "local_path": "raw/videos/videos/260.mp4",
+      "relative_path": "videos/videos/260.mp4",
+      "reused": false,
+      "sha256": "38b2d7268e68d51daafa5a812e4322507cfc61e3d09c6ee5037d07c7229b20c2",
+      "size": 4897759
+    },
+    {
+      "local_path": "raw/videos/videos/261.mp4",
+      "relative_path": "videos/videos/261.mp4",
+      "reused": false,
+      "sha256": "9b0fb77ba1a115f32b371b1a184bde1aa8c97f13a86d73fb0284ba20ec894a64",
+      "size": 5111709
+    },
+    {
+      "local_path": "raw/videos/videos/262.mp4",
+      "relative_path": "videos/videos/262.mp4",
+      "reused": false,
+      "sha256": "0e81a0a4028f4bd9083651f4b6fb05c17b1f6e66148ffb286b5808b5a300a079",
+      "size": 5155076
+    },
+    {
+      "local_path": "raw/videos/videos/263.mp4",
+      "relative_path": "videos/videos/263.mp4",
+      "reused": false,
+      "sha256": "c48378edbeab4645799585b08611e2ccf9c608e5fbff5e501a9f89bff9e5f597",
+      "size": 4348901
+    },
+    {
+      "local_path": "raw/videos/videos/264.mp4",
+      "relative_path": "videos/videos/264.mp4",
+      "reused": false,
+      "sha256": "fd1348025101ae531710ce3599c3aa2ab5d2d777f5795b312a1e745ef5f627be",
+      "size": 4374893
+    },
+    {
+      "local_path": "raw/videos/videos/265.mp4",
+      "relative_path": "videos/videos/265.mp4",
+      "reused": false,
+      "sha256": "e2b2b06aa2bc766d298c2ba492393f5ec46e730e2de089d55631102275cc3a29",
+      "size": 5199480
+    },
+    {
+      "local_path": "raw/videos/videos/266.mp4",
+      "relative_path": "videos/videos/266.mp4",
+      "reused": false,
+      "sha256": "9b39c19d1ab2d7d0ac562e0a912359ba2b57c498b20d664ac9b1da7c26469a7b",
+      "size": 6506892
+    },
+    {
+      "local_path": "raw/videos/videos/267.mp4",
+      "relative_path": "videos/videos/267.mp4",
+      "reused": false,
+      "sha256": "818a53a0e5badc1a97f43a51b03adf09526856d1df0d4af008fbafaa8bc04a5a",
+      "size": 6143687
+    },
+    {
+      "local_path": "raw/videos/videos/268.mp4",
+      "relative_path": "videos/videos/268.mp4",
+      "reused": false,
+      "sha256": "ccd9db4026832f6b709e68a8de78597fd00acbb07b1713090a2500a717d68d7c",
+      "size": 5875313
+    },
+    {
+      "local_path": "raw/videos/videos/269.mp4",
+      "relative_path": "videos/videos/269.mp4",
+      "reused": false,
+      "sha256": "e94c8b6b13e2692285c329407e2dc65726bbd9837d39a30af303d56fefe4de1c",
+      "size": 4898401
+    },
+    {
+      "local_path": "raw/videos/videos/27.mp4",
+      "relative_path": "videos/videos/27.mp4",
+      "reused": false,
+      "sha256": "d63a7947f5730a15897f4625e0882aa5115aa35b835839dcf25913a90252928a",
+      "size": 6523826
+    },
+    {
+      "local_path": "raw/videos/videos/270.mp4",
+      "relative_path": "videos/videos/270.mp4",
+      "reused": false,
+      "sha256": "e0d3239a558752b702bb10d7033a6e104b41f965cf9d1968b4ada8804f516924",
+      "size": 6431194
+    },
+    {
+      "local_path": "raw/videos/videos/271.mp4",
+      "relative_path": "videos/videos/271.mp4",
+      "reused": false,
+      "sha256": "0b398d23a7df61300b21313516f482baac4fe7515ca707e33fa6f699561faccc",
+      "size": 6080195
+    },
+    {
+      "local_path": "raw/videos/videos/272.mp4",
+      "relative_path": "videos/videos/272.mp4",
+      "reused": false,
+      "sha256": "bf5b740af0c19085b8aa69147a1d755d265a17682ac9c207a3ae26794ee6fe89",
+      "size": 6478406
+    },
+    {
+      "local_path": "raw/videos/videos/273.mp4",
+      "relative_path": "videos/videos/273.mp4",
+      "reused": false,
+      "sha256": "89af105d509c929f8430b88e5485a75c62822787831e21c4a6c553a97a00e1ab",
+      "size": 7143122
+    },
+    {
+      "local_path": "raw/videos/videos/274.mp4",
+      "relative_path": "videos/videos/274.mp4",
+      "reused": false,
+      "sha256": "dd8202e553486c43f86da864c949dbdf10ed230dab537af67cd537f5c80df2c3",
+      "size": 6041038
+    },
+    {
+      "local_path": "raw/videos/videos/275.mp4",
+      "relative_path": "videos/videos/275.mp4",
+      "reused": false,
+      "sha256": "15066307e1beeb09f01f08dca81ebaf7af5f8d25b8f868a3da0cfccf5aa50ae9",
+      "size": 5589245
+    },
+    {
+      "local_path": "raw/videos/videos/276.mp4",
+      "relative_path": "videos/videos/276.mp4",
+      "reused": false,
+      "sha256": "81a8d929220ed6681319cbbc9636b7772c6691f1974f5973ba99930e0180c909",
+      "size": 6349452
+    },
+    {
+      "local_path": "raw/videos/videos/277.mp4",
+      "relative_path": "videos/videos/277.mp4",
+      "reused": false,
+      "sha256": "89956c22031cbe34d172f5e34d7df2d5ad52b440eacece814de4c237c3ca34e7",
+      "size": 5688881
+    },
+    {
+      "local_path": "raw/videos/videos/278.mp4",
+      "relative_path": "videos/videos/278.mp4",
+      "reused": false,
+      "sha256": "70601c1329cdce15af592324230190c5bbdfa868c04ad9f6983d1429c844f23c",
+      "size": 5181407
+    },
+    {
+      "local_path": "raw/videos/videos/279.mp4",
+      "relative_path": "videos/videos/279.mp4",
+      "reused": false,
+      "sha256": "600caa638d41fce8deb53e902d1067ef61279c02c5c62fc908dde901e6ab4e2c",
+      "size": 6264800
+    },
+    {
+      "local_path": "raw/videos/videos/28.mp4",
+      "relative_path": "videos/videos/28.mp4",
+      "reused": false,
+      "sha256": "af5f272d6fc5cc4927ad6d6758dbff9db92fe8e5b43f32c17d5f8135523da0c9",
+      "size": 6695486
+    },
+    {
+      "local_path": "raw/videos/videos/280.mp4",
+      "relative_path": "videos/videos/280.mp4",
+      "reused": false,
+      "sha256": "d72f5d0ed08e7c1c4cd4eaf0f7f96aaa66e8f606f832eb397e26acf16a0e4836",
+      "size": 5781095
+    },
+    {
+      "local_path": "raw/videos/videos/281.mp4",
+      "relative_path": "videos/videos/281.mp4",
+      "reused": false,
+      "sha256": "be39f06d7e96c63a69ee008c8945f272b88db69afbba5168817d0c2d29af00a2",
+      "size": 6111211
+    },
+    {
+      "local_path": "raw/videos/videos/282.mp4",
+      "relative_path": "videos/videos/282.mp4",
+      "reused": false,
+      "sha256": "1092e9b60b05364d9a3a8008f625814320ec2cc8391f7a0382d84edf1548555c",
+      "size": 6240015
+    },
+    {
+      "local_path": "raw/videos/videos/283.mp4",
+      "relative_path": "videos/videos/283.mp4",
+      "reused": false,
+      "sha256": "9ee56763e7abaa194c6c9d6d291da1d16c1c5d9ed9763cf6373368a7313fc315",
+      "size": 5296882
+    },
+    {
+      "local_path": "raw/videos/videos/284.mp4",
+      "relative_path": "videos/videos/284.mp4",
+      "reused": false,
+      "sha256": "af8175e6311b6c8a6df4df6744937ec61149007d1ed6a8203d0e64133ef03ac7",
+      "size": 5289549
+    },
+    {
+      "local_path": "raw/videos/videos/285.mp4",
+      "relative_path": "videos/videos/285.mp4",
+      "reused": false,
+      "sha256": "1b3c05938d4089a086d3746991ed85bd5ba80f5f4123bc31710821a3d66ccc29",
+      "size": 5003759
+    },
+    {
+      "local_path": "raw/videos/videos/286.mp4",
+      "relative_path": "videos/videos/286.mp4",
+      "reused": false,
+      "sha256": "9965dc1c5092c489ebfb6d7fe8ef4d317447bbd1c1776b2211b9f32cd6395e48",
+      "size": 5041150
+    },
+    {
+      "local_path": "raw/videos/videos/287.mp4",
+      "relative_path": "videos/videos/287.mp4",
+      "reused": false,
+      "sha256": "05081f76a61829d6c5d2117f3fe62ac412761fc88a3025692a9d25f577c2f295",
+      "size": 4771534
+    },
+    {
+      "local_path": "raw/videos/videos/288.mp4",
+      "relative_path": "videos/videos/288.mp4",
+      "reused": false,
+      "sha256": "6cf5c3552bca53931fb244edc6f31e11320fb4778f2af4be61a3cdf44d3032c2",
+      "size": 5325118
+    },
+    {
+      "local_path": "raw/videos/videos/289.mp4",
+      "relative_path": "videos/videos/289.mp4",
+      "reused": false,
+      "sha256": "a4dcc87c91afb93334b13b1ce94f47af37b28b5346c1df332a3b546530dc39fa",
+      "size": 5585518
+    },
+    {
+      "local_path": "raw/videos/videos/29.mp4",
+      "relative_path": "videos/videos/29.mp4",
+      "reused": false,
+      "sha256": "8bea833d21c060293b8cea28edb56209cb726933aea68305268125e86c9a1ed0",
+      "size": 6608017
+    },
+    {
+      "local_path": "raw/videos/videos/290.mp4",
+      "relative_path": "videos/videos/290.mp4",
+      "reused": false,
+      "sha256": "38baad5a2404af56f09a6bc624311c8dfe43010ef7b4dd15b320a9398ed30f1a",
+      "size": 5666140
+    },
+    {
+      "local_path": "raw/videos/videos/291.mp4",
+      "relative_path": "videos/videos/291.mp4",
+      "reused": false,
+      "sha256": "64965ea48d2cd065358e5c83c1d4d8fa611a2de0864f70837c45fefd7f870eba",
+      "size": 6787000
+    },
+    {
+      "local_path": "raw/videos/videos/292.mp4",
+      "relative_path": "videos/videos/292.mp4",
+      "reused": false,
+      "sha256": "6fe7a0ced1157a111240e16bd57b33e9d5925a4735c1b3646eb8e4c930a282d2",
+      "size": 6722360
+    },
+    {
+      "local_path": "raw/videos/videos/293.mp4",
+      "relative_path": "videos/videos/293.mp4",
+      "reused": false,
+      "sha256": "403dab5a982259c7d453b4f3e8556ca37747031c6775a19eacc54ee71eb5de59",
+      "size": 6771200
+    },
+    {
+      "local_path": "raw/videos/videos/294.mp4",
+      "relative_path": "videos/videos/294.mp4",
+      "reused": false,
+      "sha256": "8670a46ff845233603d9cb49fc568798ddc8106845043e8f93703c6b90a01853",
+      "size": 6889906
+    },
+    {
+      "local_path": "raw/videos/videos/295.mp4",
+      "relative_path": "videos/videos/295.mp4",
+      "reused": false,
+      "sha256": "fc95fe55abea21ca7c0bb48f4594e7d1d7697a236d6bb0c1e4c3d2cce61dc288",
+      "size": 7362542
+    },
+    {
+      "local_path": "raw/videos/videos/296.mp4",
+      "relative_path": "videos/videos/296.mp4",
+      "reused": false,
+      "sha256": "02dcb2a59f789f9d45fd09c803da03917691f894b33a206d1c0e8adf6c842731",
+      "size": 5686260
+    },
+    {
+      "local_path": "raw/videos/videos/297.mp4",
+      "relative_path": "videos/videos/297.mp4",
+      "reused": false,
+      "sha256": "0fb9d3fbf012ede6ad03df58957cfc865db616d5ae030e065749bf855fdbf66e",
+      "size": 6302974
+    },
+    {
+      "local_path": "raw/videos/videos/298.mp4",
+      "relative_path": "videos/videos/298.mp4",
+      "reused": false,
+      "sha256": "4a392699e61a27bf3d5a81a04c24658450a71b25ddd8fbdecaab0af807ffffba",
+      "size": 6521829
+    },
+    {
+      "local_path": "raw/videos/videos/299.mp4",
+      "relative_path": "videos/videos/299.mp4",
+      "reused": false,
+      "sha256": "598f609ef8ccd9660f2ba509d8b9a4230259e15adfaae484693233f147f5cdf9",
+      "size": 6274655
+    },
+    {
+      "local_path": "raw/videos/videos/3.mp4",
+      "relative_path": "videos/videos/3.mp4",
+      "reused": false,
+      "sha256": "7f17497a229e6582570fb2dc3ba5eb571db09c300e38fc92975d5b2fe8816f9c",
+      "size": 6815074
+    },
+    {
+      "local_path": "raw/videos/videos/30.mp4",
+      "relative_path": "videos/videos/30.mp4",
+      "reused": false,
+      "sha256": "39acb00666eb851032862acef5bf46f4e43096f1c80998a56fd2af229c70bd6e",
+      "size": 5681330
+    },
+    {
+      "local_path": "raw/videos/videos/300.mp4",
+      "relative_path": "videos/videos/300.mp4",
+      "reused": false,
+      "sha256": "a28cc5411a865ac92e347d6c249e24a079c172d9ebd1bb1c8bd65adaf258c33a",
+      "size": 6173490
+    },
+    {
+      "local_path": "raw/videos/videos/301.mp4",
+      "relative_path": "videos/videos/301.mp4",
+      "reused": false,
+      "sha256": "aa421fdff5d0ba69b9e1ce31165f913237b0dd4b461d8e7d9f76339fed17e663",
+      "size": 6491714
+    },
+    {
+      "local_path": "raw/videos/videos/302.mp4",
+      "relative_path": "videos/videos/302.mp4",
+      "reused": false,
+      "sha256": "2bc4e6683e820f5138d1e14da21e55b5678125cd9430e54f3f66c8c95f6a9b88",
+      "size": 5932043
+    },
+    {
+      "local_path": "raw/videos/videos/303.mp4",
+      "relative_path": "videos/videos/303.mp4",
+      "reused": false,
+      "sha256": "f15c460fdd66bf65853293853f50f64bcb565094be5908da6a2921183596be35",
+      "size": 4492876
+    },
+    {
+      "local_path": "raw/videos/videos/304.mp4",
+      "relative_path": "videos/videos/304.mp4",
+      "reused": false,
+      "sha256": "121cd80d1dc51208f4c7ddbb95ce67ae3f03458217f977c30889607916fe32c2",
+      "size": 4401161
+    },
+    {
+      "local_path": "raw/videos/videos/305.mp4",
+      "relative_path": "videos/videos/305.mp4",
+      "reused": false,
+      "sha256": "6c6f462954c5c62b92be039493a53014ce958cc04b266e6fed609e64a92c8089",
+      "size": 4422306
+    },
+    {
+      "local_path": "raw/videos/videos/306.mp4",
+      "relative_path": "videos/videos/306.mp4",
+      "reused": false,
+      "sha256": "ede8af507d4f77526c4cda47987ebf0dcdada7de1e18f4a04a4124e271af9ef5",
+      "size": 5241165
+    },
+    {
+      "local_path": "raw/videos/videos/307.mp4",
+      "relative_path": "videos/videos/307.mp4",
+      "reused": false,
+      "sha256": "364464e8c6c73fb22022fa40b8009021e3f13294a9ef98e8ef99a449c2bffaab",
+      "size": 5545900
+    },
+    {
+      "local_path": "raw/videos/videos/308.mp4",
+      "relative_path": "videos/videos/308.mp4",
+      "reused": false,
+      "sha256": "8f4b2dead3edc5d212367c9e1c6cbd3919605d1f2d658a291dfa8fe5698d27ee",
+      "size": 4733219
+    },
+    {
+      "local_path": "raw/videos/videos/31.mp4",
+      "relative_path": "videos/videos/31.mp4",
+      "reused": false,
+      "sha256": "e5db1d6f17fee416af60366e819ba33d3b2f232111fce2a2efe1aee295174724",
+      "size": 5057253
+    },
+    {
+      "local_path": "raw/videos/videos/310.mp4",
+      "relative_path": "videos/videos/310.mp4",
+      "reused": false,
+      "sha256": "3cffc357d297d2e22e4ff7392237a2b5af68284a49ccb3a7a214f556c0e96b45",
+      "size": 4586587
+    },
+    {
+      "local_path": "raw/videos/videos/311.mp4",
+      "relative_path": "videos/videos/311.mp4",
+      "reused": false,
+      "sha256": "ed5831cdc783267275c44166f67e3f879ce1814710052858be93cacf31735865",
+      "size": 5084047
+    },
+    {
+      "local_path": "raw/videos/videos/312.mp4",
+      "relative_path": "videos/videos/312.mp4",
+      "reused": false,
+      "sha256": "08e07a27cb597995a10fc171d142988fe20663025b4b50c3f2ac6c3f424cdaeb",
+      "size": 4178401
+    },
+    {
+      "local_path": "raw/videos/videos/313.mp4",
+      "relative_path": "videos/videos/313.mp4",
+      "reused": false,
+      "sha256": "3f3125052069f434ffa692bec1c2f2a11f87f757c8917d4e57cf9ac1171c851f",
+      "size": 4258249
+    },
+    {
+      "local_path": "raw/videos/videos/314.mp4",
+      "relative_path": "videos/videos/314.mp4",
+      "reused": false,
+      "sha256": "98e031691d1a35c8ffd81adf8584f790544b70039b0832b29d090c7ed9ca7fba",
+      "size": 5536277
+    },
+    {
+      "local_path": "raw/videos/videos/315.mp4",
+      "relative_path": "videos/videos/315.mp4",
+      "reused": false,
+      "sha256": "50319919cf165518c857cbd2f09244185b7d9f430e740501821ec3cc66552796",
+      "size": 5063358
+    },
+    {
+      "local_path": "raw/videos/videos/316.mp4",
+      "relative_path": "videos/videos/316.mp4",
+      "reused": false,
+      "sha256": "e65b8668d9070fc78eb302e24b8c2a712e896b835f231f21dbcb2c27a1553bfe",
+      "size": 6025920
+    },
+    {
+      "local_path": "raw/videos/videos/317.mp4",
+      "relative_path": "videos/videos/317.mp4",
+      "reused": false,
+      "sha256": "a7196bbf94ad547ac027c720c72e554c71a4a6972da6f7e7784848d3cf60b4d4",
+      "size": 6444821
+    },
+    {
+      "local_path": "raw/videos/videos/318.mp4",
+      "relative_path": "videos/videos/318.mp4",
+      "reused": false,
+      "sha256": "aae054d9702f6b18a145f21a7e0a8f360b4371bfa902f0fb83054ab26fb0fc01",
+      "size": 6387420
+    },
+    {
+      "local_path": "raw/videos/videos/319.mp4",
+      "relative_path": "videos/videos/319.mp4",
+      "reused": false,
+      "sha256": "58db8b426acacf6b43248b10d38d332afcd2c40a021ada65e63829b0eb71f3e4",
+      "size": 6530785
+    },
+    {
+      "local_path": "raw/videos/videos/32.mp4",
+      "relative_path": "videos/videos/32.mp4",
+      "reused": false,
+      "sha256": "52af38f20c74b36556298222c269c6138c17377c6b570e906a44e3f995c2b24e",
+      "size": 4775065
+    },
+    {
+      "local_path": "raw/videos/videos/320.mp4",
+      "relative_path": "videos/videos/320.mp4",
+      "reused": false,
+      "sha256": "3170d722a32f9754e94f2c2fee04cc8dc0658c5a792a328a98af2bfb211555c3",
+      "size": 5750488
+    },
+    {
+      "local_path": "raw/videos/videos/321.mp4",
+      "relative_path": "videos/videos/321.mp4",
+      "reused": false,
+      "sha256": "19f60c8c9b087c7b4a4cc0f7a4ecc124e9b4a5ec97b3a3be84118379696f5b4c",
+      "size": 5232557
+    },
+    {
+      "local_path": "raw/videos/videos/322.mp4",
+      "relative_path": "videos/videos/322.mp4",
+      "reused": false,
+      "sha256": "d0eec60c92937950b75a1828cf832bb1c1b4e9f8aa87743ad1e5286c33dadf48",
+      "size": 5600517
+    },
+    {
+      "local_path": "raw/videos/videos/323.mp4",
+      "relative_path": "videos/videos/323.mp4",
+      "reused": false,
+      "sha256": "457d407f0e66f88448eabbb0cff8735510246ffafbd97149a221cba3b3e7fe58",
+      "size": 6490627
+    },
+    {
+      "local_path": "raw/videos/videos/324.mp4",
+      "relative_path": "videos/videos/324.mp4",
+      "reused": false,
+      "sha256": "3b63fbc1b4a1fef5256e9e678dc4e57a5a2e83a6a89ec93f13d3e6141bf6e3cb",
+      "size": 6254876
+    },
+    {
+      "local_path": "raw/videos/videos/325.mp4",
+      "relative_path": "videos/videos/325.mp4",
+      "reused": false,
+      "sha256": "f276feb36df4cb6dddfd56b7dc68e6e99fa499fc53de45fa7c2f7968cc774b04",
+      "size": 6277467
+    },
+    {
+      "local_path": "raw/videos/videos/326.mp4",
+      "relative_path": "videos/videos/326.mp4",
+      "reused": false,
+      "sha256": "a6d4c0891953ad0febb075784337716d1ffaadcbd9c49c833e9d627c6a58f242",
+      "size": 5795790
+    },
+    {
+      "local_path": "raw/videos/videos/327.mp4",
+      "relative_path": "videos/videos/327.mp4",
+      "reused": false,
+      "sha256": "ea4db3427292c77d4014949adca665315851029970016163aabb6bc5f8dc9a53",
+      "size": 4470425
+    },
+    {
+      "local_path": "raw/videos/videos/328.mp4",
+      "relative_path": "videos/videos/328.mp4",
+      "reused": false,
+      "sha256": "dee52df03fdd7c3f606f8339b9c6517a98adee6fae2493f1d9fc7da7acd546c9",
+      "size": 4406795
+    },
+    {
+      "local_path": "raw/videos/videos/329.mp4",
+      "relative_path": "videos/videos/329.mp4",
+      "reused": false,
+      "sha256": "70e324fd810f11d63db7624aaaad69e79093a22f74853a7453095171e0761b69",
+      "size": 4390818
+    },
+    {
+      "local_path": "raw/videos/videos/33.mp4",
+      "relative_path": "videos/videos/33.mp4",
+      "reused": false,
+      "sha256": "9e6542729a85656237fc6589f1852092e31aba4a3edd5fc485b1051e150839db",
+      "size": 4596472
+    },
+    {
+      "local_path": "raw/videos/videos/330.mp4",
+      "relative_path": "videos/videos/330.mp4",
+      "reused": false,
+      "sha256": "cc6954e2aedd9f505dd9ec0c13fdccf195620399cdc69b3c70d7103b589f80da",
+      "size": 3983375
+    },
+    {
+      "local_path": "raw/videos/videos/331.mp4",
+      "relative_path": "videos/videos/331.mp4",
+      "reused": false,
+      "sha256": "adec92ce9ee1fff6c01ea679025c305800a8a3455e8b90d4673cb90b673700ff",
+      "size": 4857670
+    },
+    {
+      "local_path": "raw/videos/videos/332.mp4",
+      "relative_path": "videos/videos/332.mp4",
+      "reused": false,
+      "sha256": "710d0e04f598da0ea472bc34208ade8563eb4a6ae9e373ece3c240cadb96565d",
+      "size": 4443628
+    },
+    {
+      "local_path": "raw/videos/videos/333.mp4",
+      "relative_path": "videos/videos/333.mp4",
+      "reused": false,
+      "sha256": "920956e0dbc315392ea1519b2d875a85994bec97d1378d97c939a798b76c5a2e",
+      "size": 5117909
+    },
+    {
+      "local_path": "raw/videos/videos/334.mp4",
+      "relative_path": "videos/videos/334.mp4",
+      "reused": false,
+      "sha256": "8daaff5bc6f25547d699ff1c8e868f130445989ff5e00c02dd61d1488f523b34",
+      "size": 4085176
+    },
+    {
+      "local_path": "raw/videos/videos/335.mp4",
+      "relative_path": "videos/videos/335.mp4",
+      "reused": false,
+      "sha256": "69f02585ad3d4f948c05f770d85e50eb6be35e0d8aed0e875d886ebb63809628",
+      "size": 4229677
+    },
+    {
+      "local_path": "raw/videos/videos/336.mp4",
+      "relative_path": "videos/videos/336.mp4",
+      "reused": false,
+      "sha256": "050b727fed3004a39f61fa6c89eccaa225aba4ef3a3c8e0bfe305a42a28ad9cf",
+      "size": 3993854
+    },
+    {
+      "local_path": "raw/videos/videos/337.mp4",
+      "relative_path": "videos/videos/337.mp4",
+      "reused": false,
+      "sha256": "65ab665b65781754e1ba14c40f1cfe6ed1e4fbfae2815d02c6841cce21c84aa9",
+      "size": 4038766
+    },
+    {
+      "local_path": "raw/videos/videos/338.mp4",
+      "relative_path": "videos/videos/338.mp4",
+      "reused": false,
+      "sha256": "94d1b24780315821d2443da3a1221c8e0e5c055ad4c6dfd5967c9932d1df76a9",
+      "size": 4372931
+    },
+    {
+      "local_path": "raw/videos/videos/339.mp4",
+      "relative_path": "videos/videos/339.mp4",
+      "reused": false,
+      "sha256": "2fdf1233168fdb10361915745e9dfcf7cf35ccc4fa9b8f29a13d02950be5db55",
+      "size": 4490118
+    },
+    {
+      "local_path": "raw/videos/videos/34.mp4",
+      "relative_path": "videos/videos/34.mp4",
+      "reused": false,
+      "sha256": "e1690a4f5f07fbbfa26dfe6c602b95b0bd6fe12caa1bf5da0ab64a77935ad5a5",
+      "size": 4562002
+    },
+    {
+      "local_path": "raw/videos/videos/340.mp4",
+      "relative_path": "videos/videos/340.mp4",
+      "reused": false,
+      "sha256": "faf1a714e681b9349a998b13cb5cff2ff52c51600e5eff3208225ab9e545f54a",
+      "size": 4461342
+    },
+    {
+      "local_path": "raw/videos/videos/341.mp4",
+      "relative_path": "videos/videos/341.mp4",
+      "reused": false,
+      "sha256": "7a9dc0344934c581f33e4d6a21226360e46705a8f737a7bc035f5f7cacf83781",
+      "size": 6164953
+    },
+    {
+      "local_path": "raw/videos/videos/342.mp4",
+      "relative_path": "videos/videos/342.mp4",
+      "reused": false,
+      "sha256": "1e2765228c1cb482531eed50411e5397248000d66f093f91b2e6bd2162edc3f5",
+      "size": 5917780
+    },
+    {
+      "local_path": "raw/videos/videos/343.mp4",
+      "relative_path": "videos/videos/343.mp4",
+      "reused": false,
+      "sha256": "890525d5a431ccd0d9366d511acf0cc83bbab3ad4ba289ac15d77c7ea9c698d8",
+      "size": 6076758
+    },
+    {
+      "local_path": "raw/videos/videos/344.mp4",
+      "relative_path": "videos/videos/344.mp4",
+      "reused": false,
+      "sha256": "562bbae0088dba1a5a9297f639c9b90adc20bae1df288dd65e94e6abe84dae21",
+      "size": 6393991
+    },
+    {
+      "local_path": "raw/videos/videos/345.mp4",
+      "relative_path": "videos/videos/345.mp4",
+      "reused": false,
+      "sha256": "c35cd76745bf575c2ef11358f66e8f72d79954f91b149b27ce065a2174e6106d",
+      "size": 6468866
+    },
+    {
+      "local_path": "raw/videos/videos/346.mp4",
+      "relative_path": "videos/videos/346.mp4",
+      "reused": false,
+      "sha256": "53f8915683da829db613d11e1cb607796a194f57f62ca329c0fba4f752282b4f",
+      "size": 6710682
+    },
+    {
+      "local_path": "raw/videos/videos/347.mp4",
+      "relative_path": "videos/videos/347.mp4",
+      "reused": false,
+      "sha256": "13140a1c72d20635af8e3ce395921b3cadcabdb6b611d064f99384cb38db6b3d",
+      "size": 7000781
+    },
+    {
+      "local_path": "raw/videos/videos/348.mp4",
+      "relative_path": "videos/videos/348.mp4",
+      "reused": false,
+      "sha256": "2b2c34ea31756c97b5c2deb2a7bba7602d4bd8e51d51ecc1551218fe056d4685",
+      "size": 6317152
+    },
+    {
+      "local_path": "raw/videos/videos/349.mp4",
+      "relative_path": "videos/videos/349.mp4",
+      "reused": false,
+      "sha256": "8dcafa95ab16cbc0aecebbc9de88675ef4275766881de6f2b85487a92606bd3e",
+      "size": 6590391
+    },
+    {
+      "local_path": "raw/videos/videos/35.mp4",
+      "relative_path": "videos/videos/35.mp4",
+      "reused": false,
+      "sha256": "396345d650296d99f089fcd5133518ff6228894810e82df554c8bafe43d7e58d",
+      "size": 4728922
+    },
+    {
+      "local_path": "raw/videos/videos/350.mp4",
+      "relative_path": "videos/videos/350.mp4",
+      "reused": false,
+      "sha256": "a299c7131c757e0244fe54abe6703811ee6738d411fa528f3a77909cf99701f0",
+      "size": 5723831
+    },
+    {
+      "local_path": "raw/videos/videos/351.mp4",
+      "relative_path": "videos/videos/351.mp4",
+      "reused": false,
+      "sha256": "13f145a7ddc7e1af0d7da4d2ea7d187e7474e011547f1431050272c785087eda",
+      "size": 5230785
+    },
+    {
+      "local_path": "raw/videos/videos/352.mp4",
+      "relative_path": "videos/videos/352.mp4",
+      "reused": false,
+      "sha256": "06f16010c4c4174aa927b0731864e96e7655f1013f0748b60a8ee8140d640f46",
+      "size": 4535585
+    },
+    {
+      "local_path": "raw/videos/videos/353.mp4",
+      "relative_path": "videos/videos/353.mp4",
+      "reused": false,
+      "sha256": "0de3f5227ba65b3193c33e6d943b4fff3482fb44a20ae6dd575fbc924a03013d",
+      "size": 4253824
+    },
+    {
+      "local_path": "raw/videos/videos/354.mp4",
+      "relative_path": "videos/videos/354.mp4",
+      "reused": false,
+      "sha256": "94ae6f130e2375efd8d7ba8cf9ea2ddf7a8747a6512e85626fb81fe03c5ff3dc",
+      "size": 4405342
+    },
+    {
+      "local_path": "raw/videos/videos/355.mp4",
+      "relative_path": "videos/videos/355.mp4",
+      "reused": false,
+      "sha256": "6fd204fdfde3259a4fabac9ef542a4cd71a6cf5611cb3275e0086032defeaddd",
+      "size": 4389964
+    },
+    {
+      "local_path": "raw/videos/videos/356.mp4",
+      "relative_path": "videos/videos/356.mp4",
+      "reused": false,
+      "sha256": "9aa439b540184cffce4dc7d3244f9ca4ee3afa528aee642d740124313942f793",
+      "size": 4163256
+    },
+    {
+      "local_path": "raw/videos/videos/357.mp4",
+      "relative_path": "videos/videos/357.mp4",
+      "reused": false,
+      "sha256": "ccac8e383ed7e49b5fa9fb1784112cf69ed9a4ec1ace772bd97e9e3e5f9306b8",
+      "size": 4568242
+    },
+    {
+      "local_path": "raw/videos/videos/358.mp4",
+      "relative_path": "videos/videos/358.mp4",
+      "reused": false,
+      "sha256": "a8fb8999fffc31d76cc2910c821c43c6bdf893289ff3f2b906d6db13e407494c",
+      "size": 4587412
+    },
+    {
+      "local_path": "raw/videos/videos/359.mp4",
+      "relative_path": "videos/videos/359.mp4",
+      "reused": false,
+      "sha256": "361cb860b301aee8ae4e57d105a2a36f751e6cef89c1a4f9feb7550a1553d33c",
+      "size": 5939445
+    },
+    {
+      "local_path": "raw/videos/videos/36.mp4",
+      "relative_path": "videos/videos/36.mp4",
+      "reused": false,
+      "sha256": "60ed62f36a3760007980ef364813411e7fb61469e8a84034dbd94c1f81c52f20",
+      "size": 4966671
+    },
+    {
+      "local_path": "raw/videos/videos/360.mp4",
+      "relative_path": "videos/videos/360.mp4",
+      "reused": false,
+      "sha256": "bdaad08d2587de7ba362290af7a9dec60427d79881bf4035f6db32052a8a7f11",
+      "size": 4323734
+    },
+    {
+      "local_path": "raw/videos/videos/361.mp4",
+      "relative_path": "videos/videos/361.mp4",
+      "reused": false,
+      "sha256": "60a3b76ff1e0c8c337429b6e61b266b94d0125260f8b82a79547050c35df46e5",
+      "size": 4341374
+    },
+    {
+      "local_path": "raw/videos/videos/362.mp4",
+      "relative_path": "videos/videos/362.mp4",
+      "reused": false,
+      "sha256": "d039eddb17c0ede5c94318589b533af25b71cda1ab86eb452c4d16f903eec3e6",
+      "size": 4739589
+    },
+    {
+      "local_path": "raw/videos/videos/363.mp4",
+      "relative_path": "videos/videos/363.mp4",
+      "reused": false,
+      "sha256": "5ad1ae3972b50cc7f85cc0355f43ca94961036d6715559aae240552d5049cb90",
+      "size": 4316655
+    },
+    {
+      "local_path": "raw/videos/videos/364.mp4",
+      "relative_path": "videos/videos/364.mp4",
+      "reused": false,
+      "sha256": "eb593e12c5a5d7340294966ca002ef03b701f277536357e5077822334d41f609",
+      "size": 4503587
+    },
+    {
+      "local_path": "raw/videos/videos/365.mp4",
+      "relative_path": "videos/videos/365.mp4",
+      "reused": false,
+      "sha256": "b7f8f3ac91c32ab6d8a68a22ca0168d516970a5b4199e6e8e6fb459cf64f7c88",
+      "size": 5542363
+    },
+    {
+      "local_path": "raw/videos/videos/366.mp4",
+      "relative_path": "videos/videos/366.mp4",
+      "reused": false,
+      "sha256": "e8c8745a35a2088f3c28fff2495013b07c12faffa9877eef0d2af14ac027e893",
+      "size": 5765248
+    },
+    {
+      "local_path": "raw/videos/videos/367.mp4",
+      "relative_path": "videos/videos/367.mp4",
+      "reused": false,
+      "sha256": "2e83b3624a321f8e78722b4278389db31c472be80ad1332f2b251f15cdf3f229",
+      "size": 5614626
+    },
+    {
+      "local_path": "raw/videos/videos/368.mp4",
+      "relative_path": "videos/videos/368.mp4",
+      "reused": false,
+      "sha256": "c67fb7131a3a652891c2dbce6f7f2c74421b7fd53810c2c31538ae7524cfffbe",
+      "size": 4814212
+    },
+    {
+      "local_path": "raw/videos/videos/369.mp4",
+      "relative_path": "videos/videos/369.mp4",
+      "reused": false,
+      "sha256": "fdc0a62eb859c6fe67a6dd51d5ea30d4b6726bce20ec382911faf2645c2f1a80",
+      "size": 4803961
+    },
+    {
+      "local_path": "raw/videos/videos/37.mp4",
+      "relative_path": "videos/videos/37.mp4",
+      "reused": false,
+      "sha256": "ef3de7386332ec5ed5e40035667aed2a17f8863cb5e438c221a4748da73f738a",
+      "size": 4935545
+    },
+    {
+      "local_path": "raw/videos/videos/370.mp4",
+      "relative_path": "videos/videos/370.mp4",
+      "reused": false,
+      "sha256": "c94da56029e6265b2afa3eb038ab593e2d792732d8e093a04eac39e418f99951",
+      "size": 6642600
+    },
+    {
+      "local_path": "raw/videos/videos/371.mp4",
+      "relative_path": "videos/videos/371.mp4",
+      "reused": false,
+      "sha256": "77d448189d7ee2ba4692f605701bc6e824e4f04a5e870bce5badb192b71774a0",
+      "size": 6225155
+    },
+    {
+      "local_path": "raw/videos/videos/372.mp4",
+      "relative_path": "videos/videos/372.mp4",
+      "reused": false,
+      "sha256": "3c80f934c27a40b037e4d7d7804b56af499572b9020619e900f42d339f2e9d88",
+      "size": 6072334
+    },
+    {
+      "local_path": "raw/videos/videos/373.mp4",
+      "relative_path": "videos/videos/373.mp4",
+      "reused": false,
+      "sha256": "983a499861317f9734f90ef57c9a1996340c84f5962fc765b4e53a909356ea6c",
+      "size": 6161703
+    },
+    {
+      "local_path": "raw/videos/videos/374.mp4",
+      "relative_path": "videos/videos/374.mp4",
+      "reused": false,
+      "sha256": "a0ad404dee45c06d5648f6b421b9a7d554e8823d8497b84183db63acbdc4960c",
+      "size": 5250987
+    },
+    {
+      "local_path": "raw/videos/videos/375.mp4",
+      "relative_path": "videos/videos/375.mp4",
+      "reused": false,
+      "sha256": "3e78f4949b4d511f7300fd1c92459d6a9f0ea6e2ccb668377d94bbfdc0d66e08",
+      "size": 4787448
+    },
+    {
+      "local_path": "raw/videos/videos/376.mp4",
+      "relative_path": "videos/videos/376.mp4",
+      "reused": false,
+      "sha256": "d37f81b745853f11d6149af950f0e0e898e2c0723034b797fed6724f5a63bc9c",
+      "size": 4348920
+    },
+    {
+      "local_path": "raw/videos/videos/377.mp4",
+      "relative_path": "videos/videos/377.mp4",
+      "reused": false,
+      "sha256": "34e8fbe8d58d904296be8643d1d3e343aaf34e12b0465d8cb0b6135f6d36dd98",
+      "size": 4229565
+    },
+    {
+      "local_path": "raw/videos/videos/378.mp4",
+      "relative_path": "videos/videos/378.mp4",
+      "reused": false,
+      "sha256": "5b8d3e09fe29c102684b26b98f2d9c2500f6f1bb3b605ecffdbf471bb4ea3e99",
+      "size": 4239823
+    },
+    {
+      "local_path": "raw/videos/videos/379.mp4",
+      "relative_path": "videos/videos/379.mp4",
+      "reused": false,
+      "sha256": "b48846d7285749369c14a9e44ef4970f33b75d9e8c849f83a914cf1825f7b7d3",
+      "size": 4070613
+    },
+    {
+      "local_path": "raw/videos/videos/38.mp4",
+      "relative_path": "videos/videos/38.mp4",
+      "reused": false,
+      "sha256": "2d409a2df56911f7316be42e9fe70ab29fa243aac34bace1aab9821e0b42ac46",
+      "size": 4649296
+    },
+    {
+      "local_path": "raw/videos/videos/380.mp4",
+      "relative_path": "videos/videos/380.mp4",
+      "reused": false,
+      "sha256": "9c45616e029e67a2da0dfac8286fe9f38a09e96ffe1cd70ca94aa6d33c618c0b",
+      "size": 4334940
+    },
+    {
+      "local_path": "raw/videos/videos/381.mp4",
+      "relative_path": "videos/videos/381.mp4",
+      "reused": false,
+      "sha256": "9a1432db1984a91c299a0e56ea6402a4e39373216bf763381f4d3acbe008663e",
+      "size": 4485872
+    },
+    {
+      "local_path": "raw/videos/videos/382.mp4",
+      "relative_path": "videos/videos/382.mp4",
+      "reused": false,
+      "sha256": "967df254feb611374edd491f264da2a5599df1cb6378aeeb01755fddb36ac5f5",
+      "size": 4471407
+    },
+    {
+      "local_path": "raw/videos/videos/383.mp4",
+      "relative_path": "videos/videos/383.mp4",
+      "reused": false,
+      "sha256": "7db21dd30b95f782eadbee19d7a272ee24e604401151e17312e1149673011370",
+      "size": 4210740
+    },
+    {
+      "local_path": "raw/videos/videos/384.mp4",
+      "relative_path": "videos/videos/384.mp4",
+      "reused": false,
+      "sha256": "b2cd4aa6f959bf5847647ad95e50dc16adf5eeb94091add683dd57e474b5fb24",
+      "size": 4077126
+    },
+    {
+      "local_path": "raw/videos/videos/385.mp4",
+      "relative_path": "videos/videos/385.mp4",
+      "reused": false,
+      "sha256": "bd58c7bc213929d4ff1e5821306c103e0f780fccd7f6a818c2d40ec7b81bc993",
+      "size": 4273593
+    },
+    {
+      "local_path": "raw/videos/videos/386.mp4",
+      "relative_path": "videos/videos/386.mp4",
+      "reused": false,
+      "sha256": "1721cad1e942dd65ab5faba0f34fd70c624eff69c8049ce09f04ffc2f928010f",
+      "size": 4180975
+    },
+    {
+      "local_path": "raw/videos/videos/387.mp4",
+      "relative_path": "videos/videos/387.mp4",
+      "reused": false,
+      "sha256": "3f7a1b97d611bed9e5243af1e17f5d8d123068ef8b6bac9692271c6ad179fca8",
+      "size": 4656650
+    },
+    {
+      "local_path": "raw/videos/videos/388.mp4",
+      "relative_path": "videos/videos/388.mp4",
+      "reused": false,
+      "sha256": "f44c96982285200bea6edc1c015cc81759d17b387872e91c69a395ac1b7fb56a",
+      "size": 5081776
+    },
+    {
+      "local_path": "raw/videos/videos/389.mp4",
+      "relative_path": "videos/videos/389.mp4",
+      "reused": false,
+      "sha256": "285d2e21abe5ce6e7fedb4f4954627f1dfb4e24d5558b4ca6ec21c9afe702430",
+      "size": 5608987
+    },
+    {
+      "local_path": "raw/videos/videos/39.mp4",
+      "relative_path": "videos/videos/39.mp4",
+      "reused": false,
+      "sha256": "ed72dbeaad0bfbd93cfac918be504991bc1c6f41b799b499ff29aebb7a982540",
+      "size": 4357314
+    },
+    {
+      "local_path": "raw/videos/videos/390.mp4",
+      "relative_path": "videos/videos/390.mp4",
+      "reused": false,
+      "sha256": "86c9c384de800114773b76469f8f7a83905f73a43d29e15957413b21392230ff",
+      "size": 5667923
+    },
+    {
+      "local_path": "raw/videos/videos/391.mp4",
+      "relative_path": "videos/videos/391.mp4",
+      "reused": false,
+      "sha256": "bc7f8820064125f10ad13f3d92db0598a478a619413a6caa13a43de904dc908e",
+      "size": 5513298
+    },
+    {
+      "local_path": "raw/videos/videos/392.mp4",
+      "relative_path": "videos/videos/392.mp4",
+      "reused": false,
+      "sha256": "d71012d44d602ace478a43cecf3b090cf1b4a920a3dd4a5e5eeaec79d8712857",
+      "size": 6530763
+    },
+    {
+      "local_path": "raw/videos/videos/393.mp4",
+      "relative_path": "videos/videos/393.mp4",
+      "reused": false,
+      "sha256": "83999a19ad3331e585f2cd0c9f06f27893936e26dbf72b26846e75fae278f697",
+      "size": 5941161
+    },
+    {
+      "local_path": "raw/videos/videos/394.mp4",
+      "relative_path": "videos/videos/394.mp4",
+      "reused": false,
+      "sha256": "45a1f399d7c2f1ef255211c0c99bf96fded40f13ea1a21614919672f93d5b176",
+      "size": 6195879
+    },
+    {
+      "local_path": "raw/videos/videos/395.mp4",
+      "relative_path": "videos/videos/395.mp4",
+      "reused": false,
+      "sha256": "564145431ecfb54330fbbc59ddb1ce97c7130f725bd374e717a11e029ce3c1ad",
+      "size": 4144559
+    },
+    {
+      "local_path": "raw/videos/videos/396.mp4",
+      "relative_path": "videos/videos/396.mp4",
+      "reused": false,
+      "sha256": "0d65f634e213e15921c6da945e3175c9b5bc8cbaa7ad3a1648310d608209a4bb",
+      "size": 4006000
+    },
+    {
+      "local_path": "raw/videos/videos/397.mp4",
+      "relative_path": "videos/videos/397.mp4",
+      "reused": false,
+      "sha256": "5426e02cf27a10481ca81e32e8ca4af9a2eb8fe781c3b79ae1bdc67d06401ec2",
+      "size": 4732920
+    },
+    {
+      "local_path": "raw/videos/videos/398.mp4",
+      "relative_path": "videos/videos/398.mp4",
+      "reused": false,
+      "sha256": "e952999454694c7059aad9a36737b6ca400eff5f2b3b0aadd8be287465a97d67",
+      "size": 5368582
+    },
+    {
+      "local_path": "raw/videos/videos/399.mp4",
+      "relative_path": "videos/videos/399.mp4",
+      "reused": false,
+      "sha256": "e936032aefe48cc2cba6fb516c77c1129256d233b29be59cdb848ccb32f2baf0",
+      "size": 4693000
+    },
+    {
+      "local_path": "raw/videos/videos/4.mp4",
+      "relative_path": "videos/videos/4.mp4",
+      "reused": false,
+      "sha256": "7ea13b1457d3c705f58cd69733f0e4d5c42e11f07b019fb40f376726bcde7699",
+      "size": 7038865
+    },
+    {
+      "local_path": "raw/videos/videos/40.mp4",
+      "relative_path": "videos/videos/40.mp4",
+      "reused": false,
+      "sha256": "ed4701ecd7c907fffbd2541e3d729d1469ceb749c41c5bf808945aec9a7fc5aa",
+      "size": 4566587
+    },
+    {
+      "local_path": "raw/videos/videos/400.mp4",
+      "relative_path": "videos/videos/400.mp4",
+      "reused": false,
+      "sha256": "18cee561df0b2f6596065bfc67a8a20ba938ff6f50b8f6e4cc440e97c7d1fd45",
+      "size": 3863156
+    },
+    {
+      "local_path": "raw/videos/videos/401.mp4",
+      "relative_path": "videos/videos/401.mp4",
+      "reused": false,
+      "sha256": "11d7f5fd617a42036cfc618d70bed083de50aa84fe7226deeafbd2665b0aa49e",
+      "size": 3453350
+    },
+    {
+      "local_path": "raw/videos/videos/402.mp4",
+      "relative_path": "videos/videos/402.mp4",
+      "reused": false,
+      "sha256": "bd2917d8dbe0dc3a550658b4421ccba77bc2d8c196661c43b713292658bf3505",
+      "size": 3126832
+    },
+    {
+      "local_path": "raw/videos/videos/403.mp4",
+      "relative_path": "videos/videos/403.mp4",
+      "reused": false,
+      "sha256": "29ca54e8936cb68ab7b2c03618ded789a87f0180d8f88901a7f032438ce57bb1",
+      "size": 3358327
+    },
+    {
+      "local_path": "raw/videos/videos/404.mp4",
+      "relative_path": "videos/videos/404.mp4",
+      "reused": false,
+      "sha256": "2d8806c3ea391ba86e2348ba9d81ab46c750e5756d0b01ebce2405b4a16721d7",
+      "size": 3178271
+    },
+    {
+      "local_path": "raw/videos/videos/405.mp4",
+      "relative_path": "videos/videos/405.mp4",
+      "reused": false,
+      "sha256": "6d15d8d0384ba2efd8ac41eea94563098e3ddfead4f75461dbe1bf7ba0d41821",
+      "size": 3475583
+    },
+    {
+      "local_path": "raw/videos/videos/406.mp4",
+      "relative_path": "videos/videos/406.mp4",
+      "reused": false,
+      "sha256": "24960b383bb5480a4da8a1defab33a8d0c8c3fd422cc4335f730e9eb6e95cd12",
+      "size": 3801924
+    },
+    {
+      "local_path": "raw/videos/videos/407.mp4",
+      "relative_path": "videos/videos/407.mp4",
+      "reused": false,
+      "sha256": "d288806e52938ac7038bc4778cb001003cd72503621ffa51d0fafbef3486a106",
+      "size": 3406772
+    },
+    {
+      "local_path": "raw/videos/videos/408.mp4",
+      "relative_path": "videos/videos/408.mp4",
+      "reused": false,
+      "sha256": "c7b7711e6e423df319c3a6a5f32d45559dff06dcc6398fa6cc4576e5b9c23b37",
+      "size": 3282243
+    },
+    {
+      "local_path": "raw/videos/videos/409.mp4",
+      "relative_path": "videos/videos/409.mp4",
+      "reused": false,
+      "sha256": "039ecd9775bb6162e02890070ccb42efa6cc5e9300cb12d9f01b90ef1510a160",
+      "size": 3473389
+    },
+    {
+      "local_path": "raw/videos/videos/41.mp4",
+      "relative_path": "videos/videos/41.mp4",
+      "reused": false,
+      "sha256": "93b88aecda8c06428c3a32f3410b9f5f837bf9fcc1294a0b3bc48a47eee6ece7",
+      "size": 4372536
+    },
+    {
+      "local_path": "raw/videos/videos/410.mp4",
+      "relative_path": "videos/videos/410.mp4",
+      "reused": false,
+      "sha256": "56e077ed8df798cc69dc874968682730953fae28322b3affeff5c5dbc946624e",
+      "size": 3141030
+    },
+    {
+      "local_path": "raw/videos/videos/411.mp4",
+      "relative_path": "videos/videos/411.mp4",
+      "reused": false,
+      "sha256": "20469e0518349770eee8f52ada2baf702a57055efaadac36839b13cf799db323",
+      "size": 3100056
+    },
+    {
+      "local_path": "raw/videos/videos/412.mp4",
+      "relative_path": "videos/videos/412.mp4",
+      "reused": false,
+      "sha256": "15521fa14f31c1bbaf475c031a9f12fcb1696ffb5a0ea695c1014d0452eedcbb",
+      "size": 3589175
+    },
+    {
+      "local_path": "raw/videos/videos/413.mp4",
+      "relative_path": "videos/videos/413.mp4",
+      "reused": false,
+      "sha256": "ef77ab2f63872bca7eceda3cfaa08daaf08bf0e36d8e76355635eb2378048c64",
+      "size": 3510655
+    },
+    {
+      "local_path": "raw/videos/videos/414.mp4",
+      "relative_path": "videos/videos/414.mp4",
+      "reused": false,
+      "sha256": "520f1e70c73f92a3ff3f8af254aad0a407f6d5f485eb8333d9d462523c1cec90",
+      "size": 5550129
+    },
+    {
+      "local_path": "raw/videos/videos/415.mp4",
+      "relative_path": "videos/videos/415.mp4",
+      "reused": false,
+      "sha256": "9a835b2e09b3b2c19708def5a153a82d85611863282eb4ade7d09dda590fa259",
+      "size": 5496008
+    },
+    {
+      "local_path": "raw/videos/videos/416.mp4",
+      "relative_path": "videos/videos/416.mp4",
+      "reused": false,
+      "sha256": "c06b2691a3c5aea1e371a89ee075a5c98e67d06c7dde946d7529d3dbebbc792d",
+      "size": 5867297
+    },
+    {
+      "local_path": "raw/videos/videos/417.mp4",
+      "relative_path": "videos/videos/417.mp4",
+      "reused": false,
+      "sha256": "c4409056f7b7c0cdf5ec7b42ede79ecba3faaf057af5c6f6fcba2b5cc4a9207e",
+      "size": 4843399
+    },
+    {
+      "local_path": "raw/videos/videos/418.mp4",
+      "relative_path": "videos/videos/418.mp4",
+      "reused": false,
+      "sha256": "3739d8d87312bb1e58ba1269215e5fd7879f608fe90989b61f2fb0c49a95553f",
+      "size": 4172011
+    },
+    {
+      "local_path": "raw/videos/videos/419.mp4",
+      "relative_path": "videos/videos/419.mp4",
+      "reused": false,
+      "sha256": "8f90ab4390e19e6d60c64ca7add3e94f4039a026eea2a2e7e12d108257846bfe",
+      "size": 4844938
+    },
+    {
+      "local_path": "raw/videos/videos/42.mp4",
+      "relative_path": "videos/videos/42.mp4",
+      "reused": false,
+      "sha256": "329f267766c4772acf6aab58bad5cc2c1735b4dad1dc6d49e42b1bcd15d0de03",
+      "size": 4059293
+    },
+    {
+      "local_path": "raw/videos/videos/420.mp4",
+      "relative_path": "videos/videos/420.mp4",
+      "reused": false,
+      "sha256": "8a6e20c6ec3e76b49ccccc5c339c9178ede560432fa249700d51a57e24fb43a6",
+      "size": 4851290
+    },
+    {
+      "local_path": "raw/videos/videos/421.mp4",
+      "relative_path": "videos/videos/421.mp4",
+      "reused": false,
+      "sha256": "51f1fea220afa6d626ac25360685368d7719cbd8458606932ac61290ed0a41b7",
+      "size": 6336538
+    },
+    {
+      "local_path": "raw/videos/videos/422.mp4",
+      "relative_path": "videos/videos/422.mp4",
+      "reused": false,
+      "sha256": "1ad248084d8caccb7e5b57d3058cfae4a4671c9542c0d3c333baf80184d00bf8",
+      "size": 6065676
+    },
+    {
+      "local_path": "raw/videos/videos/423.mp4",
+      "relative_path": "videos/videos/423.mp4",
+      "reused": false,
+      "sha256": "b5aa7d3e89acde927ea0a730f534065a06ad48b86d3ba75b47555db0d77740ed",
+      "size": 5247407
+    },
+    {
+      "local_path": "raw/videos/videos/424.mp4",
+      "relative_path": "videos/videos/424.mp4",
+      "reused": false,
+      "sha256": "2528c886695f940509610dc64daab9f7fd4460c899ed5945825bf7176d234a06",
+      "size": 3865148
+    },
+    {
+      "local_path": "raw/videos/videos/425.mp4",
+      "relative_path": "videos/videos/425.mp4",
+      "reused": false,
+      "sha256": "09571e1d9bad31a498134537e16e7a6e5a81effd0653ec05b439813b14f312fb",
+      "size": 3573972
+    },
+    {
+      "local_path": "raw/videos/videos/426.mp4",
+      "relative_path": "videos/videos/426.mp4",
+      "reused": false,
+      "sha256": "5c58330e89f68f48f61b76a5300c171f5d226831167f73a94f7ff5c0d623bd91",
+      "size": 3328843
+    },
+    {
+      "local_path": "raw/videos/videos/427.mp4",
+      "relative_path": "videos/videos/427.mp4",
+      "reused": false,
+      "sha256": "f47acd740b6c34d8b8e9d9a325e0a00dc9929f90e036f6ee3f5be81cc1dd2139",
+      "size": 3459063
+    },
+    {
+      "local_path": "raw/videos/videos/428.mp4",
+      "relative_path": "videos/videos/428.mp4",
+      "reused": false,
+      "sha256": "a062a98fb3fd2cbbbd723ab76e5129dbb69137add180ab1158ed3c6a282d9e44",
+      "size": 3276250
+    },
+    {
+      "local_path": "raw/videos/videos/429.mp4",
+      "relative_path": "videos/videos/429.mp4",
+      "reused": false,
+      "sha256": "6c003ae6e8154525b373536713b1f9dfedff631db82e013c9c5fa09d7c9feb4e",
+      "size": 3079313
+    },
+    {
+      "local_path": "raw/videos/videos/43.mp4",
+      "relative_path": "videos/videos/43.mp4",
+      "reused": false,
+      "sha256": "cb76d0f16ace8dd230680be81fd0fd47ccac6cfdfb6007bec1a9ab40630273e5",
+      "size": 5949642
+    },
+    {
+      "local_path": "raw/videos/videos/430.mp4",
+      "relative_path": "videos/videos/430.mp4",
+      "reused": false,
+      "sha256": "8f06a7626e57c6b1ff0746abdb3c2716c2ab5c0fb924295d40c05c56d7a196c1",
+      "size": 4093050
+    },
+    {
+      "local_path": "raw/videos/videos/431.mp4",
+      "relative_path": "videos/videos/431.mp4",
+      "reused": false,
+      "sha256": "ec54c2cd1629b93808ef918721695812c96270dd96870b3a0a81e088e3a8ba54",
+      "size": 3551208
+    },
+    {
+      "local_path": "raw/videos/videos/432.mp4",
+      "relative_path": "videos/videos/432.mp4",
+      "reused": false,
+      "sha256": "2230df4b00dac2e4881cac7c02fc68a59abe88b753d30f5703a482fbb2445025",
+      "size": 3410024
+    },
+    {
+      "local_path": "raw/videos/videos/433.mp4",
+      "relative_path": "videos/videos/433.mp4",
+      "reused": false,
+      "sha256": "91d397fdc3de8b844b5e28e749b06f89568e9798648b46954fdb60a711b8be9a",
+      "size": 3202024
+    },
+    {
+      "local_path": "raw/videos/videos/434.mp4",
+      "relative_path": "videos/videos/434.mp4",
+      "reused": false,
+      "sha256": "a10943fca1cc8ca247014cfe5d38c38d002ce6f8770173774801c327c2e34071",
+      "size": 3479493
+    },
+    {
+      "local_path": "raw/videos/videos/435.mp4",
+      "relative_path": "videos/videos/435.mp4",
+      "reused": false,
+      "sha256": "00cb9873474ec6fa4ee800b897b585798a4f8bc7c3ebd7e101d1f6a7b478e9c6",
+      "size": 3233560
+    },
+    {
+      "local_path": "raw/videos/videos/436.mp4",
+      "relative_path": "videos/videos/436.mp4",
+      "reused": false,
+      "sha256": "336cd376ed60c77fb2a936b7f2837ef0ee759b5d264cde560bfd22b8006a4147",
+      "size": 4170471
+    },
+    {
+      "local_path": "raw/videos/videos/437.mp4",
+      "relative_path": "videos/videos/437.mp4",
+      "reused": false,
+      "sha256": "3f85810a5b6e5d7fed2e4c40ead5877dc6445c6cfdea3c13de47bf63a4102c89",
+      "size": 3209005
+    },
+    {
+      "local_path": "raw/videos/videos/438.mp4",
+      "relative_path": "videos/videos/438.mp4",
+      "reused": false,
+      "sha256": "269e2f171d111addcc7636cbe1edd6aa0ee637990519679c68e4379b3829e17f",
+      "size": 4136434
+    },
+    {
+      "local_path": "raw/videos/videos/439.mp4",
+      "relative_path": "videos/videos/439.mp4",
+      "reused": false,
+      "sha256": "d8b069d6c4fe78f780ce3576c44d919d8c99e167bc88fd57a68a73246c1d505f",
+      "size": 6109841
+    },
+    {
+      "local_path": "raw/videos/videos/44.mp4",
+      "relative_path": "videos/videos/44.mp4",
+      "reused": false,
+      "sha256": "b48d835d843b3b22ac3179346ce479a2047696c4ae5a2b2272d094880645e8b1",
+      "size": 4185711
+    },
+    {
+      "local_path": "raw/videos/videos/440.mp4",
+      "relative_path": "videos/videos/440.mp4",
+      "reused": false,
+      "sha256": "106874ce913a997490ef8d22411a7501d5f0ffc0af4841ab9f97d952ed6b4afd",
+      "size": 4799535
+    },
+    {
+      "local_path": "raw/videos/videos/441.mp4",
+      "relative_path": "videos/videos/441.mp4",
+      "reused": false,
+      "sha256": "3890b03aad3254772b8060288357c85c637857651e16fc5b41a1a07aabc3c5b4",
+      "size": 5001085
+    },
+    {
+      "local_path": "raw/videos/videos/442.mp4",
+      "relative_path": "videos/videos/442.mp4",
+      "reused": false,
+      "sha256": "0832399e1bb71c6b84a1e09921c8f24638c7b73882bc867a5508b77078426755",
+      "size": 3438636
+    },
+    {
+      "local_path": "raw/videos/videos/443.mp4",
+      "relative_path": "videos/videos/443.mp4",
+      "reused": false,
+      "sha256": "850de678f7aa51d9d1fe6f9e793aadb0568ea53a98c886dcfdb116c6212100f9",
+      "size": 5953580
+    },
+    {
+      "local_path": "raw/videos/videos/444.mp4",
+      "relative_path": "videos/videos/444.mp4",
+      "reused": false,
+      "sha256": "371909d3019cf5b6be9d5dc1e53043185f82d063fcfce2242e99002c6a26a7ce",
+      "size": 4536902
+    },
+    {
+      "local_path": "raw/videos/videos/445.mp4",
+      "relative_path": "videos/videos/445.mp4",
+      "reused": false,
+      "sha256": "f68a2439c53d2819a52c5f2e4157dd82e0636deb484bf7d44b4e3ddb05e61d2c",
+      "size": 4603637
+    },
+    {
+      "local_path": "raw/videos/videos/446.mp4",
+      "relative_path": "videos/videos/446.mp4",
+      "reused": false,
+      "sha256": "a6ebaf73bef7d2666c761be2d36d2b8cf524d872eafce26ce6a293370d8c307a",
+      "size": 5239109
+    },
+    {
+      "local_path": "raw/videos/videos/447.mp4",
+      "relative_path": "videos/videos/447.mp4",
+      "reused": false,
+      "sha256": "536a2cbb59bdea9ec1654172d25160b7b917a20a72b4dc537bba0ca4d2adff92",
+      "size": 4527392
+    },
+    {
+      "local_path": "raw/videos/videos/448.mp4",
+      "relative_path": "videos/videos/448.mp4",
+      "reused": false,
+      "sha256": "89507e6b2a6afccc9c26ec4782f0eb0225adc84c4406d63e04fea302569e653f",
+      "size": 4056368
+    },
+    {
+      "local_path": "raw/videos/videos/449.mp4",
+      "relative_path": "videos/videos/449.mp4",
+      "reused": false,
+      "sha256": "118c58df7c0d53c0deeccdc89802740846dbf468cd709a7370ee496ebab258b7",
+      "size": 3794863
+    },
+    {
+      "local_path": "raw/videos/videos/45.mp4",
+      "relative_path": "videos/videos/45.mp4",
+      "reused": false,
+      "sha256": "8e370d3242d8c3ddde1f86939aaec44423ebcc56e7eb12c9e3cdeb44c449b025",
+      "size": 4473087
+    },
+    {
+      "local_path": "raw/videos/videos/450.mp4",
+      "relative_path": "videos/videos/450.mp4",
+      "reused": false,
+      "sha256": "78ddc3c8777e6fdf8057e6e68b50ffa91ae13e33c4ceeb5d6901a0a5e1105e87",
+      "size": 3392242
+    },
+    {
+      "local_path": "raw/videos/videos/451.mp4",
+      "relative_path": "videos/videos/451.mp4",
+      "reused": false,
+      "sha256": "7c4a49f2b31471697faf475a32a5b6625bf2947ed86c7e600241167812947436",
+      "size": 3086318
+    },
+    {
+      "local_path": "raw/videos/videos/452.mp4",
+      "relative_path": "videos/videos/452.mp4",
+      "reused": false,
+      "sha256": "020909aa243f13798cfb8e6019b9cc8e3f4b82e27898bb1b9a898d00307ec67a",
+      "size": 3419353
+    },
+    {
+      "local_path": "raw/videos/videos/453.mp4",
+      "relative_path": "videos/videos/453.mp4",
+      "reused": false,
+      "sha256": "ba8db477b8431438e1d17ff97db835447119d89dea32560df8bca36ebf145b5b",
+      "size": 3204802
+    },
+    {
+      "local_path": "raw/videos/videos/454.mp4",
+      "relative_path": "videos/videos/454.mp4",
+      "reused": false,
+      "sha256": "2cf5be67f764ea9a84fe5193d154dabfa2db836425edc94d04b402604dfeaa8e",
+      "size": 3774510
+    },
+    {
+      "local_path": "raw/videos/videos/455.mp4",
+      "relative_path": "videos/videos/455.mp4",
+      "reused": false,
+      "sha256": "c62f34f624fb29fe8b45ad9b6e426ab5eb7d430e3a7409e98cfffd488670cc6b",
+      "size": 4172728
+    },
+    {
+      "local_path": "raw/videos/videos/456.mp4",
+      "relative_path": "videos/videos/456.mp4",
+      "reused": false,
+      "sha256": "f193549fdd894b78fc8a4d7902a808063dd75ac652d120c5adbf7a1f1bafb8fa",
+      "size": 3316521
+    },
+    {
+      "local_path": "raw/videos/videos/457.mp4",
+      "relative_path": "videos/videos/457.mp4",
+      "reused": false,
+      "sha256": "b56c271a9f5ebd8867612d0de24bbc5971add6fd31e89e67b2d5b5f98469c143",
+      "size": 3288994
+    },
+    {
+      "local_path": "raw/videos/videos/458.mp4",
+      "relative_path": "videos/videos/458.mp4",
+      "reused": false,
+      "sha256": "4439474bc34ca3fed89d4e4dc57e735af73fa7ed92a6f2b9aae49cb40d438e5f",
+      "size": 3037670
+    },
+    {
+      "local_path": "raw/videos/videos/459.mp4",
+      "relative_path": "videos/videos/459.mp4",
+      "reused": false,
+      "sha256": "fe6425914b010171b542d0b22d7010469cca28d090461b810c12219bba21a574",
+      "size": 3265701
+    },
+    {
+      "local_path": "raw/videos/videos/46.mp4",
+      "relative_path": "videos/videos/46.mp4",
+      "reused": false,
+      "sha256": "3398f449090d27cb207bf983302ed9eed0fb02b0983084052239324bfd0bca9a",
+      "size": 4972426
+    },
+    {
+      "local_path": "raw/videos/videos/460.mp4",
+      "relative_path": "videos/videos/460.mp4",
+      "reused": false,
+      "sha256": "03baaf0820ee8c60b5a5457cf999d566f3c824b7e7dc14020b0cb23201c0b310",
+      "size": 3310715
+    },
+    {
+      "local_path": "raw/videos/videos/461.mp4",
+      "relative_path": "videos/videos/461.mp4",
+      "reused": false,
+      "sha256": "089f91690c17306bf262ce6ad35792c823038cc2d37f8c45961cee3633e5615a",
+      "size": 3615930
+    },
+    {
+      "local_path": "raw/videos/videos/462.mp4",
+      "relative_path": "videos/videos/462.mp4",
+      "reused": false,
+      "sha256": "4a68fc7ec04c05fa1332374b8b23e484ce3c1ceac8e957d44cd34eff43f5ffe9",
+      "size": 3646217
+    },
+    {
+      "local_path": "raw/videos/videos/463.mp4",
+      "relative_path": "videos/videos/463.mp4",
+      "reused": false,
+      "sha256": "7925280403c7ff32e110ddb6117feea5d1e5efb9c32d3bebfe55c5323679b7a5",
+      "size": 6255998
+    },
+    {
+      "local_path": "raw/videos/videos/464.mp4",
+      "relative_path": "videos/videos/464.mp4",
+      "reused": false,
+      "sha256": "3f19a6d50f1edb4c85da580666ae96907b8e5cd7f4c1e6d591e8546f9b0c6e85",
+      "size": 5086937
+    },
+    {
+      "local_path": "raw/videos/videos/465.mp4",
+      "relative_path": "videos/videos/465.mp4",
+      "reused": false,
+      "sha256": "107e9dada16eeaf344afb4908951b74c1ebb4861cf7ed843bc8ca677dada539f",
+      "size": 4115915
+    },
+    {
+      "local_path": "raw/videos/videos/466.mp4",
+      "relative_path": "videos/videos/466.mp4",
+      "reused": false,
+      "sha256": "8d18c86415457b673d108255b2f48e5e2de036adf40362eff625e75ef049af97",
+      "size": 5743316
+    },
+    {
+      "local_path": "raw/videos/videos/467.mp4",
+      "relative_path": "videos/videos/467.mp4",
+      "reused": false,
+      "sha256": "475fa85b63b7ebf267500ac016e1ef1c6f3744aa28cbdf5fe12ce756ca84bb3a",
+      "size": 5092455
+    },
+    {
+      "local_path": "raw/videos/videos/468.mp4",
+      "relative_path": "videos/videos/468.mp4",
+      "reused": false,
+      "sha256": "b5855e788911babf22b6a3d0c4084053f6eb625bd7d34a99d1655d21de7f342f",
+      "size": 3792459
+    },
+    {
+      "local_path": "raw/videos/videos/469.mp4",
+      "relative_path": "videos/videos/469.mp4",
+      "reused": false,
+      "sha256": "799622180ecc9368d33f6403fe004ad0aaa6f60bcbc3fab050a3384be68048f2",
+      "size": 5935492
+    },
+    {
+      "local_path": "raw/videos/videos/47.mp4",
+      "relative_path": "videos/videos/47.mp4",
+      "reused": false,
+      "sha256": "6ce0c332db1e55ac77bdd9d152496f979f012b5e4b60bd9e325abb53ce7079db",
+      "size": 4919786
+    },
+    {
+      "local_path": "raw/videos/videos/470.mp4",
+      "relative_path": "videos/videos/470.mp4",
+      "reused": false,
+      "sha256": "f5fdf5c7a5588b3a8566cb7681943e6c56d7f45d4710b5674d51eb2f4c280a7e",
+      "size": 5798687
+    },
+    {
+      "local_path": "raw/videos/videos/471.mp4",
+      "relative_path": "videos/videos/471.mp4",
+      "reused": false,
+      "sha256": "ca675b07de436ac731cbeb15f545787b214bd5d3a361ab3e5e6a952f8ba94ea0",
+      "size": 6114639
+    },
+    {
+      "local_path": "raw/videos/videos/472.mp4",
+      "relative_path": "videos/videos/472.mp4",
+      "reused": false,
+      "sha256": "46c6eb80da368f45d03851e52adf430c60e6bcaeb4b99dc0a1bc305766218e78",
+      "size": 4882219
+    },
+    {
+      "local_path": "raw/videos/videos/473.mp4",
+      "relative_path": "videos/videos/473.mp4",
+      "reused": false,
+      "sha256": "e8e9dc14537460955d26d9865b0f21d8d62258c6ec58792f6b9fbd2f9599ed99",
+      "size": 3236940
+    },
+    {
+      "local_path": "raw/videos/videos/474.mp4",
+      "relative_path": "videos/videos/474.mp4",
+      "reused": false,
+      "sha256": "bb852c244950f96c3536830e972b2c8b7f4da4c59aa6d16ec3f30de6ff201cef",
+      "size": 3818418
+    },
+    {
+      "local_path": "raw/videos/videos/475.mp4",
+      "relative_path": "videos/videos/475.mp4",
+      "reused": false,
+      "sha256": "53ede23e865f71d2076ab89f52d8db15db9753df72c3556a538bc515aa74cd73",
+      "size": 3494809
+    },
+    {
+      "local_path": "raw/videos/videos/476.mp4",
+      "relative_path": "videos/videos/476.mp4",
+      "reused": false,
+      "sha256": "e75a5afcb3e02877f47fb6aabc9d5b3de47ae4632379e886041d01de239f7c6d",
+      "size": 3949427
+    },
+    {
+      "local_path": "raw/videos/videos/477.mp4",
+      "relative_path": "videos/videos/477.mp4",
+      "reused": false,
+      "sha256": "7b9104919075d8dfc5a3a2dd68133ca2afcbe80d111d3cbd636736ece9152547",
+      "size": 3502289
+    },
+    {
+      "local_path": "raw/videos/videos/478.mp4",
+      "relative_path": "videos/videos/478.mp4",
+      "reused": false,
+      "sha256": "27f74f452cd11911e57282e6c560b8eea7ccb95bb6f1774349e3ff3e498c3d61",
+      "size": 3303910
+    },
+    {
+      "local_path": "raw/videos/videos/479.mp4",
+      "relative_path": "videos/videos/479.mp4",
+      "reused": false,
+      "sha256": "395e22567f47ddf05bf231d50c2edb12abd346ac34463f7aa282f8f3bd9635a0",
+      "size": 4314526
+    },
+    {
+      "local_path": "raw/videos/videos/48.mp4",
+      "relative_path": "videos/videos/48.mp4",
+      "reused": false,
+      "sha256": "5ba26a8bd5a3fef651efe967a04198f864d85790cbde9cec5d3f7dee5b913a0c",
+      "size": 4278191
+    },
+    {
+      "local_path": "raw/videos/videos/480.mp4",
+      "relative_path": "videos/videos/480.mp4",
+      "reused": false,
+      "sha256": "60625f6708aa92478428d3de0ded777da5aeea313c60ccd9874a0c2e3f6548b9",
+      "size": 3435736
+    },
+    {
+      "local_path": "raw/videos/videos/481.mp4",
+      "relative_path": "videos/videos/481.mp4",
+      "reused": false,
+      "sha256": "72db249491f5b2563699e8f379616f2dd286bb8ae5b872844c1d9009c4bf3390",
+      "size": 3522239
+    },
+    {
+      "local_path": "raw/videos/videos/482.mp4",
+      "relative_path": "videos/videos/482.mp4",
+      "reused": false,
+      "sha256": "918a3b5c2fbb0b8e090bc72ed6be96e4bf0f5ac3a6199b42f9aac2dad707aaeb",
+      "size": 3151727
+    },
+    {
+      "local_path": "raw/videos/videos/483.mp4",
+      "relative_path": "videos/videos/483.mp4",
+      "reused": false,
+      "sha256": "f683299104a6ac931f83f6e22e4acc28f1fcb21b8ead09af75446ba532eca9f3",
+      "size": 3331858
+    },
+    {
+      "local_path": "raw/videos/videos/484.mp4",
+      "relative_path": "videos/videos/484.mp4",
+      "reused": false,
+      "sha256": "bc27d9932eb200e45abcc48a145fdac5a9e60511f04ce5e355481da3a00e6288",
+      "size": 3465696
+    },
+    {
+      "local_path": "raw/videos/videos/485.mp4",
+      "relative_path": "videos/videos/485.mp4",
+      "reused": false,
+      "sha256": "26e71f4e1dc153ddbc467835bae37f111248f17f6ba03a49a9a6ea46b196846f",
+      "size": 3489104
+    },
+    {
+      "local_path": "raw/videos/videos/486.mp4",
+      "relative_path": "videos/videos/486.mp4",
+      "reused": false,
+      "sha256": "8f77abeb737f5d556d35231d785b1576399dc6748a1117e6e52cd9a8b011d11c",
+      "size": 4375798
+    },
+    {
+      "local_path": "raw/videos/videos/487.mp4",
+      "relative_path": "videos/videos/487.mp4",
+      "reused": false,
+      "sha256": "d5381f3df944667943238f902db9c3bd8e492de7781f93eb061d74c142a38b2e",
+      "size": 3804123
+    },
+    {
+      "local_path": "raw/videos/videos/488.mp4",
+      "relative_path": "videos/videos/488.mp4",
+      "reused": false,
+      "sha256": "bf8fde868eb87ef071076e9df46e34f7de6008d670fc5a2521ad48b71e8ee2e2",
+      "size": 3607892
+    },
+    {
+      "local_path": "raw/videos/videos/489.mp4",
+      "relative_path": "videos/videos/489.mp4",
+      "reused": false,
+      "sha256": "5eff0adf7833709cfd5634ccaaf9d0cee6e91072f1a41c55483f34e5c77e0473",
+      "size": 4831816
+    },
+    {
+      "local_path": "raw/videos/videos/49.mp4",
+      "relative_path": "videos/videos/49.mp4",
+      "reused": false,
+      "sha256": "2d4a6ec9338f1d40bf874bd430fcde1f535481ad0c1f34e4934ca11a3444d8a4",
+      "size": 5498756
+    },
+    {
+      "local_path": "raw/videos/videos/490.mp4",
+      "relative_path": "videos/videos/490.mp4",
+      "reused": false,
+      "sha256": "96404927cdd99d9e61bfffb81daaf48fef91560a9cc07eda146c0c33280fb781",
+      "size": 5322291
+    },
+    {
+      "local_path": "raw/videos/videos/491.mp4",
+      "relative_path": "videos/videos/491.mp4",
+      "reused": false,
+      "sha256": "7bcbc85430aa50b7feecc2df4970c502bb9684248f7d4704db7c35ff5d94f21d",
+      "size": 3961599
+    },
+    {
+      "local_path": "raw/videos/videos/492.mp4",
+      "relative_path": "videos/videos/492.mp4",
+      "reused": false,
+      "sha256": "846a0a07abd262c172a682e33dd9a550b3f1eb762fed6bb8b76065bc00607bf2",
+      "size": 4238168
+    },
+    {
+      "local_path": "raw/videos/videos/493.mp4",
+      "relative_path": "videos/videos/493.mp4",
+      "reused": false,
+      "sha256": "fdf5ae8d9b066231518de2ab5b199d271bcc0fac64f6e4b3f187568ef2f5f967",
+      "size": 6650081
+    },
+    {
+      "local_path": "raw/videos/videos/494.mp4",
+      "relative_path": "videos/videos/494.mp4",
+      "reused": false,
+      "sha256": "4da9855eeb051f1d4674b0081bbb7afd4293f11193bb786552d82b8149a595cd",
+      "size": 6120221
+    },
+    {
+      "local_path": "raw/videos/videos/495.mp4",
+      "relative_path": "videos/videos/495.mp4",
+      "reused": false,
+      "sha256": "fc6552ddaa18c25e073b1d8a46c22787c740a4ff8b36a8495342177db5a23771",
+      "size": 6824910
+    },
+    {
+      "local_path": "raw/videos/videos/496.mp4",
+      "relative_path": "videos/videos/496.mp4",
+      "reused": false,
+      "sha256": "0b7e74e42fb85b2c4b7d3f85a8e0cc83f3fe4d70010db0de056065cf0fc222bf",
+      "size": 6476334
+    },
+    {
+      "local_path": "raw/videos/videos/497.mp4",
+      "relative_path": "videos/videos/497.mp4",
+      "reused": false,
+      "sha256": "d18742fa0f1089755f550d1a4b058f0752157a3b1fc10b1172247be8b36f31ee",
+      "size": 6120422
+    },
+    {
+      "local_path": "raw/videos/videos/498.mp4",
+      "relative_path": "videos/videos/498.mp4",
+      "reused": false,
+      "sha256": "6de9728c3e4c51864d62a0e7b86bb5974e966502392f0f425743edde80939714",
+      "size": 6399542
+    },
+    {
+      "local_path": "raw/videos/videos/499.mp4",
+      "relative_path": "videos/videos/499.mp4",
+      "reused": false,
+      "sha256": "46e05930b36d160ed66373a4b6f498f6311541834babfef5e896222da2460fe6",
+      "size": 5551547
+    },
+    {
+      "local_path": "raw/videos/videos/5.mp4",
+      "relative_path": "videos/videos/5.mp4",
+      "reused": false,
+      "sha256": "d3da73a1aefa8322e1ec467f890668a7804e23335ce436a8c4e7a4b0d6aa4b6c",
+      "size": 7191372
+    },
+    {
+      "local_path": "raw/videos/videos/50.mp4",
+      "relative_path": "videos/videos/50.mp4",
+      "reused": false,
+      "sha256": "000c4a05668e01b3e9916f9175a06491a7508e7fbea8c6cfebfd3636515106c3",
+      "size": 6198236
+    },
+    {
+      "local_path": "raw/videos/videos/500.mp4",
+      "relative_path": "videos/videos/500.mp4",
+      "reused": false,
+      "sha256": "f6f5790ba81c828442bd13e9408b0cec95401829d68ac76f8730a967432eae1b",
+      "size": 5451612
+    },
+    {
+      "local_path": "raw/videos/videos/501.mp4",
+      "relative_path": "videos/videos/501.mp4",
+      "reused": false,
+      "sha256": "89cfe3a1d5795fae483fe4a42c10645049bbd9f9169befadd0ec87bbfe86574f",
+      "size": 4756121
+    },
+    {
+      "local_path": "raw/videos/videos/502.mp4",
+      "relative_path": "videos/videos/502.mp4",
+      "reused": false,
+      "sha256": "3ff2b95cc25dcdab9093b896fa7b872f090b1dfba2b7ccd53214869b93f1e39f",
+      "size": 4584686
+    },
+    {
+      "local_path": "raw/videos/videos/503.mp4",
+      "relative_path": "videos/videos/503.mp4",
+      "reused": false,
+      "sha256": "c0cfecb6386035c938c5aa72290443b2fc5b5de230d6f2b5aeb01a2f531b0361",
+      "size": 5130499
+    },
+    {
+      "local_path": "raw/videos/videos/504.mp4",
+      "relative_path": "videos/videos/504.mp4",
+      "reused": false,
+      "sha256": "4379b73120a2253b9c45e3b964bc8aba9735d7fc97b0c9e006da1886736021a6",
+      "size": 4895100
+    },
+    {
+      "local_path": "raw/videos/videos/505.mp4",
+      "relative_path": "videos/videos/505.mp4",
+      "reused": false,
+      "sha256": "2d0851d4c47f10d3e188b994912836a5e2f336fad7e1d0edcc3be5f77f360055",
+      "size": 4753690
+    },
+    {
+      "local_path": "raw/videos/videos/506.mp4",
+      "relative_path": "videos/videos/506.mp4",
+      "reused": false,
+      "sha256": "c1c5b5a53f89a320e743b0ff0e087edd3dbcbf95e8904cf5bdad747923765c39",
+      "size": 4849917
+    },
+    {
+      "local_path": "raw/videos/videos/507.mp4",
+      "relative_path": "videos/videos/507.mp4",
+      "reused": false,
+      "sha256": "02306a213c33e514c50b1f9525b328f0fdacf89b0c2a8c32f14530f6592ff565",
+      "size": 4858833
+    },
+    {
+      "local_path": "raw/videos/videos/508.mp4",
+      "relative_path": "videos/videos/508.mp4",
+      "reused": false,
+      "sha256": "393c4a903581e0f7087c21b525e2e158551905616843a499b55ad0bfc939eb59",
+      "size": 4612885
+    },
+    {
+      "local_path": "raw/videos/videos/509.mp4",
+      "relative_path": "videos/videos/509.mp4",
+      "reused": false,
+      "sha256": "c3c4f0a7ad5bcab3913097800030f1cb166cf1b7e1274fae785cbf0156286806",
+      "size": 4807216
+    },
+    {
+      "local_path": "raw/videos/videos/51.mp4",
+      "relative_path": "videos/videos/51.mp4",
+      "reused": false,
+      "sha256": "2e8efb6a662f4b7a7e40f59f0025845698e0cce3d9ba1fdc8b38f13d73305fc0",
+      "size": 4856812
+    },
+    {
+      "local_path": "raw/videos/videos/510.mp4",
+      "relative_path": "videos/videos/510.mp4",
+      "reused": false,
+      "sha256": "7bc49545147d41b5a9e18809f10adc0f464a34027273b296c681a7636fbfca5b",
+      "size": 5581620
+    },
+    {
+      "local_path": "raw/videos/videos/511.mp4",
+      "relative_path": "videos/videos/511.mp4",
+      "reused": false,
+      "sha256": "69c72803dc4f0b0695428bfa3c52b278f3e8c65f54c7eba777c780fa3570444c",
+      "size": 5599762
+    },
+    {
+      "local_path": "raw/videos/videos/512.mp4",
+      "relative_path": "videos/videos/512.mp4",
+      "reused": false,
+      "sha256": "29d5c6105399423ab91d62e8b2e752164f11626e810ec0f1634772246558faf3",
+      "size": 5315216
+    },
+    {
+      "local_path": "raw/videos/videos/513.mp4",
+      "relative_path": "videos/videos/513.mp4",
+      "reused": false,
+      "sha256": "fd74b51523ddc1578fb3ac64f62838128c53acf62e1b4074a04f20d6cc972446",
+      "size": 6661367
+    },
+    {
+      "local_path": "raw/videos/videos/514.mp4",
+      "relative_path": "videos/videos/514.mp4",
+      "reused": false,
+      "sha256": "e5c647590f5fafb6630f881d673cf223b8be51a25105e847773f0269e93fe80b",
+      "size": 6337321
+    },
+    {
+      "local_path": "raw/videos/videos/515.mp4",
+      "relative_path": "videos/videos/515.mp4",
+      "reused": false,
+      "sha256": "ae28cf3dde013ad6edffb64a9e2cac0fb89463ef945f54364a99a7172456b888",
+      "size": 6384708
+    },
+    {
+      "local_path": "raw/videos/videos/516.mp4",
+      "relative_path": "videos/videos/516.mp4",
+      "reused": false,
+      "sha256": "f14f2e26ec335711e9150b99a505dba6da2736e275136107383e37a20159dd7d",
+      "size": 4670694
+    },
+    {
+      "local_path": "raw/videos/videos/517.mp4",
+      "relative_path": "videos/videos/517.mp4",
+      "reused": false,
+      "sha256": "e405fe9236eae9987e3a9326cddf5389d814476cbefdd41931914b6a0555b337",
+      "size": 5420653
+    },
+    {
+      "local_path": "raw/videos/videos/518.mp4",
+      "relative_path": "videos/videos/518.mp4",
+      "reused": false,
+      "sha256": "cddee9a696e8f4aad401b6539e63c5dfface1fec14a420dfde81f544da4a7c4c",
+      "size": 6087836
+    },
+    {
+      "local_path": "raw/videos/videos/519.mp4",
+      "relative_path": "videos/videos/519.mp4",
+      "reused": false,
+      "sha256": "2ec1f551417257802d66e7e0f907b221615bf997a3f6c397dd8a282249a36cbb",
+      "size": 6538487
+    },
+    {
+      "local_path": "raw/videos/videos/52.mp4",
+      "relative_path": "videos/videos/52.mp4",
+      "reused": false,
+      "sha256": "07a26ff7e15802152b01c867f555a74fc80dfc6b11d9646a4019d9a85c7e4ff8",
+      "size": 4831527
+    },
+    {
+      "local_path": "raw/videos/videos/520.mp4",
+      "relative_path": "videos/videos/520.mp4",
+      "reused": false,
+      "sha256": "3c0d0d53995d02a721a7f5669a2b887d24b7dc0a6cac7820584b020e0579a59b",
+      "size": 6874073
+    },
+    {
+      "local_path": "raw/videos/videos/521.mp4",
+      "relative_path": "videos/videos/521.mp4",
+      "reused": false,
+      "sha256": "4a94460bc899b44ff720e31d3cdaf20c69078a716bf26f3d024f1220734e990c",
+      "size": 5945927
+    },
+    {
+      "local_path": "raw/videos/videos/522.mp4",
+      "relative_path": "videos/videos/522.mp4",
+      "reused": false,
+      "sha256": "452044a42986818d75cadcc9dd66e730d4c4e65ebe66c27a9c89d2dc2e4e83eb",
+      "size": 5435947
+    },
+    {
+      "local_path": "raw/videos/videos/523.mp4",
+      "relative_path": "videos/videos/523.mp4",
+      "reused": false,
+      "sha256": "05ebfe16c5e1f1b0df869d8f111ac02638674a05d13c0c8ca7bf81eb4bcf1161",
+      "size": 4847807
+    },
+    {
+      "local_path": "raw/videos/videos/524.mp4",
+      "relative_path": "videos/videos/524.mp4",
+      "reused": false,
+      "sha256": "c97330769006e2b40262419e32ee0515bc637b179360259236e1890fb1a5d384",
+      "size": 4415476
+    },
+    {
+      "local_path": "raw/videos/videos/525.mp4",
+      "relative_path": "videos/videos/525.mp4",
+      "reused": false,
+      "sha256": "26691f5255906526c8c6a6cea0ebee579e40e7fe99373f5576d95798aaf1dc59",
+      "size": 4365006
+    },
+    {
+      "local_path": "raw/videos/videos/526.mp4",
+      "relative_path": "videos/videos/526.mp4",
+      "reused": false,
+      "sha256": "0bfd2abde1c4b2018b3614d7e5c848171fa7cc2ec505276d42f7763caf98f801",
+      "size": 4501723
+    },
+    {
+      "local_path": "raw/videos/videos/527.mp4",
+      "relative_path": "videos/videos/527.mp4",
+      "reused": false,
+      "sha256": "1c93a8ef0b48f49bc20bfa3af6bc7fe256a4c16e9cf83532b815533221f54e8c",
+      "size": 4541813
+    },
+    {
+      "local_path": "raw/videos/videos/528.mp4",
+      "relative_path": "videos/videos/528.mp4",
+      "reused": false,
+      "sha256": "2690e4f5e6006d4a69cd93d951bc15e10a50d6068e0bc52fa9adf2c8d135e0e5",
+      "size": 5557746
+    },
+    {
+      "local_path": "raw/videos/videos/529.mp4",
+      "relative_path": "videos/videos/529.mp4",
+      "reused": false,
+      "sha256": "a937f6e99092476bc84699bd4b86ed3b68a7b01316030dedc66e5b59ec8cf393",
+      "size": 5675723
+    },
+    {
+      "local_path": "raw/videos/videos/53.mp4",
+      "relative_path": "videos/videos/53.mp4",
+      "reused": false,
+      "sha256": "47c0940101c7becda0eed997fc6598f8572596b1862961351f7d9f3da38cf187",
+      "size": 4890266
+    },
+    {
+      "local_path": "raw/videos/videos/530.mp4",
+      "relative_path": "videos/videos/530.mp4",
+      "reused": false,
+      "sha256": "72a902781b7260a3bffce95832ffc00c00a80a6e5e2d63e2d631b25a54eaadb6",
+      "size": 4453540
+    },
+    {
+      "local_path": "raw/videos/videos/531.mp4",
+      "relative_path": "videos/videos/531.mp4",
+      "reused": false,
+      "sha256": "0489be389a0ca22743067e9a90749f1050440e9f13338e2fa937d0f76475f68b",
+      "size": 4409297
+    },
+    {
+      "local_path": "raw/videos/videos/532.mp4",
+      "relative_path": "videos/videos/532.mp4",
+      "reused": false,
+      "sha256": "72a0ddb15783cd087672a0802cafce7683644ef397e967f907dbc9c719585f16",
+      "size": 4426398
+    },
+    {
+      "local_path": "raw/videos/videos/533.mp4",
+      "relative_path": "videos/videos/533.mp4",
+      "reused": false,
+      "sha256": "f2b5fd6bf76a77d25f5ad1e31bde9c6d01d6d6a053cf92a99a0adcca26c0535f",
+      "size": 4370196
+    },
+    {
+      "local_path": "raw/videos/videos/534.mp4",
+      "relative_path": "videos/videos/534.mp4",
+      "reused": false,
+      "sha256": "d477d6f6131d8fe18c7a7bc716767d975eb6c1009bde7121cb73cdfeade273ba",
+      "size": 4442564
+    },
+    {
+      "local_path": "raw/videos/videos/535.mp4",
+      "relative_path": "videos/videos/535.mp4",
+      "reused": false,
+      "sha256": "d61c18ae91d79ed06e9c8d85af13cc0621a175bd3a1754f9df00010bbe4a80f6",
+      "size": 5280754
+    },
+    {
+      "local_path": "raw/videos/videos/536.mp4",
+      "relative_path": "videos/videos/536.mp4",
+      "reused": false,
+      "sha256": "62591dd7ebf8fdd448d277b97c8247ad9947732092951928d1c9705f7b547be1",
+      "size": 5499475
+    },
+    {
+      "local_path": "raw/videos/videos/537.mp4",
+      "relative_path": "videos/videos/537.mp4",
+      "reused": false,
+      "sha256": "62ef1780a92db30880e9db6b32601a2b9207168f4fa00470815983c695628ba1",
+      "size": 6256477
+    },
+    {
+      "local_path": "raw/videos/videos/538.mp4",
+      "relative_path": "videos/videos/538.mp4",
+      "reused": false,
+      "sha256": "5c8a509fd2762a2a08208af3c0fb71b9139d60e9c0f25b41adb2cbcfcf5ea61c",
+      "size": 5593897
+    },
+    {
+      "local_path": "raw/videos/videos/539.mp4",
+      "relative_path": "videos/videos/539.mp4",
+      "reused": false,
+      "sha256": "e3d91b64a0a0773e972186370ca2544cd5311436ec1ac0de804c1090ae4195b2",
+      "size": 5695006
+    },
+    {
+      "local_path": "raw/videos/videos/54.mp4",
+      "relative_path": "videos/videos/54.mp4",
+      "reused": false,
+      "sha256": "7deafbdaf6ca00200603b7e7e16129a1808fba8ad9b33112b773932bf5f98061",
+      "size": 5765249
+    },
+    {
+      "local_path": "raw/videos/videos/540.mp4",
+      "relative_path": "videos/videos/540.mp4",
+      "reused": false,
+      "sha256": "fa7d6e3a743f555b92c557127ef5badd665cbea564d2e4a1146f645054e90dfa",
+      "size": 5916686
+    },
+    {
+      "local_path": "raw/videos/videos/541.mp4",
+      "relative_path": "videos/videos/541.mp4",
+      "reused": false,
+      "sha256": "bde6ee8808626de1df4cab098a25df08f34ec48b80a873015c462ea52a5ce9d3",
+      "size": 5898082
+    },
+    {
+      "local_path": "raw/videos/videos/542.mp4",
+      "relative_path": "videos/videos/542.mp4",
+      "reused": false,
+      "sha256": "9792d209f22d13e5ef1fd2d57b22579c6b3af20238146b1e48301b77a87500f9",
+      "size": 6397786
+    },
+    {
+      "local_path": "raw/videos/videos/543.mp4",
+      "relative_path": "videos/videos/543.mp4",
+      "reused": false,
+      "sha256": "7e97dd0a7650af4d3b70edb49ef5e34b9e0694b4d138fedde1d7487fcccaa32a",
+      "size": 5755382
+    },
+    {
+      "local_path": "raw/videos/videos/544.mp4",
+      "relative_path": "videos/videos/544.mp4",
+      "reused": false,
+      "sha256": "783b46e9f0dfef1d06aa6dc0b5f0fff95eac826ce388ff18205fd0bb39359d99",
+      "size": 5714675
+    },
+    {
+      "local_path": "raw/videos/videos/545.mp4",
+      "relative_path": "videos/videos/545.mp4",
+      "reused": false,
+      "sha256": "3b4aa49e1cc30007e2513add8ba7cafe7b81da6bf45bfcd7d8107e66cd87360c",
+      "size": 5360849
+    },
+    {
+      "local_path": "raw/videos/videos/546.mp4",
+      "relative_path": "videos/videos/546.mp4",
+      "reused": false,
+      "sha256": "0baef92371ce569403205352f1f224e6e40cf283913c21060466befda27d8d6d",
+      "size": 5103419
+    },
+    {
+      "local_path": "raw/videos/videos/547.mp4",
+      "relative_path": "videos/videos/547.mp4",
+      "reused": false,
+      "sha256": "c4714a957afeb9b4251cdf4f552b9eb5656dac2c99a2e579db8c9f60a195d39c",
+      "size": 4278660
+    },
+    {
+      "local_path": "raw/videos/videos/548.mp4",
+      "relative_path": "videos/videos/548.mp4",
+      "reused": false,
+      "sha256": "cd3922db28344871799ce033170000dbe0d72eefd93e108b803aec9d5344e79d",
+      "size": 4797974
+    },
+    {
+      "local_path": "raw/videos/videos/549.mp4",
+      "relative_path": "videos/videos/549.mp4",
+      "reused": false,
+      "sha256": "b92a052309f0d9eeadcc683c46ed9ecac5fe660b5b91170879d5b47a4b108320",
+      "size": 4645423
+    },
+    {
+      "local_path": "raw/videos/videos/55.mp4",
+      "relative_path": "videos/videos/55.mp4",
+      "reused": false,
+      "sha256": "bfa0ad0b15de0285d68e137a3ca7818767b7f3c3e8c185b301bf23df23513f39",
+      "size": 4748317
+    },
+    {
+      "local_path": "raw/videos/videos/550.mp4",
+      "relative_path": "videos/videos/550.mp4",
+      "reused": false,
+      "sha256": "6ccf63c48cb000f0a09bb148f67d29bf5c4dde6454d63d388b974bcfd7a6d741",
+      "size": 4942969
+    },
+    {
+      "local_path": "raw/videos/videos/551.mp4",
+      "relative_path": "videos/videos/551.mp4",
+      "reused": false,
+      "sha256": "f585c310b45b64eb93b7015313965e6d22ed366e60b85ecabd8df37f27c5a1b4",
+      "size": 4567904
+    },
+    {
+      "local_path": "raw/videos/videos/552.mp4",
+      "relative_path": "videos/videos/552.mp4",
+      "reused": false,
+      "sha256": "2ff049b8d91f72f221d85711bca90caa809e8d2d88b91074f4696d1cfe0b99bb",
+      "size": 4563088
+    },
+    {
+      "local_path": "raw/videos/videos/553.mp4",
+      "relative_path": "videos/videos/553.mp4",
+      "reused": false,
+      "sha256": "715d525bd641dca9cd14260971459cef00549029ee74debe0c64cf096baa30f1",
+      "size": 4684568
+    },
+    {
+      "local_path": "raw/videos/videos/554.mp4",
+      "relative_path": "videos/videos/554.mp4",
+      "reused": false,
+      "sha256": "5fb80352eccafc59aa629c5d1c2fe5a26c14aa09f1d0deffe50fd7aa16f8fe9e",
+      "size": 4488874
+    },
+    {
+      "local_path": "raw/videos/videos/555.mp4",
+      "relative_path": "videos/videos/555.mp4",
+      "reused": false,
+      "sha256": "026240acfec2c6bcd4b46b03561ab3025bb2bb604852ed2566cbc3b4e4eec37e",
+      "size": 4778576
+    },
+    {
+      "local_path": "raw/videos/videos/556.mp4",
+      "relative_path": "videos/videos/556.mp4",
+      "reused": false,
+      "sha256": "2270251cf9dcfc471d75cb6997cf0d1c698f106f9142e375720295c1b25a8fdd",
+      "size": 4684331
+    },
+    {
+      "local_path": "raw/videos/videos/557.mp4",
+      "relative_path": "videos/videos/557.mp4",
+      "reused": false,
+      "sha256": "795c9eabace20ce42e4880ea882954ced4fd49a7a57a17bf80db6e5adc61e4f2",
+      "size": 4507443
+    },
+    {
+      "local_path": "raw/videos/videos/558.mp4",
+      "relative_path": "videos/videos/558.mp4",
+      "reused": false,
+      "sha256": "2dc4adb26ea42c76bc232f8960a575b2e28894fde95e7b7387a279904be42654",
+      "size": 4915692
+    },
+    {
+      "local_path": "raw/videos/videos/559.mp4",
+      "relative_path": "videos/videos/559.mp4",
+      "reused": false,
+      "sha256": "076728a439ec67bc81c9cc1ea8ffb169940bbddd1b7d5af0658c5f8adc5c13b8",
+      "size": 4925075
+    },
+    {
+      "local_path": "raw/videos/videos/56.mp4",
+      "relative_path": "videos/videos/56.mp4",
+      "reused": false,
+      "sha256": "a262d37e5c93d62d6b28fb4a53c97c1eb0c10ef5355ce26c0fd9a6236ba9fd74",
+      "size": 4854342
+    },
+    {
+      "local_path": "raw/videos/videos/560.mp4",
+      "relative_path": "videos/videos/560.mp4",
+      "reused": false,
+      "sha256": "b7eabb9f128479a65e225423d5b4bff515a7b6952d68b3a59c2fbca626417941",
+      "size": 4408222
+    },
+    {
+      "local_path": "raw/videos/videos/561.mp4",
+      "relative_path": "videos/videos/561.mp4",
+      "reused": false,
+      "sha256": "13210a4f2c93a6910cceda02f119c222f6966374b77c03e14c6517455a37b8e1",
+      "size": 4317039
+    },
+    {
+      "local_path": "raw/videos/videos/562.mp4",
+      "relative_path": "videos/videos/562.mp4",
+      "reused": false,
+      "sha256": "369c6353db5a473837d43c8d1c922f9932263527babdb2ef23bf0c9681052f56",
+      "size": 4880779
+    },
+    {
+      "local_path": "raw/videos/videos/563.mp4",
+      "relative_path": "videos/videos/563.mp4",
+      "reused": false,
+      "sha256": "31d467eea91cb0adc047952a101464c385f5846bafdda8eb91abefb5b2225483",
+      "size": 4908029
+    },
+    {
+      "local_path": "raw/videos/videos/564.mp4",
+      "relative_path": "videos/videos/564.mp4",
+      "reused": false,
+      "sha256": "f14c69e92007ebb2443fd3abd16aaff27bb8223aa37ba47fd91f7948d3d195d8",
+      "size": 4356724
+    },
+    {
+      "local_path": "raw/videos/videos/565.mp4",
+      "relative_path": "videos/videos/565.mp4",
+      "reused": false,
+      "sha256": "834b2064e76885f8ea49624954bc971ce0a79054f83d5027606bc25d0a78c550",
+      "size": 4611124
+    },
+    {
+      "local_path": "raw/videos/videos/566.mp4",
+      "relative_path": "videos/videos/566.mp4",
+      "reused": false,
+      "sha256": "1d78e3d3ef5dfb6433af1531bd01935ec4ca0825df8610a93b68a1b999890a2d",
+      "size": 6485107
+    },
+    {
+      "local_path": "raw/videos/videos/567.mp4",
+      "relative_path": "videos/videos/567.mp4",
+      "reused": false,
+      "sha256": "139b3b0c35ebfca2b4f50383e3fa817d2ab5dfa00aa12310e0527d483950f04e",
+      "size": 5651327
+    },
+    {
+      "local_path": "raw/videos/videos/568.mp4",
+      "relative_path": "videos/videos/568.mp4",
+      "reused": false,
+      "sha256": "b973e605e37ff7148dd8b51cefcc7bb34585be9dbb1645d8eb2cd3a330c5f843",
+      "size": 6466942
+    },
+    {
+      "local_path": "raw/videos/videos/569.mp4",
+      "relative_path": "videos/videos/569.mp4",
+      "reused": false,
+      "sha256": "4849175892ed4fa71a6d91756152af4a32c0ed11ce31e35c73ab7d91ea453631",
+      "size": 6594282
+    },
+    {
+      "local_path": "raw/videos/videos/57.mp4",
+      "relative_path": "videos/videos/57.mp4",
+      "reused": false,
+      "sha256": "93f1c4861e1f0fcfdbc5433a2f892df0594131897cc696fa8eb89794c09a2778",
+      "size": 4626673
+    },
+    {
+      "local_path": "raw/videos/videos/570.mp4",
+      "relative_path": "videos/videos/570.mp4",
+      "reused": false,
+      "sha256": "88d8823c238ac20c22b4b3f18b85c8b6b358544102c0c506bc6629870d93820d",
+      "size": 3679195
+    },
+    {
+      "local_path": "raw/videos/videos/571.mp4",
+      "relative_path": "videos/videos/571.mp4",
+      "reused": false,
+      "sha256": "ac763fec68ecfd6d722997a6773131a0fb374a8cbaac4e1be7664b4943b43554",
+      "size": 5312567
+    },
+    {
+      "local_path": "raw/videos/videos/572.mp4",
+      "relative_path": "videos/videos/572.mp4",
+      "reused": false,
+      "sha256": "715519ecc17f78170818c1ff218fce297d9a5b3a8c2cdc00c0f54cb5dce96bbe",
+      "size": 5981024
+    },
+    {
+      "local_path": "raw/videos/videos/573.mp4",
+      "relative_path": "videos/videos/573.mp4",
+      "reused": false,
+      "sha256": "7266e2673ee360cde08ae0061025b1917de7951e3dbe7088deb800471ce3641d",
+      "size": 6149353
+    },
+    {
+      "local_path": "raw/videos/videos/574.mp4",
+      "relative_path": "videos/videos/574.mp4",
+      "reused": false,
+      "sha256": "64f9674368131900a2c4c29f72dfd3574a5c3b631047ea88de433471ae8b0c79",
+      "size": 5372067
+    },
+    {
+      "local_path": "raw/videos/videos/575.mp4",
+      "relative_path": "videos/videos/575.mp4",
+      "reused": false,
+      "sha256": "d96f6993c8d55765385d98e5541b32fcb0464c38dd2f2515c7d3fdd570243bfd",
+      "size": 5255711
+    },
+    {
+      "local_path": "raw/videos/videos/576.mp4",
+      "relative_path": "videos/videos/576.mp4",
+      "reused": false,
+      "sha256": "80cc813140d89a63d8aac6a074f9b6f1c8f2b2ac2d96611ec06d908412e58eba",
+      "size": 6132006
+    },
+    {
+      "local_path": "raw/videos/videos/577.mp4",
+      "relative_path": "videos/videos/577.mp4",
+      "reused": false,
+      "sha256": "0355c25e2bd8fa1d24d1ca86416d61aa2a6056df9cba9686e74f5013ace352fa",
+      "size": 5056299
+    },
+    {
+      "local_path": "raw/videos/videos/578.mp4",
+      "relative_path": "videos/videos/578.mp4",
+      "reused": false,
+      "sha256": "8635b76fdb7bd0903f2bfb65e720000d88cfa10399384fe7261ec42237a3fbd4",
+      "size": 4818956
+    },
+    {
+      "local_path": "raw/videos/videos/579.mp4",
+      "relative_path": "videos/videos/579.mp4",
+      "reused": false,
+      "sha256": "0cbf9b93b91a204577bd481d18c4bd6e38fbd548b06fdd3929421b4ccf89966e",
+      "size": 4616525
+    },
+    {
+      "local_path": "raw/videos/videos/58.mp4",
+      "relative_path": "videos/videos/58.mp4",
+      "reused": false,
+      "sha256": "0af0e039c52a18dd16c00c531ff3dc1b6f98347b2f6efb9de7eb3dfabb2bd6c1",
+      "size": 4684876
+    },
+    {
+      "local_path": "raw/videos/videos/580.mp4",
+      "relative_path": "videos/videos/580.mp4",
+      "reused": false,
+      "sha256": "ddf9d919b0ca8230c58c893bc24e6bf74cc53dd11ba9f5e36f1f4a53fc39a3b2",
+      "size": 4678320
+    },
+    {
+      "local_path": "raw/videos/videos/581.mp4",
+      "relative_path": "videos/videos/581.mp4",
+      "reused": false,
+      "sha256": "713a12cfa64cdc977940fad18679346a1350dcaa465f743119a7c8883ccbd5fd",
+      "size": 4665839
+    },
+    {
+      "local_path": "raw/videos/videos/582.mp4",
+      "relative_path": "videos/videos/582.mp4",
+      "reused": false,
+      "sha256": "ebeb2105f017e3e8d34495ee7d33be909b9db61b4c5d1517ea3d71f7a4be03c6",
+      "size": 4497397
+    },
+    {
+      "local_path": "raw/videos/videos/583.mp4",
+      "relative_path": "videos/videos/583.mp4",
+      "reused": false,
+      "sha256": "8b63ef6843bad6bf2b459814d384f6715471ef663eb2fc2cf381729ff8e67e5d",
+      "size": 6145225
+    },
+    {
+      "local_path": "raw/videos/videos/584.mp4",
+      "relative_path": "videos/videos/584.mp4",
+      "reused": false,
+      "sha256": "9c2750ca1e09c196b81dfdb15236344001c0cc023a1de1aa5643063d381f66e2",
+      "size": 4863464
+    },
+    {
+      "local_path": "raw/videos/videos/585.mp4",
+      "relative_path": "videos/videos/585.mp4",
+      "reused": false,
+      "sha256": "31bc425efee9f3980b66725e9cff3bf175017f5f5f213f1db332fc6ade2d0f43",
+      "size": 6175449
+    },
+    {
+      "local_path": "raw/videos/videos/586.mp4",
+      "relative_path": "videos/videos/586.mp4",
+      "reused": false,
+      "sha256": "d71a6eb7a3e4065082bcb2fc325f037fbb1de7715f9d19aa92374d15b055c4ae",
+      "size": 5646450
+    },
+    {
+      "local_path": "raw/videos/videos/587.mp4",
+      "relative_path": "videos/videos/587.mp4",
+      "reused": false,
+      "sha256": "9eccd7002269a854c4138f283aad9ef5a93262d89ccec84217621e3442126d68",
+      "size": 5886556
+    },
+    {
+      "local_path": "raw/videos/videos/588.mp4",
+      "relative_path": "videos/videos/588.mp4",
+      "reused": false,
+      "sha256": "397cee137074ebeed9aa320d7aebe25b28417bd03e2b40974850f6891e15cbbe",
+      "size": 6339878
+    },
+    {
+      "local_path": "raw/videos/videos/589.mp4",
+      "relative_path": "videos/videos/589.mp4",
+      "reused": false,
+      "sha256": "15f3efeed8027427f12a850c4a81cf2522768ab7bb023f0173f48dc1c43ef165",
+      "size": 6456358
+    },
+    {
+      "local_path": "raw/videos/videos/59.mp4",
+      "relative_path": "videos/videos/59.mp4",
+      "reused": false,
+      "sha256": "a690508b282b187ffde459bfd102dfd644fcc5863b6f631752ec0957dc7dba07",
+      "size": 4462864
+    },
+    {
+      "local_path": "raw/videos/videos/590.mp4",
+      "relative_path": "videos/videos/590.mp4",
+      "reused": false,
+      "sha256": "cfe0b55fffca7e67840d5d0f78b6e0d3c131f1eda37bd431f401f4eea7811723",
+      "size": 6021572
+    },
+    {
+      "local_path": "raw/videos/videos/591.mp4",
+      "relative_path": "videos/videos/591.mp4",
+      "reused": false,
+      "sha256": "949081d1f25452d6daccddc0891cdc28f7bd34cd5583cafb77a6000dfcf0a6b6",
+      "size": 4001577
+    },
+    {
+      "local_path": "raw/videos/videos/592.mp4",
+      "relative_path": "videos/videos/592.mp4",
+      "reused": false,
+      "sha256": "940bb95606a4faab1d30766047246efc3dc0183cf02d19071cbb38bbcf4dea4e",
+      "size": 4731760
+    },
+    {
+      "local_path": "raw/videos/videos/593.mp4",
+      "relative_path": "videos/videos/593.mp4",
+      "reused": false,
+      "sha256": "72ffc5a7e373efbb739ecc9fce3871d3d05890dae79972def52be3a963b2659b",
+      "size": 3118956
+    },
+    {
+      "local_path": "raw/videos/videos/594.mp4",
+      "relative_path": "videos/videos/594.mp4",
+      "reused": false,
+      "sha256": "5200a5a758d191c80dbe0a2b2a015f5e5010f773fc3e32a8200745e0c180be58",
+      "size": 4872492
+    },
+    {
+      "local_path": "raw/videos/videos/595.mp4",
+      "relative_path": "videos/videos/595.mp4",
+      "reused": false,
+      "sha256": "283479eee06e53d215f412a6def1dee0fba3d4d14cf6986533f8b58a08bf2bf0",
+      "size": 5307774
+    },
+    {
+      "local_path": "raw/videos/videos/596.mp4",
+      "relative_path": "videos/videos/596.mp4",
+      "reused": false,
+      "sha256": "2853c6e4ea1083b76b8bfbd5c36ac8fd808a7c26ba93eba0db0e4c88eb55ff29",
+      "size": 5120660
+    },
+    {
+      "local_path": "raw/videos/videos/597.mp4",
+      "relative_path": "videos/videos/597.mp4",
+      "reused": false,
+      "sha256": "301a7c7408f85205515aee3143d052827babcf9f784a4ca4eb2ec5276fee62b8",
+      "size": 4599452
+    },
+    {
+      "local_path": "raw/videos/videos/598.mp4",
+      "relative_path": "videos/videos/598.mp4",
+      "reused": false,
+      "sha256": "6004fd7d5e12b2d39a368c35a315a2d2cf28d2e4518e1c612616b923b05dffad",
+      "size": 4709864
+    },
+    {
+      "local_path": "raw/videos/videos/599.mp4",
+      "relative_path": "videos/videos/599.mp4",
+      "reused": false,
+      "sha256": "b1b9798c0c9cf654ae8a96afc3dab366f32613d637098de3aa1a2df0a5be424b",
+      "size": 4666619
+    },
+    {
+      "local_path": "raw/videos/videos/6.mp4",
+      "relative_path": "videos/videos/6.mp4",
+      "reused": false,
+      "sha256": "5b124166b8ea4ed75dea5efe3d980041aff9bbc34404acf4da5e2c9e3236dcd3",
+      "size": 6936545
+    },
+    {
+      "local_path": "raw/videos/videos/60.mp4",
+      "relative_path": "videos/videos/60.mp4",
+      "reused": false,
+      "sha256": "2d66e80eb8b30b6c5de95234e7642a11c9d97b4eb9fa376bac51c0d664262a63",
+      "size": 4746609
+    },
+    {
+      "local_path": "raw/videos/videos/600.mp4",
+      "relative_path": "videos/videos/600.mp4",
+      "reused": false,
+      "sha256": "2173ae4004f3b31f03640b141cd8d0023b925be7b00c6e2df5b310c38006f3b7",
+      "size": 4425124
+    },
+    {
+      "local_path": "raw/videos/videos/601.mp4",
+      "relative_path": "videos/videos/601.mp4",
+      "reused": false,
+      "sha256": "2238ea6fb7d49627796636ea0622a16c553989023db09a8524d373bdb0c939f1",
+      "size": 4760292
+    },
+    {
+      "local_path": "raw/videos/videos/602.mp4",
+      "relative_path": "videos/videos/602.mp4",
+      "reused": false,
+      "sha256": "8f60c6fca19ce2b94854553dad7663fb7509af4191e861dbc5add2eabdaf825a",
+      "size": 4770689
+    },
+    {
+      "local_path": "raw/videos/videos/603.mp4",
+      "relative_path": "videos/videos/603.mp4",
+      "reused": false,
+      "sha256": "8e2a080bd0cfb7c9bcee507ae226a9f299f5d604833c3b5d14012b0ee2fc583d",
+      "size": 4483059
+    },
+    {
+      "local_path": "raw/videos/videos/604.mp4",
+      "relative_path": "videos/videos/604.mp4",
+      "reused": false,
+      "sha256": "46278d8ff2860a1f0a218c12f3aaaca61fb8b4b942831fea29625d7f8386a3af",
+      "size": 4769132
+    },
+    {
+      "local_path": "raw/videos/videos/605.mp4",
+      "relative_path": "videos/videos/605.mp4",
+      "reused": false,
+      "sha256": "0dc2fa03ed64cdeef159961052821eab7d110cb7ba182139976be4d4105a78f9",
+      "size": 4636327
+    },
+    {
+      "local_path": "raw/videos/videos/606.mp4",
+      "relative_path": "videos/videos/606.mp4",
+      "reused": false,
+      "sha256": "b61cccf4efcf607b6351b2f93e62b92df8236c54b52624c013939d6868e2341a",
+      "size": 4626543
+    },
+    {
+      "local_path": "raw/videos/videos/607.mp4",
+      "relative_path": "videos/videos/607.mp4",
+      "reused": false,
+      "sha256": "40646f4da5a506ccae986cebdd00a53b325379ab9c2a0953d502a42475eb8919",
+      "size": 4761260
+    },
+    {
+      "local_path": "raw/videos/videos/608.mp4",
+      "relative_path": "videos/videos/608.mp4",
+      "reused": false,
+      "sha256": "d5041c698fcca34e156ce03f4c565e892dc2705b8d71fc832a1f5c1bc4bc8b46",
+      "size": 3439087
+    },
+    {
+      "local_path": "raw/videos/videos/609.mp4",
+      "relative_path": "videos/videos/609.mp4",
+      "reused": false,
+      "sha256": "0cefe1fe81c4cba35b1953b9561f33f4df57a0326cd4d851104ffe1d28c13d68",
+      "size": 4120765
+    },
+    {
+      "local_path": "raw/videos/videos/61.mp4",
+      "relative_path": "videos/videos/61.mp4",
+      "reused": false,
+      "sha256": "06d63dec6c51a4327eafe75e78f57bccb9c61174f167016d48b84fde01e7d095",
+      "size": 4606861
+    },
+    {
+      "local_path": "raw/videos/videos/610.mp4",
+      "relative_path": "videos/videos/610.mp4",
+      "reused": false,
+      "sha256": "f079b3e1b27c4faae43b331654b6037af6491e3de60707a733f8af0d830ac5af",
+      "size": 3380058
+    },
+    {
+      "local_path": "raw/videos/videos/611.mp4",
+      "relative_path": "videos/videos/611.mp4",
+      "reused": false,
+      "sha256": "e82d382221dcb49818abc3747586402ab9eb31093f9c08a605bf3145b9717fcb",
+      "size": 3454649
+    },
+    {
+      "local_path": "raw/videos/videos/612.mp4",
+      "relative_path": "videos/videos/612.mp4",
+      "reused": false,
+      "sha256": "039ceeef0ba0f31a8035d07ea3bcbf3ad75d82f9922d80179713f71a773b902d",
+      "size": 3481088
+    },
+    {
+      "local_path": "raw/videos/videos/613.mp4",
+      "relative_path": "videos/videos/613.mp4",
+      "reused": false,
+      "sha256": "c8f826c22bdddffcb0df2e831a1c4a699b52f6da617c3e8665611a9f0822aff4",
+      "size": 3352326
+    },
+    {
+      "local_path": "raw/videos/videos/614.mp4",
+      "relative_path": "videos/videos/614.mp4",
+      "reused": false,
+      "sha256": "a9409ea63bda5e9220e6699f7a7576234c153e0e9ac2d322e9105f823afaa3b7",
+      "size": 5095088
+    },
+    {
+      "local_path": "raw/videos/videos/615.mp4",
+      "relative_path": "videos/videos/615.mp4",
+      "reused": false,
+      "sha256": "292502f49f5a84efc345feef97b70a61b93208941f953ded30f07a1045799c92",
+      "size": 4185201
+    },
+    {
+      "local_path": "raw/videos/videos/616.mp4",
+      "relative_path": "videos/videos/616.mp4",
+      "reused": false,
+      "sha256": "1f0fa75bf7e6b4b86513ec13f80fe95e0b41bf86cbcbb50cb24d34c88a222958",
+      "size": 3708881
+    },
+    {
+      "local_path": "raw/videos/videos/617.mp4",
+      "relative_path": "videos/videos/617.mp4",
+      "reused": false,
+      "sha256": "7a27a8489c775a584ed10a7bc26f55900d7bb1d56e0b9ce192cef78787eee53e",
+      "size": 3971063
+    },
+    {
+      "local_path": "raw/videos/videos/618.mp4",
+      "relative_path": "videos/videos/618.mp4",
+      "reused": false,
+      "sha256": "5aa7b4f3e518c92de8d5e53d1f2519f36374685bfbbe07954b1597cd317a0d77",
+      "size": 3937884
+    },
+    {
+      "local_path": "raw/videos/videos/619.mp4",
+      "relative_path": "videos/videos/619.mp4",
+      "reused": false,
+      "sha256": "8fe73d18b47d61f46546007bfa123af255231d189c899e1aeba60fe47206bb88",
+      "size": 5154097
+    },
+    {
+      "local_path": "raw/videos/videos/62.mp4",
+      "relative_path": "videos/videos/62.mp4",
+      "reused": false,
+      "sha256": "b7f7828009596fa31676660cfdc8e705421243ffdc573f579f0775e788bd8572",
+      "size": 4693344
+    },
+    {
+      "local_path": "raw/videos/videos/620.mp4",
+      "relative_path": "videos/videos/620.mp4",
+      "reused": false,
+      "sha256": "68b7fe15a0743e6027f7a426296f738d6972711ba04b8d80c45d006daa1b6d10",
+      "size": 5345298
+    },
+    {
+      "local_path": "raw/videos/videos/621.mp4",
+      "relative_path": "videos/videos/621.mp4",
+      "reused": false,
+      "sha256": "5988ee7503747fcf11287be53cf01546b9f16663689ae0441709446e9d479b08",
+      "size": 4391866
+    },
+    {
+      "local_path": "raw/videos/videos/622.mp4",
+      "relative_path": "videos/videos/622.mp4",
+      "reused": false,
+      "sha256": "da510fefbb8190b98047373fecf6b30c3a8c7926bf28a978b82598700490a628",
+      "size": 4905227
+    },
+    {
+      "local_path": "raw/videos/videos/623.mp4",
+      "relative_path": "videos/videos/623.mp4",
+      "reused": false,
+      "sha256": "6522ccd38027395348d5b6ef8efb6fcc483e50866410a23ca45b5d4314f50bcc",
+      "size": 4802445
+    },
+    {
+      "local_path": "raw/videos/videos/624.mp4",
+      "relative_path": "videos/videos/624.mp4",
+      "reused": false,
+      "sha256": "1285c228aa022cd3b1dad285ecd0cb06816b7527437016b6cadd4f4bd44a340d",
+      "size": 4753678
+    },
+    {
+      "local_path": "raw/videos/videos/625.mp4",
+      "relative_path": "videos/videos/625.mp4",
+      "reused": false,
+      "sha256": "a1699ca2f6f4dadb5c9722f707be5f14d351a07a7bae73355fff2488f0dcdf8d",
+      "size": 4839361
+    },
+    {
+      "local_path": "raw/videos/videos/626.mp4",
+      "relative_path": "videos/videos/626.mp4",
+      "reused": false,
+      "sha256": "ed48a60214647f6d30eae64ba4439d83acb4af5f023db13bbbc1e00a641cdac8",
+      "size": 4973018
+    },
+    {
+      "local_path": "raw/videos/videos/627.mp4",
+      "relative_path": "videos/videos/627.mp4",
+      "reused": false,
+      "sha256": "4959931a403b2d46be8a48ff8ee92c7bab73f0e464716bd5fd844da9eceb185e",
+      "size": 4910005
+    },
+    {
+      "local_path": "raw/videos/videos/628.mp4",
+      "relative_path": "videos/videos/628.mp4",
+      "reused": false,
+      "sha256": "2e3e5f21ec1a829b0ff0e1c46554aef21042cdd72b6c32cf16030e4dd6e0e65d",
+      "size": 4876307
+    },
+    {
+      "local_path": "raw/videos/videos/629.mp4",
+      "relative_path": "videos/videos/629.mp4",
+      "reused": false,
+      "sha256": "179987d3e14279c69a57121276ee4ea808eba996975616e5d2e5a513a5dc388d",
+      "size": 4776999
+    },
+    {
+      "local_path": "raw/videos/videos/63.mp4",
+      "relative_path": "videos/videos/63.mp4",
+      "reused": false,
+      "sha256": "ccf84bee964b976a90d61df94cdef763c8cab6207e6187cef2ad320867c2260b",
+      "size": 5194259
+    },
+    {
+      "local_path": "raw/videos/videos/630.mp4",
+      "relative_path": "videos/videos/630.mp4",
+      "reused": false,
+      "sha256": "32e48120c205f8d91d128b070433530641da38c69f300ea8e47009cb916acec6",
+      "size": 4927307
+    },
+    {
+      "local_path": "raw/videos/videos/631.mp4",
+      "relative_path": "videos/videos/631.mp4",
+      "reused": false,
+      "sha256": "5b59b2fa6032aba13cedc040248976603b6ebc4fa689927d05ab58e5857ec69f",
+      "size": 4731286
+    },
+    {
+      "local_path": "raw/videos/videos/632.mp4",
+      "relative_path": "videos/videos/632.mp4",
+      "reused": false,
+      "sha256": "9439bfddb2de0dd0cf2ec0b21706df1f8343c98742bb64c559e33eb817b523a8",
+      "size": 5456660
+    },
+    {
+      "local_path": "raw/videos/videos/633.mp4",
+      "relative_path": "videos/videos/633.mp4",
+      "reused": false,
+      "sha256": "f0f5ce5de63b160e10e8a9e8f392af41fac5bbf9f97d4c07e7e0dd3411fd9b86",
+      "size": 4399277
+    },
+    {
+      "local_path": "raw/videos/videos/634.mp4",
+      "relative_path": "videos/videos/634.mp4",
+      "reused": false,
+      "sha256": "cc45c9dfac05d40bcc86dbca6c0233634e92564c89298f0d107e6f0944239654",
+      "size": 4357574
+    },
+    {
+      "local_path": "raw/videos/videos/635.mp4",
+      "relative_path": "videos/videos/635.mp4",
+      "reused": false,
+      "sha256": "deafa408497a1c9dd3b763b2eaf9cc932d0be610df615a3cc5379dd18cc5af9e",
+      "size": 4640460
+    },
+    {
+      "local_path": "raw/videos/videos/636.mp4",
+      "relative_path": "videos/videos/636.mp4",
+      "reused": false,
+      "sha256": "8c3b3ea86708be31a6db7a36c143d1157bd5591421e840bbe4f979dc04cbfd87",
+      "size": 3575438
+    },
+    {
+      "local_path": "raw/videos/videos/637.mp4",
+      "relative_path": "videos/videos/637.mp4",
+      "reused": false,
+      "sha256": "ca561227c7314dc57e0d34923a8f347e30c473b9c99c68130ba3ff8f37c47512",
+      "size": 4039021
+    },
+    {
+      "local_path": "raw/videos/videos/638.mp4",
+      "relative_path": "videos/videos/638.mp4",
+      "reused": false,
+      "sha256": "c5c017aa8550d37c74d7c619ee92227361cbc14d9c1304980d2a5e291a5685c5",
+      "size": 3377157
+    },
+    {
+      "local_path": "raw/videos/videos/639.mp4",
+      "relative_path": "videos/videos/639.mp4",
+      "reused": false,
+      "sha256": "a03193a348e7c1230960333ea45d2fd0ecb6808b8365612296c531e6984a8111",
+      "size": 5685129
+    },
+    {
+      "local_path": "raw/videos/videos/64.mp4",
+      "relative_path": "videos/videos/64.mp4",
+      "reused": false,
+      "sha256": "74d3dc3dffbe4ddd95b3d766c7ab2ea74025310a2b74fce6634cd60d9b184add",
+      "size": 4250332
+    },
+    {
+      "local_path": "raw/videos/videos/640.mp4",
+      "relative_path": "videos/videos/640.mp4",
+      "reused": false,
+      "sha256": "fc00812322eece2af98bb673dbc2e214310763a1539ebb0f94668da7d437cd5b",
+      "size": 3606567
+    },
+    {
+      "local_path": "raw/videos/videos/641.mp4",
+      "relative_path": "videos/videos/641.mp4",
+      "reused": false,
+      "sha256": "3aaf3b28ed90d50804230318edcb496daef3cb095de414686efd317e21326a1e",
+      "size": 4507295
+    },
+    {
+      "local_path": "raw/videos/videos/642.mp4",
+      "relative_path": "videos/videos/642.mp4",
+      "reused": false,
+      "sha256": "442b0381731836b5e55a922225f9ac740a2296afc1ebc1075e36fe1e1e72859e",
+      "size": 4416033
+    },
+    {
+      "local_path": "raw/videos/videos/643.mp4",
+      "relative_path": "videos/videos/643.mp4",
+      "reused": false,
+      "sha256": "a138e7895f50a2743d007964245961dbc869fbbd8652ff4f85fc6fa644cef221",
+      "size": 5580162
+    },
+    {
+      "local_path": "raw/videos/videos/644.mp4",
+      "relative_path": "videos/videos/644.mp4",
+      "reused": false,
+      "sha256": "3b5327b00bad0917b7c28876764dc7edb75ce3d1ccd3e5dc4d764a79642e209e",
+      "size": 4351079
+    },
+    {
+      "local_path": "raw/videos/videos/645.mp4",
+      "relative_path": "videos/videos/645.mp4",
+      "reused": false,
+      "sha256": "0c7d1d5922cc7882ab02130ccf9174ca01949e9d47ce198bab401bfe6970038b",
+      "size": 4330066
+    },
+    {
+      "local_path": "raw/videos/videos/646.mp4",
+      "relative_path": "videos/videos/646.mp4",
+      "reused": false,
+      "sha256": "06546b2b261198142d6b5e9a12746358e33b2a3c138a852bae21f5f4d4496a8a",
+      "size": 4860134
+    },
+    {
+      "local_path": "raw/videos/videos/647.mp4",
+      "relative_path": "videos/videos/647.mp4",
+      "reused": false,
+      "sha256": "714d6c12c3ec79afd1cb5148a87020cff2f365b1991cdc21507d587bf7754edf",
+      "size": 5021816
+    },
+    {
+      "local_path": "raw/videos/videos/648.mp4",
+      "relative_path": "videos/videos/648.mp4",
+      "reused": false,
+      "sha256": "d3e60bad67a0042a1118261444679b9ea4e41e50f809130ddfd000e8bf2a2ce8",
+      "size": 4947274
+    },
+    {
+      "local_path": "raw/videos/videos/649.mp4",
+      "relative_path": "videos/videos/649.mp4",
+      "reused": false,
+      "sha256": "707f96d67d0fe0d1cf321e7375169925c6dd94f26b0ab0140b93b63c316d712c",
+      "size": 4832566
+    },
+    {
+      "local_path": "raw/videos/videos/65.mp4",
+      "relative_path": "videos/videos/65.mp4",
+      "reused": false,
+      "sha256": "9fd7456678f9e5e8076e47dc7b45e387f04f3f38026b2f4d27a0be2595f8ac33",
+      "size": 4251395
+    },
+    {
+      "local_path": "raw/videos/videos/650.mp4",
+      "relative_path": "videos/videos/650.mp4",
+      "reused": false,
+      "sha256": "e71e9fd2bb1d43845928143ccfaf30ec4fc2c84f59acfc6fe7d413ed570a6ea3",
+      "size": 4844478
+    },
+    {
+      "local_path": "raw/videos/videos/651.mp4",
+      "relative_path": "videos/videos/651.mp4",
+      "reused": false,
+      "sha256": "a1a50010ebf1052b1afea200928a49d4896ad7052ab6f024cb548ed87e0c21fa",
+      "size": 4806604
+    },
+    {
+      "local_path": "raw/videos/videos/652.mp4",
+      "relative_path": "videos/videos/652.mp4",
+      "reused": false,
+      "sha256": "9c765aa3e7605d132a1c582702ff85e104a7329c420cefe7c6c4f6707564c540",
+      "size": 5325234
+    },
+    {
+      "local_path": "raw/videos/videos/653.mp4",
+      "relative_path": "videos/videos/653.mp4",
+      "reused": false,
+      "sha256": "54de530081788fbae82681eeefc765524c77bff211965c20e3f0dfcdf4173346",
+      "size": 4944402
+    },
+    {
+      "local_path": "raw/videos/videos/654.mp4",
+      "relative_path": "videos/videos/654.mp4",
+      "reused": false,
+      "sha256": "8beae6cf08a1ef2f9148b225487643ce604bf083c8fab343e30180286538a07d",
+      "size": 5310628
+    },
+    {
+      "local_path": "raw/videos/videos/655.mp4",
+      "relative_path": "videos/videos/655.mp4",
+      "reused": false,
+      "sha256": "446f8dbb3410ce589a322f69f682556dcd40eb68c47531dcab66a1ce29860083",
+      "size": 4993449
+    },
+    {
+      "local_path": "raw/videos/videos/656.mp4",
+      "relative_path": "videos/videos/656.mp4",
+      "reused": false,
+      "sha256": "476776493be6bdbe0bdf9f89c93b0405f4b5d82e0c90bd3e6f20edf64854cc47",
+      "size": 4915557
+    },
+    {
+      "local_path": "raw/videos/videos/657.mp4",
+      "relative_path": "videos/videos/657.mp4",
+      "reused": false,
+      "sha256": "667944880cee9cf17c81350bf44c2fb224a2cf4d9d69773d0baddae2f3f9e0ed",
+      "size": 4985401
+    },
+    {
+      "local_path": "raw/videos/videos/658.mp4",
+      "relative_path": "videos/videos/658.mp4",
+      "reused": false,
+      "sha256": "1a7dee3ed90bb6953550c09b3762fe3f33e8b2348b7f75ac8c74452fc81d8ce9",
+      "size": 4635793
+    },
+    {
+      "local_path": "raw/videos/videos/659.mp4",
+      "relative_path": "videos/videos/659.mp4",
+      "reused": false,
+      "sha256": "a53d8ba7bc38be7dc700614717fcc3679b327f9292784d58af9b7c17061ec2c6",
+      "size": 4017990
+    },
+    {
+      "local_path": "raw/videos/videos/66.mp4",
+      "relative_path": "videos/videos/66.mp4",
+      "reused": false,
+      "sha256": "4b946d2dd7fa466590354749900447685eb50749f0f7280037caa8255f6d6532",
+      "size": 4428979
+    },
+    {
+      "local_path": "raw/videos/videos/660.mp4",
+      "relative_path": "videos/videos/660.mp4",
+      "reused": false,
+      "sha256": "2a6d942a1f25d4590c2acc477a421d8afc28cfb9e9d3a8d7aa90fa2e24aafa90",
+      "size": 4028452
+    },
+    {
+      "local_path": "raw/videos/videos/661.mp4",
+      "relative_path": "videos/videos/661.mp4",
+      "reused": false,
+      "sha256": "b3c5e93335d094c6d2a4c6c148dc84ddb3bc0c712aaf19a1c8d5da39c1ed6beb",
+      "size": 3241642
+    },
+    {
+      "local_path": "raw/videos/videos/662.mp4",
+      "relative_path": "videos/videos/662.mp4",
+      "reused": false,
+      "sha256": "92a905974ce5168f7a14858e0a3954bc6810343bafe1e578f12238c15c789fcd",
+      "size": 3210083
+    },
+    {
+      "local_path": "raw/videos/videos/663.mp4",
+      "relative_path": "videos/videos/663.mp4",
+      "reused": false,
+      "sha256": "144c8403d85698de925ee0fe5e014ae44b6da36c6e468b636c77166dddb60d77",
+      "size": 3601133
+    },
+    {
+      "local_path": "raw/videos/videos/664.mp4",
+      "relative_path": "videos/videos/664.mp4",
+      "reused": false,
+      "sha256": "77e437dcc4788cad2322c4bcdedd22de82172441b4c64fe95b37eda8f11a7419",
+      "size": 4153185
+    },
+    {
+      "local_path": "raw/videos/videos/665.mp4",
+      "relative_path": "videos/videos/665.mp4",
+      "reused": false,
+      "sha256": "83f5ed4c5a218bfcdf95c060a36df97010c6aed2762824e305842dc492894b21",
+      "size": 3877041
+    },
+    {
+      "local_path": "raw/videos/videos/666.mp4",
+      "relative_path": "videos/videos/666.mp4",
+      "reused": false,
+      "sha256": "3db17567ac33eaaa75dcb332f879fa5ddb7dbcc4a2157180b79d16e6fe9f7493",
+      "size": 4019540
+    },
+    {
+      "local_path": "raw/videos/videos/667.mp4",
+      "relative_path": "videos/videos/667.mp4",
+      "reused": false,
+      "sha256": "0191deda725e1f4560d4d69211a196e75993432c49c66c2af32afd1798746745",
+      "size": 4230013
+    },
+    {
+      "local_path": "raw/videos/videos/668.mp4",
+      "relative_path": "videos/videos/668.mp4",
+      "reused": false,
+      "sha256": "440ad63022e67bad14d6e2c92b045cb82b10aee6781a33610fdaa40c8535861f",
+      "size": 6385353
+    },
+    {
+      "local_path": "raw/videos/videos/669.mp4",
+      "relative_path": "videos/videos/669.mp4",
+      "reused": false,
+      "sha256": "128d3df22f129c1ddc1f7b64b5d1f46d25c6cf4ade7fc6f277de223afe9a8e29",
+      "size": 4575384
+    },
+    {
+      "local_path": "raw/videos/videos/67.mp4",
+      "relative_path": "videos/videos/67.mp4",
+      "reused": false,
+      "sha256": "17a618cfef298619727c11f62fe6c8a56d26490a2402419bcc9e5474f8fee332",
+      "size": 4489866
+    },
+    {
+      "local_path": "raw/videos/videos/670.mp4",
+      "relative_path": "videos/videos/670.mp4",
+      "reused": false,
+      "sha256": "1b2dc7056522fb321cd57aa837ce1296a656042136b3d4835f5df63b3cbc925f",
+      "size": 4954912
+    },
+    {
+      "local_path": "raw/videos/videos/671.mp4",
+      "relative_path": "videos/videos/671.mp4",
+      "reused": false,
+      "sha256": "2e10f0c93c61ad7ca911a89c301abc2316bd632f676a193c40cf3a1ce62bb430",
+      "size": 5191043
+    },
+    {
+      "local_path": "raw/videos/videos/672.mp4",
+      "relative_path": "videos/videos/672.mp4",
+      "reused": false,
+      "sha256": "aff293bd35627232d03d11f5ded52976f7c977ae4865e985677547d167041537",
+      "size": 5206499
+    },
+    {
+      "local_path": "raw/videos/videos/673.mp4",
+      "relative_path": "videos/videos/673.mp4",
+      "reused": false,
+      "sha256": "76a051e8c91075f32618049512b64f7a453f443a7f471763042d0e014f91c966",
+      "size": 5010095
+    },
+    {
+      "local_path": "raw/videos/videos/674.mp4",
+      "relative_path": "videos/videos/674.mp4",
+      "reused": false,
+      "sha256": "17600c290c32518813a9a86f05f7bf2df9df6b776ed0e82f948ff2502cfec70b",
+      "size": 4412374
+    },
+    {
+      "local_path": "raw/videos/videos/675.mp4",
+      "relative_path": "videos/videos/675.mp4",
+      "reused": false,
+      "sha256": "9551f457e63c800143b5b8b18d2b0d7309d4c0605467b0d5ae7cb40c1386134b",
+      "size": 4944205
+    },
+    {
+      "local_path": "raw/videos/videos/676.mp4",
+      "relative_path": "videos/videos/676.mp4",
+      "reused": false,
+      "sha256": "3dcb02c9a6d5cda8b288f0ee52f795eb8e41ffaae5a7cc8700ae323cf287ea0f",
+      "size": 5000410
+    },
+    {
+      "local_path": "raw/videos/videos/677.mp4",
+      "relative_path": "videos/videos/677.mp4",
+      "reused": false,
+      "sha256": "bb3dd2a5b887171c4fda5822c6066b25926511a016d52d60561a5417f2c8e2a6",
+      "size": 5000040
+    },
+    {
+      "local_path": "raw/videos/videos/678.mp4",
+      "relative_path": "videos/videos/678.mp4",
+      "reused": false,
+      "sha256": "1d36873f88a5f7050a9fa3a13c60e59bb13dbb55c2acedc226c14d09309cd130",
+      "size": 5003473
+    },
+    {
+      "local_path": "raw/videos/videos/679.mp4",
+      "relative_path": "videos/videos/679.mp4",
+      "reused": false,
+      "sha256": "676f2f70dfea1f853ea0fd31306ddc9983a29466b2d0318dc1396591fb205e8b",
+      "size": 5019569
+    },
+    {
+      "local_path": "raw/videos/videos/68.mp4",
+      "relative_path": "videos/videos/68.mp4",
+      "reused": false,
+      "sha256": "a611ce3a44a3feb9aa98ee2d81d720ccfae846ede59b47d614b8569ce6a3d9e1",
+      "size": 3821651
+    },
+    {
+      "local_path": "raw/videos/videos/680.mp4",
+      "relative_path": "videos/videos/680.mp4",
+      "reused": false,
+      "sha256": "a836cd8ca828aa257c42701bf71fadec1bd1b60d590aec5bec8e522b9603f923",
+      "size": 5052499
+    },
+    {
+      "local_path": "raw/videos/videos/681.mp4",
+      "relative_path": "videos/videos/681.mp4",
+      "reused": false,
+      "sha256": "9259278ea856fa48f8f12f163a5206490d6b25763ded775a12cefbd8568dfd09",
+      "size": 5031074
+    },
+    {
+      "local_path": "raw/videos/videos/682.mp4",
+      "relative_path": "videos/videos/682.mp4",
+      "reused": false,
+      "sha256": "2caae1eb9ac44f8bbabc3cee535e503fe092b8cd71101fabb8f55e3799e3a42b",
+      "size": 4378312
+    },
+    {
+      "local_path": "raw/videos/videos/683.mp4",
+      "relative_path": "videos/videos/683.mp4",
+      "reused": false,
+      "sha256": "18ae4679ea112343c678e19ce1a686329a93656add8365b1bf093c8c031b4766",
+      "size": 3796588
+    },
+    {
+      "local_path": "raw/videos/videos/684.mp4",
+      "relative_path": "videos/videos/684.mp4",
+      "reused": false,
+      "sha256": "af195ce37f8467aafc666628c83bf4728b3184a0e85fe9d941320f025c3605d9",
+      "size": 3927747
+    },
+    {
+      "local_path": "raw/videos/videos/685.mp4",
+      "relative_path": "videos/videos/685.mp4",
+      "reused": false,
+      "sha256": "72fcfdb82b81672fa9f57a7c84d09438ae4650a6ee62f9f404288094d29ec728",
+      "size": 3876877
+    },
+    {
+      "local_path": "raw/videos/videos/686.mp4",
+      "relative_path": "videos/videos/686.mp4",
+      "reused": false,
+      "sha256": "4e0700031c8f6f5fb464ec351d9dc58ae6d5c53b4f36ea11f81438dd35d85b64",
+      "size": 3615808
+    },
+    {
+      "local_path": "raw/videos/videos/687.mp4",
+      "relative_path": "videos/videos/687.mp4",
+      "reused": false,
+      "sha256": "82a50c81be24c7f3a9cd00b091c05ef12fe60efdbd938af5ea189eee264238b2",
+      "size": 4019967
+    },
+    {
+      "local_path": "raw/videos/videos/688.mp4",
+      "relative_path": "videos/videos/688.mp4",
+      "reused": false,
+      "sha256": "8be76e6d052474a7300c7178c1eb4a5b9b5def4a67250ba91aed08186ec5e6be",
+      "size": 4328341
+    },
+    {
+      "local_path": "raw/videos/videos/689.mp4",
+      "relative_path": "videos/videos/689.mp4",
+      "reused": false,
+      "sha256": "b2f08964084d0424b5c21d8beb8d3e7c98c9480c16373867c0d1c66b1457855e",
+      "size": 4479856
+    },
+    {
+      "local_path": "raw/videos/videos/69.mp4",
+      "relative_path": "videos/videos/69.mp4",
+      "reused": false,
+      "sha256": "23e9a77c71eaa6bb48e21b139f32c8bdc72a13681afa19bef426a6b8b89bcabf",
+      "size": 2939189
+    },
+    {
+      "local_path": "raw/videos/videos/7.mp4",
+      "relative_path": "videos/videos/7.mp4",
+      "reused": false,
+      "sha256": "dba952eb23d07a9bbbb1052f04fe236445e12d9a79fa66373241707a8db5b3de",
+      "size": 4867430
+    },
+    {
+      "local_path": "raw/videos/videos/70.mp4",
+      "relative_path": "videos/videos/70.mp4",
+      "reused": false,
+      "sha256": "4ef3db3958fe54b6a74bfced17ef5bc224dd86606b8c140e724fe85222c06f51",
+      "size": 3653815
+    },
+    {
+      "local_path": "raw/videos/videos/71.mp4",
+      "relative_path": "videos/videos/71.mp4",
+      "reused": false,
+      "sha256": "cab7b33b299897c72459f6b5cb7a171b99f95131aee7b1e09cd89c130e1eba54",
+      "size": 4519043
+    },
+    {
+      "local_path": "raw/videos/videos/72.mp4",
+      "relative_path": "videos/videos/72.mp4",
+      "reused": false,
+      "sha256": "54b03c7983a06a2da8b2dc45849521f0a679c7707c8d48b69f44e5c699b795e1",
+      "size": 4319625
+    },
+    {
+      "local_path": "raw/videos/videos/73.mp4",
+      "relative_path": "videos/videos/73.mp4",
+      "reused": false,
+      "sha256": "8f649ba9ba065ec2076cc0249f188c22842fbbe5d4464fa80014b84864e572e8",
+      "size": 4593266
+    },
+    {
+      "local_path": "raw/videos/videos/74.mp4",
+      "relative_path": "videos/videos/74.mp4",
+      "reused": false,
+      "sha256": "107f00e80d5e955d28827212572347538ebed26cf8fd0a7c25d67697b628a22e",
+      "size": 5933874
+    },
+    {
+      "local_path": "raw/videos/videos/75.mp4",
+      "relative_path": "videos/videos/75.mp4",
+      "reused": false,
+      "sha256": "023c2c2ee5cb1336e0c5d09c7476b31e074a4d1a4ac47ecc20a3860ab9fc2d6f",
+      "size": 6725991
+    },
+    {
+      "local_path": "raw/videos/videos/76.mp4",
+      "relative_path": "videos/videos/76.mp4",
+      "reused": false,
+      "sha256": "ad46d735e30914c852aa17a19b7619c4b8be104f5dc52dd0e8678b720e38a82c",
+      "size": 6039101
+    },
+    {
+      "local_path": "raw/videos/videos/77.mp4",
+      "relative_path": "videos/videos/77.mp4",
+      "reused": false,
+      "sha256": "bde39da6ed91509eb867301cd2d120c39085797bd75062f7cf749cd764a07f2b",
+      "size": 7013359
+    },
+    {
+      "local_path": "raw/videos/videos/78.mp4",
+      "relative_path": "videos/videos/78.mp4",
+      "reused": false,
+      "sha256": "be22d47a4638d5630f7cacf49cdd3ef3f1f2f1901d726ab1b9dbffb98af221dd",
+      "size": 5783974
+    },
+    {
+      "local_path": "raw/videos/videos/79.mp4",
+      "relative_path": "videos/videos/79.mp4",
+      "reused": false,
+      "sha256": "e16a031a4883ef988a1e82dfbacf23bccef1c9f60b084da9abb0e08e2df44386",
+      "size": 4612167
+    },
+    {
+      "local_path": "raw/videos/videos/8.mp4",
+      "relative_path": "videos/videos/8.mp4",
+      "reused": false,
+      "sha256": "1d199a7fe84f7c7e8828d0a6dafb224d873c486987df1286b969145d2c6809a5",
+      "size": 4700177
+    },
+    {
+      "local_path": "raw/videos/videos/80.mp4",
+      "relative_path": "videos/videos/80.mp4",
+      "reused": false,
+      "sha256": "6b8d4cbc4dd9613834c332a6ac2c7949fc368d6d97a8fbc22de905ecfcf6ed29",
+      "size": 5055520
+    },
+    {
+      "local_path": "raw/videos/videos/81.mp4",
+      "relative_path": "videos/videos/81.mp4",
+      "reused": false,
+      "sha256": "7889dac2f24d859f4ab1774b7914efca27e50082bc43f17504064bcb7fb8e1dc",
+      "size": 5213912
+    },
+    {
+      "local_path": "raw/videos/videos/82.mp4",
+      "relative_path": "videos/videos/82.mp4",
+      "reused": false,
+      "sha256": "c2c41c5705182afab5e798fe8f69c3fd194c66b72cc8bf10c23994eeb5c9db50",
+      "size": 4811752
+    },
+    {
+      "local_path": "raw/videos/videos/83.mp4",
+      "relative_path": "videos/videos/83.mp4",
+      "reused": false,
+      "sha256": "c2e6570fb61d940b56be5e7526ec54fd0af9587fa5da1a808af8a22a8d0c45b3",
+      "size": 4800736
+    },
+    {
+      "local_path": "raw/videos/videos/84.mp4",
+      "relative_path": "videos/videos/84.mp4",
+      "reused": false,
+      "sha256": "125d17d84d8fe0f127eb253cc8c69d61f2b7847272dc3805f23e703cbc75eb56",
+      "size": 4591041
+    },
+    {
+      "local_path": "raw/videos/videos/85.mp4",
+      "relative_path": "videos/videos/85.mp4",
+      "reused": false,
+      "sha256": "a6aedb1c6a70f6d04889ffb567f0900d7eb405f8d11b79bb7832a2b2a2f1fdd5",
+      "size": 4631620
+    },
+    {
+      "local_path": "raw/videos/videos/86.mp4",
+      "relative_path": "videos/videos/86.mp4",
+      "reused": false,
+      "sha256": "c50e4144bb2d629a7813bc63dd9e7737f215bad539d3df21c3c9f7d5d832fe20",
+      "size": 4369099
+    },
+    {
+      "local_path": "raw/videos/videos/87.mp4",
+      "relative_path": "videos/videos/87.mp4",
+      "reused": false,
+      "sha256": "85c1c5c111f000c6df205cb4ef1277dbb145c1549672418491412c0c0ebfc48a",
+      "size": 4305653
+    },
+    {
+      "local_path": "raw/videos/videos/88.mp4",
+      "relative_path": "videos/videos/88.mp4",
+      "reused": false,
+      "sha256": "85ea31e3b402ee0866f14a56df8b1378016c47eb201478efeb53486100741e0f",
+      "size": 4313865
+    },
+    {
+      "local_path": "raw/videos/videos/89.mp4",
+      "relative_path": "videos/videos/89.mp4",
+      "reused": false,
+      "sha256": "4c5ecd323da19805904a0ad93156807ccdd4d5c9be5d8755c16d13de498f16a4",
+      "size": 4216046
+    },
+    {
+      "local_path": "raw/videos/videos/9.mp4",
+      "relative_path": "videos/videos/9.mp4",
+      "reused": false,
+      "sha256": "92fe615fc761cd2584f4f53e2edc47e853c00dcd0085e716db828854adac6449",
+      "size": 4754181
+    },
+    {
+      "local_path": "raw/videos/videos/90.mp4",
+      "relative_path": "videos/videos/90.mp4",
+      "reused": false,
+      "sha256": "79d228aa2e045fa9266493fcb5729479844eac457c7692f3020af49e6b5afab2",
+      "size": 4447316
+    },
+    {
+      "local_path": "raw/videos/videos/91.mp4",
+      "relative_path": "videos/videos/91.mp4",
+      "reused": false,
+      "sha256": "996cf85d2c0047e351a2c988b285d4d88e375e48d94bbe278f27f85f4ca44455",
+      "size": 6275198
+    },
+    {
+      "local_path": "raw/videos/videos/92.mp4",
+      "relative_path": "videos/videos/92.mp4",
+      "reused": false,
+      "sha256": "b7c63fd8edaab2c413800781495c256b5a15e2bf92b9ec566a6ce43970e54130",
+      "size": 4110407
+    },
+    {
+      "local_path": "raw/videos/videos/93.mp4",
+      "relative_path": "videos/videos/93.mp4",
+      "reused": false,
+      "sha256": "266cf8d9eb691ce4413bf13ddb76b6132813bafccbb74aee267433d32acc23d5",
+      "size": 5539008
+    },
+    {
+      "local_path": "raw/videos/videos/94.mp4",
+      "relative_path": "videos/videos/94.mp4",
+      "reused": false,
+      "sha256": "5bf0edbb13fbaa725e49c5376ebd8640dc3817743c4d4cdb0eec7defb1e8fe1f",
+      "size": 5585528
+    },
+    {
+      "local_path": "raw/videos/videos/95.mp4",
+      "relative_path": "videos/videos/95.mp4",
+      "reused": false,
+      "sha256": "f0d700bc167c9f43dbaa343d69e0276ccd1ec70cbfea6d117c19b0a375bb22b6",
+      "size": 5010223
+    },
+    {
+      "local_path": "raw/videos/videos/96.mp4",
+      "relative_path": "videos/videos/96.mp4",
+      "reused": false,
+      "sha256": "00da7f79e24d2478f6212f88fdfb9c05bb55442004b991d1b3272c8cefe987f0",
+      "size": 4589660
+    },
+    {
+      "local_path": "raw/videos/videos/97.mp4",
+      "relative_path": "videos/videos/97.mp4",
+      "reused": false,
+      "sha256": "7bfa402b0d279ed79e598ed1764cf0153bae32b4724a35c55640e5252c4982be",
+      "size": 6595502
+    },
+    {
+      "local_path": "raw/videos/videos/98.mp4",
+      "relative_path": "videos/videos/98.mp4",
+      "reused": false,
+      "sha256": "5087bbdd31c4c212c73afbefcd924f2daa02977cc544190cb44f9ebde8f1e76e",
+      "size": 8178611
+    },
+    {
+      "local_path": "raw/videos/videos/99.mp4",
+      "relative_path": "videos/videos/99.mp4",
+      "reused": false,
+      "sha256": "8f9a258de3d24d0453132627d1b99abd295d740ae552e611cbfa2f3db9dab39a",
+      "size": 6189894
+    }
+  ],
+  "reused_count": 1,
+  "total_bytes": 3480105107
+}

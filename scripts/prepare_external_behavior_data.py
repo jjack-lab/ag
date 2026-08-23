@@ -178,6 +178,10 @@ def _prepare_cbvd5(record, project_root: Path, args) -> Mapping[str, object]:
                 }
             )
     assigned = assign_groups(selected, seed=args.seed)
+    selected_source_paths = {row.source_video_path for row in assigned}
+    selected_source_rows = [
+        row for row in source_rows.values() if row["path"] in selected_source_paths
+    ]
     manifest_root = record.storage_root / "manifests"
     manifest_root.mkdir(parents=True, exist_ok=True)
     manifest_path = manifest_root / "evaluation_clips_{}.csv".format(args.tier)
@@ -185,7 +189,7 @@ def _prepare_cbvd5(record, project_root: Path, args) -> Mapping[str, object]:
     _write_csv(
         manifest_root / "source_videos.csv",
         ("dataset_id", "dataset_version", "source_video_id", "path", "bytes", "sha256"),
-        sorted(source_rows.values(), key=lambda row: row["source_video_id"]),
+        sorted(selected_source_rows, key=lambda row: row["source_video_id"]),
     )
     exclusion_path = manifest_root / "excluded_samples.csv"
     existing = []
@@ -219,7 +223,7 @@ def _prepare_cbvd5(record, project_root: Path, args) -> Mapping[str, object]:
         "max_per_class": args.max_per_class,
         "clip_seconds": args.clip_seconds,
         "included_samples": len(assigned),
-        "included_source_videos": len(source_rows),
+        "included_source_videos": len(selected_source_rows),
         "class_counts": counts,
         "parser_exclusions": len(parser_exclusions),
         "total_exclusions": len(exclusions),

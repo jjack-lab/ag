@@ -1,0 +1,46 @@
+{
+  "extended": {
+    "annotation_path": "data/external/cbvd5/archives/ava_train_v2.1.csv",
+    "annotation_sha256": "fad18b34f43c2f7efbbe5dfbdc3b10c27dbc7bca5306076e8ad61a32ccdef920",
+    "class_counts": {
+      "drinking": 100,
+      "grazing": 100,
+      "resting-lying": 100,
+      "resting-standing": 100,
+      "ruminating-lying": 100,
+      "ruminating-standing": 100
+    },
+    "clip_materialization": "virtual_window_and_crop",
+    "clip_seconds": 4.0,
+    "dataset_id": "cbvd5",
+    "dataset_version": "kaggle-version-11",
+    "included_samples": 600,
+    "included_source_videos": 298,
+    "max_per_class": 100,
+    "parser_exclusions": 44,
+    "selection_seed": 20260823,
+    "split_policy": "external_test_only",
+    "total_exclusions": 22198
+  },
+  "strict": {
+    "annotation_path": "data/external/cbvd5/archives/ava_train_v2.1.csv",
+    "annotation_sha256": "fad18b34f43c2f7efbbe5dfbdc3b10c27dbc7bca5306076e8ad61a32ccdef920",
+    "class_counts": {
+      "drinking": 100,
+      "grazing": 100,
+      "ruminating-lying": 100,
+      "ruminating-standing": 100
+    },
+    "clip_materialization": "virtual_window_and_crop",
+    "clip_seconds": 4.0,
+    "dataset_id": "cbvd5",
+    "dataset_version": "kaggle-version-11",
+    "included_samples": 400,
+    "included_source_videos": 211,
+    "max_per_class": 100,
+    "parser_exclusions": 44,
+    "selection_seed": 20260823,
+    "split_policy": "external_test_only",
+    "total_exclusions": 22398
+  }
+}
