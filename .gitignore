@@ -36,3 +36,12 @@ cloud_pack/
 cloud_upload/
 data/cvb_behavior_v1/
 data/.cvb_behavior_v1.staging-*/
+
+# External research media stays local; provenance manifests remain tracked.
+data/external/*/archives/*
+!data/external/*/archives/.gitkeep
+data/external/*/raw/*
+!data/external/*/raw/.gitkeep
+data/external/*/derived/*
+!data/external/*/derived/.gitkeep
+data/external/*/cache/*

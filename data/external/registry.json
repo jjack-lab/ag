@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "datasets": [
+    {
+      "dataset_id": "cvb",
+      "name": "CVB: A Video Dataset of Cattle Visual Behaviors",
+      "version": "10.25919/3g3t-p068",
+      "official_url": "https://doi.org/10.25919/3g3t-p068",
+      "access_url": "https://researchdata.edu.au/cvb-a-video-visual-behaviors/2593248",
+      "license_name": "CC BY-NC-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "license_status": "verified",
+      "intended_use": "existing_training_domain_and_in_domain_baseline",
+      "storage_root": "data/external/cvb",
+      "max_download_bytes": 5368709120
+    },
+    {
+      "dataset_id": "cbvd5",
+      "name": "CBVD-5 Cow Behavior Video Dataset",
+      "version": "kaggle-version-8-candidate",
+      "official_url": "https://www.nature.com/articles/s41598-024-65953-x",
+      "access_url": "https://www.kaggle.com/datasets/fandaoerji/cbvd-5cow-behavior-video-dataset/versions/8",
+      "license_name": "CC0 candidate; verify on official data page",
+      "license_url": "",
+      "license_status": "verify_before_download",
+      "intended_use": "external_test_only_until_separate_adaptation_protocol",
+      "storage_root": "data/external/cbvd5",
+      "max_download_bytes": 5368709120
+    },
+    {
+      "dataset_id": "mmcows",
+      "name": "MmCows",
+      "version": "huggingface-main-candidate",
+      "official_url": "https://github.com/neis-lab/mmcows",
+      "access_url": "https://huggingface.co/datasets/neis-lab/mmcows",
+      "license_name": "CC BY-NC-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "license_status": "verified",
+      "intended_use": "fallback_external_test_and_future_multimodal_research",
+      "storage_root": "data/external/mmcows",
+      "max_download_bytes": 5368709120
+    },
+    {
+      "dataset_id": "cattleeyeview",
+      "name": "CattleEyeView",
+      "version": "official-repository-candidate",
+      "official_url": "https://github.com/AnimalEyeQ/CattleEyeView",
+      "access_url": "https://github.com/AnimalEyeQ/CattleEyeView",
+      "license_name": "dataset terms not established by repository code license",
+      "license_url": "",
+      "license_status": "not_used",
+      "intended_use": "future_top_down_detection_tracking_research",
+      "storage_root": "data/external/cattleeyeview",
+      "max_download_bytes": 5368709120
+    }
+  ]
+}
