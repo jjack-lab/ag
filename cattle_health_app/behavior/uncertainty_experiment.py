@@ -218,6 +218,75 @@ def _selection_metadata(values: PredictionSet) -> dict:
     }
 
 
+def save_prediction_cache(path, values: PredictionSet, fingerprint: dict) -> None:
+    """Atomically cache raw logits with an exact input fingerprint."""
+
+    values = _validated_prediction_set(values, "cache")
+    if not isinstance(fingerprint, dict):
+        raise TypeError("cache fingerprint must be a dictionary")
+    fingerprint_json = json.dumps(fingerprint, sort_keys=True, allow_nan=False)
+    metadata = {
+        "fingerprint": json.loads(fingerprint_json),
+        "source_sample_count": values.source_sample_count,
+        "sampling_method": values.sampling_method,
+        "sampling_seed": values.sampling_seed,
+        "max_samples_per_class": values.max_samples_per_class,
+    }
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    handle = tempfile.NamedTemporaryFile(
+        dir=str(destination.parent),
+        prefix=f".{destination.name}.",
+        suffix=".tmp",
+        delete=False,
+    )
+    temporary = Path(handle.name)
+    handle.close()
+    try:
+        with temporary.open("wb") as target:
+            np.savez_compressed(
+                target,
+                sample_ids=np.asarray(values.sample_ids, dtype=np.str_),
+                logits=values.logits,
+                labels=values.labels,
+                metadata=np.asarray(
+                    json.dumps(metadata, sort_keys=True, allow_nan=False),
+                    dtype=np.str_,
+                ),
+            )
+            target.flush()
+            os.fsync(target.fileno())
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def load_prediction_cache(path, fingerprint: dict) -> PredictionSet | None:
+    """Load a cache only when its fingerprint exactly matches current inputs."""
+
+    source = Path(path)
+    if not source.is_file():
+        return None
+    try:
+        expected = json.loads(json.dumps(fingerprint, sort_keys=True, allow_nan=False))
+        with np.load(source, allow_pickle=False) as payload:
+            metadata = json.loads(str(payload["metadata"].item()))
+            if metadata.get("fingerprint") != expected:
+                return None
+            values = PredictionSet(
+                sample_ids=tuple(str(item) for item in payload["sample_ids"].tolist()),
+                logits=np.asarray(payload["logits"], dtype=np.float64),
+                labels=np.asarray(payload["labels"], dtype=np.int64),
+                source_sample_count=metadata.get("source_sample_count"),
+                sampling_method=metadata.get("sampling_method", "all"),
+                sampling_seed=metadata.get("sampling_seed"),
+                max_samples_per_class=metadata.get("max_samples_per_class"),
+            )
+        return _validated_prediction_set(values, "cached")
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        return None
+
+
 def _json(path: Path, payload: dict) -> None:
     path.write_text(
         json.dumps(
@@ -361,12 +430,12 @@ def run_experiment(
     confidence_grid = (
         confidence_grid
         if confidence_grid is not None
-        else np.arange(0.25, 0.91, 0.05).tolist()
+        else [value / 100.0 for value in range(25, 91, 5)]
     )
     entropy_grid = (
         entropy_grid
         if entropy_grid is not None
-        else np.arange(0.50, 1.001, 0.05).tolist()
+        else [value / 100.0 for value in range(50, 101, 5)]
     )
 
     temperature = fit_temperature(validation.logits, validation.labels)
@@ -482,6 +551,20 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _dataset_sample_ids_sha256(dataset) -> str:
+    digest = hashlib.sha256()
+    samples = getattr(dataset, "samples", None)
+    if samples is None or len(samples) != len(dataset):
+        raise ValueError("dataset must expose ordered samples for cache fingerprinting")
+    for sample in samples:
+        sample_id = getattr(sample, "sample_id", None)
+        if not isinstance(sample_id, str) or not sample_id:
+            raise ValueError("dataset samples must expose non-empty sample IDs")
+        digest.update(sample_id.encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
 def run_from_paths(
     *,
     index_root,
@@ -497,6 +580,7 @@ def run_from_paths(
     max_validation_samples_per_class: int | None = None,
     max_test_samples_per_class: int | None = None,
     sampling_seed: int = 20260823,
+    prediction_cache_root=None,
 ) -> dict:
     """Load fixed validation/test splits, collect logits, and run the experiment."""
 
@@ -531,20 +615,40 @@ def run_from_paths(
         test_dataset = class_stratified_subset(
             test_dataset, max_test_samples_per_class, sampling_seed
         )
-    validation_predictions = collect_predictions(
-        validation_dataset,
-        loaded.model,
-        device=device,
-        batch_size=batch_size,
-        workers=workers,
+    checkpoint_hash = _sha256_file(checkpoint_path)
+    validation_hash = _sha256_file(validation_manifest)
+    test_hash = _sha256_file(test_manifest)
+    cache_root = (
+        Path(prediction_cache_root)
+        if prediction_cache_root is not None
+        else Path(str(output_root) + ".prediction_cache")
     )
-    test_predictions = collect_predictions(
-        test_dataset,
-        loaded.model,
-        device=device,
-        batch_size=batch_size,
-        workers=workers,
+
+    def predictions_for(split, dataset, manifest_hash):
+        fingerprint = {
+            "checkpoint_sha256": checkpoint_hash,
+            "manifest_sha256": manifest_hash,
+            "sample_ids_sha256": _dataset_sample_ids_sha256(dataset),
+            "model_version": loaded.metadata.model_version,
+        }
+        cache_path = cache_root / f"{split}.npz"
+        cached = load_prediction_cache(cache_path, fingerprint)
+        if cached is not None:
+            return cached
+        collected = collect_predictions(
+            dataset,
+            loaded.model,
+            device=device,
+            batch_size=batch_size,
+            workers=workers,
+        )
+        save_prediction_cache(cache_path, collected, fingerprint)
+        return collected
+
+    validation_predictions = predictions_for(
+        "validation", validation_dataset, validation_hash
     )
+    test_predictions = predictions_for("test", test_dataset, test_hash)
     uncertain_ids = tuple(
         label_id - 1 for label_id, label in CVB_LABELS.items() if label.uncertain
     )
@@ -552,9 +656,9 @@ def run_from_paths(
         validation_predictions,
         test_predictions,
         output_root,
-        checkpoint_sha256=_sha256_file(checkpoint_path),
-        validation_manifest_sha256=_sha256_file(validation_manifest),
-        test_manifest_sha256=_sha256_file(test_manifest),
+        checkpoint_sha256=checkpoint_hash,
+        validation_manifest_sha256=validation_hash,
+        test_manifest_sha256=test_hash,
         model_version=loaded.metadata.model_version,
         confidence_grid=confidence_grid,
         entropy_grid=entropy_grid,
@@ -582,6 +686,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-validation-samples-per-class", type=int, default=512)
     parser.add_argument("--max-test-samples-per-class", type=int, default=1024)
     parser.add_argument("--sampling-seed", type=int, default=20260823)
+    parser.add_argument("--prediction-cache-root")
     return parser
 
 
@@ -601,6 +706,7 @@ def main(argv=None) -> dict:
         max_validation_samples_per_class=args.max_validation_samples_per_class,
         max_test_samples_per_class=args.max_test_samples_per_class,
         sampling_seed=args.sampling_seed,
+        prediction_cache_root=args.prediction_cache_root,
     )
     print(json.dumps(result, ensure_ascii=False, allow_nan=False))
     return result

@@ -28,7 +28,7 @@ $env:TORCH_HOME=Join-Path $projectRoot 'models\cache\torch'
 $python='F:\deepl\anaconda1\envs\pytorch\python.exe'
 if($Mode -in @('evaluate','uncertainty') -and -not $Checkpoint){throw '-Checkpoint is required for evaluate and uncertainty modes'}
 if($Mode -eq 'uncertainty'){
- $arguments=@('-m','cattle_health_app.behavior.uncertainty_experiment','--index-root',$IndexRoot,'--source-data-root',$SourceDataRoot,'--checkpoint',$Checkpoint,'--output-root',$OutputRoot,'--device',$Device,'--batch-size',$BatchSize,'--workers',$Workers,'--minimum-actionable-coverage',$MinimumActionableCoverage,'--max-validation-samples-per-class',512,'--max-test-samples-per-class',1024,'--sampling-seed',20260823)
+ $arguments=@('-m','cattle_health_app.behavior.uncertainty_experiment','--index-root',$IndexRoot,'--source-data-root',$SourceDataRoot,'--checkpoint',$Checkpoint,'--output-root',$OutputRoot,'--device',$Device,'--batch-size',$BatchSize,'--workers',0,'--minimum-actionable-coverage',$MinimumActionableCoverage,'--max-validation-samples-per-class',512,'--max-test-samples-per-class',1024,'--sampling-seed',20260823)
 }else{
  $arguments=@('-m','cattle_health_app.behavior.train','--mode',$Mode,'--index-root',$IndexRoot,'--source-data-root',$SourceDataRoot,'--output-root',$OutputRoot,'--split',$Split,'--device',$Device,'--epochs',$Epochs,'--batch-size',$BatchSize,'--accumulation-steps',$AccumulationSteps,'--learning-rate',$LearningRate,'--weight-decay',$WeightDecay,'--patience',$Patience,'--workers',$Workers,'--freeze-backbone-epochs',$FreezeBackboneEpochs,'--seed',$Seed)
  if($Checkpoint){$arguments+=@('--checkpoint',$Checkpoint)}

@@ -157,6 +157,45 @@ def test_core_json_artifacts_are_byte_deterministic(tmp_path):
         ).read_bytes()
 
 
+def test_experiment_default_threshold_grids_stay_within_unit_interval(tmp_path):
+    validation, test = prediction_sets()
+
+    result = experiment.run_experiment(
+        validation,
+        test,
+        tmp_path / "result",
+        checkpoint_sha256="a" * 64,
+        validation_manifest_sha256="b" * 64,
+        test_manifest_sha256="c" * 64,
+        model_version="unit-v1",
+        minimum_actionable_coverage=0.60,
+        uncertain_label_ids=(2,),
+    )
+
+    assert 0.0 <= result["policy"]["max_normalized_entropy"] <= 1.0
+
+
+def test_prediction_cache_round_trips_and_requires_exact_fingerprint(tmp_path):
+    validation, _ = prediction_sets()
+    cache = tmp_path / "validation.npz"
+    fingerprint = {
+        "checkpoint_sha256": "a" * 64,
+        "manifest_sha256": "b" * 64,
+        "sample_ids_sha256": "c" * 64,
+        "model_version": "unit-v1",
+    }
+
+    experiment.save_prediction_cache(cache, validation, fingerprint)
+    restored = experiment.load_prediction_cache(cache, fingerprint)
+
+    assert restored.sample_ids == validation.sample_ids
+    np.testing.assert_array_equal(restored.logits, validation.logits)
+    np.testing.assert_array_equal(restored.labels, validation.labels)
+    assert experiment.load_prediction_cache(
+        cache, {**fingerprint, "model_version": "different"}
+    ) is None
+
+
 def test_failed_publish_restores_previous_output(tmp_path, monkeypatch):
     output = tmp_path / "result"
     output.mkdir()
@@ -249,7 +288,11 @@ def test_run_from_paths_hashes_inputs_and_keeps_split_roles(tmp_path, monkeypatc
     class Dataset:
         def __init__(self, manifest, data_root, training, size):
             self.manifest = Path(manifest)
+            self.samples = [SimpleNamespace(sample_id=f"{self.manifest.name}-sample")]
             created.append((self.manifest.name, Path(data_root), training, size))
+
+        def __len__(self):
+            return len(self.samples)
 
     monkeypatch.setattr(experiment, "CvbClipDataset", Dataset)
     monkeypatch.setattr(
@@ -333,7 +376,15 @@ def test_run_from_paths_applies_split_specific_sampling_before_inference(
 
     def capture_subset(dataset, max_samples_per_class, seed):
         sampled.append((dataset.name, max_samples_per_class, seed))
-        return SimpleNamespace(name=f"sampled-{dataset.name}")
+
+        class Sampled:
+            name = f"sampled-{dataset.name}"
+            samples = [SimpleNamespace(sample_id=f"{name}-sample")]
+
+            def __len__(self):
+                return len(self.samples)
+
+        return Sampled()
 
     monkeypatch.setattr(experiment, "class_stratified_subset", capture_subset)
     validation, test = prediction_sets()
