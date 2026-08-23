@@ -43,6 +43,7 @@
 | 2026-08-23 | CBVD-5 v11 | 下载 VIA 原始标注 | `CBVD-5.csv` | `data/external/cbvd5/archives/CBVD-5.csv` | 2,409,930 B；`da271e825931eb36e4877b61280b2a0ac0019918b692a8b27355f16ada9c0aa9` | 完成；仅用于结构核验 |
 | 2026-08-23 | CBVD-5 v11 | 下载 AVA 训练标注 | `miniannotations/ava_train_v2.1.csv` | `data/external/cbvd5/archives/ava_train_v2.1.csv` | 1,733,774 B；`fad18b34f43c2f7efbbe5dfbdc3b10c27dbc7bca5306076e8ad61a32ccdef920` | 完成；确认 8 列 AVA 结构 |
 | 2026-08-23 | CBVD-5 v11 | 下载标签映射 | `miniannotations/labelmap.txt` | `data/external/cbvd5/archives/labelmap.txt` | 67 B；`78ae410e0005ffca882e0709e0ebc31b7fbab3fb80be3809eff37a28404125ba` | 完成；1站立、2卧躺、3采食、4饮水、5反刍 |
+| 2026-08-23 | CBVD-5 v11 | 解析真实 AVA 训练标注并合并同框原子标签 | `archives/ava_train_v2.1.csv` | 内存审计；摘要写入 `manifests/official_inventory_summary.json` | 22,754个有效合并框；严格映射11,300个 | 排除32个坏框、12个姿态冲突 |
 
 实际下载后，每个压缩包、标注文件和最终使用视频都必须在此追加记录，不覆盖历史行。
 

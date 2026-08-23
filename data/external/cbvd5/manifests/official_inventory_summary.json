@@ -39,5 +39,23 @@
     "path": "manifests/official_dataset_metadata_v11.json",
     "bytes": 8592,
     "sha256": "e3a6338572af50e7884c42f1a2f0da4c0f303126ec7e3e88682b1ba7f6f2079f"
+  },
+  "schema_audit": {
+    "source": "archives/ava_train_v2.1.csv",
+    "columns": [
+      "video_id",
+      "timestamp",
+      "x1",
+      "y1",
+      "x2",
+      "y2",
+      "action_id",
+      "entity_id"
+    ],
+    "grouped_annotations": 22754,
+    "strict_mapped_annotations": 11300,
+    "extended_mapped_annotations": 22754,
+    "excluded_invalid_bbox": 32,
+    "excluded_conflicting_posture": 12
   }
 }
