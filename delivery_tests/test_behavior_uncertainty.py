@@ -2,9 +2,13 @@ import numpy as np
 import pytest
 
 from cattle_health_app.behavior.uncertainty import (
+    calibration_metrics,
     fit_temperature,
     negative_log_likelihood,
+    normalized_entropy,
     probabilities_from_logits,
+    rejection_mask,
+    selective_metrics,
 )
 
 
@@ -80,3 +84,100 @@ def test_fit_temperature_reduces_validation_nll_and_is_deterministic():
     assert negative_log_likelihood(calibrated, labels) < negative_log_likelihood(
         uncalibrated, labels
     )
+
+
+def test_calibration_metrics_match_hand_computed_values():
+    probabilities = np.array([[0.8, 0.2], [0.4, 0.6]], dtype=np.float64)
+    labels = np.array([0, 0], dtype=np.int64)
+
+    metrics = calibration_metrics(probabilities, labels, bins=2)
+
+    assert metrics["negative_log_likelihood"] == pytest.approx(
+        -np.log([0.8, 0.4]).mean()
+    )
+    assert metrics["expected_calibration_error"] == pytest.approx(0.2)
+    assert metrics["multiclass_brier_score"] == pytest.approx(0.4)
+    assert metrics["accuracy"] == pytest.approx(0.5)
+    assert metrics["macro_f1"] == pytest.approx(1.0 / 3.0)
+
+
+def test_calibration_metrics_reject_invalid_bin_count():
+    with pytest.raises(ValueError, match="bins"):
+        calibration_metrics(np.array([[0.5, 0.5]]), np.array([0]), bins=0)
+
+
+def test_normalized_entropy_has_zero_and_unit_endpoints():
+    probabilities = np.array([[1.0, 0.0], [0.5, 0.5]], dtype=np.float64)
+
+    entropy = normalized_entropy(probabilities)
+
+    np.testing.assert_allclose(entropy, [0.0, 1.0], atol=1e-12)
+
+
+def test_joint_rejection_uses_low_confidence_or_high_entropy():
+    probabilities = np.array(
+        [[0.9, 0.1], [0.6, 0.4], [0.55, 0.45]], dtype=np.float64
+    )
+
+    rejected = rejection_mask(
+        probabilities, min_confidence=0.65, max_normalized_entropy=0.99
+    )
+
+    np.testing.assert_array_equal(rejected, [False, True, True])
+
+
+@pytest.mark.parametrize(
+    "confidence,entropy,match",
+    [(-0.1, 0.5, "min_confidence"), (0.5, 1.1, "max_normalized_entropy")],
+)
+def test_joint_rejection_validates_thresholds(confidence, entropy, match):
+    with pytest.raises(ValueError, match=match):
+        rejection_mask(np.array([[0.5, 0.5]]), confidence, entropy)
+
+
+def test_selective_metrics_report_coverage_risk_and_per_class_counts():
+    probabilities = np.array(
+        [
+            [0.9, 0.05, 0.05],
+            [0.2, 0.7, 0.1],
+            [0.6, 0.3, 0.1],
+            [0.1, 0.2, 0.7],
+        ],
+        dtype=np.float64,
+    )
+    labels = np.array([0, 1, 1, 2], dtype=np.int64)
+    accepted = np.array([True, True, False, False])
+
+    metrics = selective_metrics(
+        probabilities, labels, accepted, uncertain_label_ids=(2,)
+    )
+
+    assert metrics["sample_count"] == 4
+    assert metrics["coverage"] == pytest.approx(0.5)
+    assert metrics["actionable_coverage"] == pytest.approx(2.0 / 3.0)
+    assert metrics["selective_accuracy"] == pytest.approx(1.0)
+    assert metrics["selective_risk"] == pytest.approx(0.0)
+    assert metrics["selective_macro_f1"] == pytest.approx(1.0)
+    assert metrics["unsafe_count"] == 2
+    assert metrics["rejection_recall_for_unsafe"] == pytest.approx(1.0)
+    assert metrics["per_class"] == [
+        {"class_id": 0, "support": 1, "accepted": 1, "rejected": 0},
+        {"class_id": 1, "support": 2, "accepted": 1, "rejected": 1},
+        {"class_id": 2, "support": 1, "accepted": 0, "rejected": 1},
+    ]
+    assert 0.0 <= metrics["unsafe_detection_auroc"] <= 1.0
+    assert 0.0 <= metrics["unsafe_detection_auprc"] <= 1.0
+
+
+def test_selective_metrics_use_null_when_nothing_is_accepted():
+    probabilities = np.array([[0.8, 0.2], [0.3, 0.7]], dtype=np.float64)
+    labels = np.array([0, 1], dtype=np.int64)
+
+    metrics = selective_metrics(
+        probabilities, labels, np.array([False, False]), uncertain_label_ids=()
+    )
+
+    assert metrics["coverage"] == 0.0
+    assert metrics["selective_accuracy"] is None
+    assert metrics["selective_macro_f1"] is None
+    assert metrics["selective_risk"] is None

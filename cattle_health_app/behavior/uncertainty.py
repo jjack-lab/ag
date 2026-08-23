@@ -6,6 +6,7 @@ import math
 
 import numpy as np
 import torch
+from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
 from torch.nn import functional as F
 
 
@@ -118,3 +119,199 @@ def fit_temperature(logits, labels) -> float:
     optimizer.step(closure)
     fitted = math.exp(float(torch.clamp(log_temperature.detach(), lower, upper)))
     return min(MAX_TEMPERATURE, max(MIN_TEMPERATURE, fitted))
+
+
+def normalized_entropy(probabilities) -> np.ndarray:
+    """Return Shannon entropy normalized to [0, 1] by the class count."""
+
+    values = _validated_probabilities(probabilities)
+    positive = values > 0
+    terms = np.zeros_like(values)
+    terms[positive] = values[positive] * np.log(values[positive])
+    return -terms.sum(axis=1) / math.log(values.shape[1])
+
+
+def calibration_metrics(probabilities, labels, bins: int = 15) -> dict:
+    """Measure multiclass classification and confidence calibration quality."""
+
+    values = _validated_probabilities(probabilities)
+    targets = _validated_labels(labels, len(values), values.shape[1])
+    if isinstance(bins, bool) or not isinstance(bins, int) or bins <= 0:
+        raise ValueError("bins must be a positive integer")
+    predictions = values.argmax(axis=1)
+    confidences = values.max(axis=1)
+    correct = predictions == targets
+    bin_ids = np.minimum((confidences * bins).astype(np.int64), bins - 1)
+    ece = 0.0
+    for bin_id in range(bins):
+        selected = bin_ids == bin_id
+        if selected.any():
+            weight = float(selected.mean())
+            gap = abs(float(correct[selected].mean()) - float(confidences[selected].mean()))
+            ece += weight * gap
+    one_hot = np.eye(values.shape[1], dtype=np.float64)[targets]
+    brier = float(np.square(values - one_hot).sum(axis=1).mean())
+    return {
+        "sample_count": int(len(values)),
+        "accuracy": float(correct.mean()),
+        "macro_f1": float(
+            f1_score(
+                targets,
+                predictions,
+                labels=list(range(values.shape[1])),
+                average="macro",
+                zero_division=0,
+            )
+        ),
+        "negative_log_likelihood": negative_log_likelihood(values, targets),
+        "expected_calibration_error": float(ece),
+        "multiclass_brier_score": brier,
+        "ece_bins": bins,
+    }
+
+
+def _unit_interval(value, name: str) -> float:
+    if isinstance(value, (bool, np.bool_)):
+        raise TypeError(f"{name} must be a finite number in [0, 1]")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(f"{name} must be a finite number in [0, 1]") from exc
+    if not math.isfinite(parsed) or not 0 <= parsed <= 1:
+        raise ValueError(f"{name} must be in [0, 1]")
+    return parsed
+
+
+def rejection_mask(
+    probabilities, min_confidence: float, max_normalized_entropy: float
+) -> np.ndarray:
+    """Return True for predictions rejected by either confidence gate."""
+
+    values = _validated_probabilities(probabilities)
+    confidence = _unit_interval(min_confidence, "min_confidence")
+    entropy_limit = _unit_interval(
+        max_normalized_entropy, "max_normalized_entropy"
+    )
+    return (values.max(axis=1) < confidence) | (
+        normalized_entropy(values) > entropy_limit
+    )
+
+
+def _validated_accepted(accepted, sample_count: int) -> np.ndarray:
+    values = np.asarray(accepted)
+    if values.ndim != 1 or len(values) != sample_count:
+        raise ValueError("accepted must be a one-dimensional sample mask")
+    if values.dtype != np.bool_:
+        raise ValueError("accepted must use a boolean dtype")
+    return values
+
+
+def _validated_uncertain_ids(values, class_count: int) -> tuple[int, ...]:
+    if values is None:
+        return ()
+    parsed = []
+    for value in values:
+        if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
+            raise ValueError("uncertain_label_ids must contain integer class IDs")
+        item = int(value)
+        if item < 0 or item >= class_count:
+            raise ValueError("uncertain_label_ids contains an out-of-range class ID")
+        if item not in parsed:
+            parsed.append(item)
+    return tuple(parsed)
+
+
+def selective_metrics(
+    probabilities, labels, accepted, uncertain_label_ids=(0, 9, 10)
+) -> dict:
+    """Measure quality and safety trade-offs for a frozen acceptance mask."""
+
+    values = _validated_probabilities(probabilities)
+    targets = _validated_labels(labels, len(values), values.shape[1])
+    accepted_mask = _validated_accepted(accepted, len(values))
+    uncertain_ids = _validated_uncertain_ids(
+        uncertain_label_ids, values.shape[1]
+    )
+    predictions = values.argmax(axis=1)
+    correct = predictions == targets
+    uncertain_truth = np.isin(targets, uncertain_ids)
+    unsafe = uncertain_truth | ~correct
+    rejected = ~accepted_mask
+    actionable_truth = ~uncertain_truth
+    actionable_count = int(actionable_truth.sum())
+    accepted_count = int(accepted_mask.sum())
+    unsafe_count = int(unsafe.sum())
+    rejected_count = int(rejected.sum())
+
+    if accepted_count:
+        selective_accuracy = float(correct[accepted_mask].mean())
+        selective_risk = 1.0 - selective_accuracy
+    else:
+        selective_accuracy = None
+        selective_risk = None
+
+    accepted_actionable = accepted_mask & actionable_truth
+    actionable_ids = [
+        item for item in range(values.shape[1]) if item not in uncertain_ids
+    ]
+    if accepted_actionable.any() and actionable_ids:
+        selective_macro_f1 = float(
+            f1_score(
+                targets[accepted_actionable],
+                predictions[accepted_actionable],
+                labels=actionable_ids,
+                average="macro",
+                zero_division=0,
+            )
+        )
+    else:
+        selective_macro_f1 = None
+
+    uncertainty_score = 1.0 - values.max(axis=1)
+    if unsafe_count and unsafe_count < len(values):
+        unsafe_auroc = float(roc_auc_score(unsafe, uncertainty_score))
+        unsafe_auprc = float(average_precision_score(unsafe, uncertainty_score))
+    else:
+        unsafe_auroc = None
+        unsafe_auprc = None
+
+    per_class = []
+    for class_id in range(values.shape[1]):
+        selected = targets == class_id
+        support = int(selected.sum())
+        per_class.append(
+            {
+                "class_id": class_id,
+                "support": support,
+                "accepted": int((selected & accepted_mask).sum()),
+                "rejected": int((selected & rejected).sum()),
+            }
+        )
+
+    return {
+        "sample_count": int(len(values)),
+        "accepted_count": accepted_count,
+        "rejected_count": rejected_count,
+        "coverage": float(accepted_mask.mean()),
+        "actionable_count": actionable_count,
+        "actionable_coverage": (
+            float((accepted_mask & actionable_truth).sum() / actionable_count)
+            if actionable_count else None
+        ),
+        "selective_accuracy": selective_accuracy,
+        "selective_macro_f1": selective_macro_f1,
+        "selective_risk": selective_risk,
+        "unsafe_count": unsafe_count,
+        "unsafe_detection_score": "one_minus_max_probability",
+        "unsafe_detection_auroc": unsafe_auroc,
+        "unsafe_detection_auprc": unsafe_auprc,
+        "rejection_precision_for_unsafe": (
+            float((rejected & unsafe).sum() / rejected_count)
+            if rejected_count else None
+        ),
+        "rejection_recall_for_unsafe": (
+            float((rejected & unsafe).sum() / unsafe_count)
+            if unsafe_count else None
+        ),
+        "per_class": per_class,
+    }
