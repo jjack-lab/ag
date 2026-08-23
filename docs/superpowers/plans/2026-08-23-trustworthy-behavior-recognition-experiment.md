@@ -179,9 +179,11 @@ Commit message: `feat: add reproducible behavior uncertainty experiment`
 
 Check that the checkpoint hash matches the packaged model, validation/test manifests exist, all referenced frames resolve read-only, and the output root resolves under `F:\new大创`.
 
+Record the measured full-test estimate (approximately 29.5 hours at 3.99 samples/second) and use the user-approved deterministic class-stratified caps: 512 validation and 1024 test samples per class with seed `20260823`.
+
 - [ ] **Step 2: Run the experiment on validation and test splits**
 
-Run the uncertainty command with the existing X3D v2 checkpoint, GPU device, and the prepared CVB v2 index. External CVB source data is read-only; all caches and artifacts point inside the project.
+Run the uncertainty command with the existing X3D v2 checkpoint, GPU device, prepared CVB v2 index, and the fixed sampling arguments. External CVB source data is read-only; all caches and artifacts point inside the project.
 
 - [ ] **Step 3: Validate artifact consistency**
 

@@ -111,6 +111,8 @@ def test_experiment_writes_traceable_protocol_artifacts(tmp_path):
     assert calibration["validation_manifest_sha256"] == "b" * 64
     assert "test_manifest_sha256" not in calibration
     assert calibration["policy"]["selection_split"] == "validation"
+    assert calibration["validation_selection"]["selected_sample_count"] == 6
+    assert calibration["validation_selection"]["sampling_method"] == "all"
     metrics = json.loads((output / "experiment_metrics.json").read_text("utf-8"))
     assert metrics == result
     assert list(metrics["protocols"]) == [
@@ -119,6 +121,8 @@ def test_experiment_writes_traceable_protocol_artifacts(tmp_path):
         "temperature_joint_rejection",
     ]
     assert metrics["test_manifest_sha256"] == "c" * 64
+    assert metrics["test_selection"]["selected_sample_count"] == 4
+    assert len(metrics["test_selection"]["sample_ids_sha256"]) == 64
     assert "F:\\" not in (output / "experiment_metrics.json").read_text("utf-8")
 
 
@@ -300,6 +304,62 @@ def test_run_from_paths_hashes_inputs_and_keeps_split_roles(tmp_path, monkeypatc
     assert received["model_version"] == "checkpoint-v1"
 
 
+def test_run_from_paths_applies_split_specific_sampling_before_inference(
+    tmp_path, monkeypatch
+):
+    index_root = tmp_path / "index"
+    index_root.mkdir()
+    (index_root / "val.csv").write_text("val", encoding="utf-8")
+    (index_root / "test.csv").write_text("test", encoding="utf-8")
+    checkpoint = tmp_path / "model.pt"
+    checkpoint.write_bytes(b"checkpoint")
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+
+    class Dataset:
+        def __init__(self, manifest, *args, **kwargs):
+            self.name = Path(manifest).name
+
+    monkeypatch.setattr(experiment, "CvbClipDataset", Dataset)
+    monkeypatch.setattr(
+        experiment,
+        "load_behavior_checkpoint",
+        lambda *args, **kwargs: SimpleNamespace(
+            model=torch.nn.Identity(),
+            metadata=SimpleNamespace(input_size=224, model_version="v1"),
+        ),
+    )
+    sampled = []
+
+    def capture_subset(dataset, max_samples_per_class, seed):
+        sampled.append((dataset.name, max_samples_per_class, seed))
+        return SimpleNamespace(name=f"sampled-{dataset.name}")
+
+    monkeypatch.setattr(experiment, "class_stratified_subset", capture_subset)
+    validation, test = prediction_sets()
+    monkeypatch.setattr(
+        experiment,
+        "collect_predictions",
+        lambda dataset, *args, **kwargs: validation if dataset.name.startswith("sampled-val") else test,
+    )
+    monkeypatch.setattr(experiment, "run_experiment", lambda *args, **kwargs: {"ok": True})
+
+    experiment.run_from_paths(
+        index_root=index_root,
+        source_data_root=source_root,
+        checkpoint=checkpoint,
+        output_root=tmp_path / "output",
+        max_validation_samples_per_class=512,
+        max_test_samples_per_class=1024,
+        sampling_seed=20260823,
+    )
+
+    assert sampled == [
+        ("val.csv", 512, 20260823),
+        ("test.csv", 1024, 20260823),
+    ]
+
+
 def test_cli_requires_all_data_and_output_paths():
     parser = experiment.build_parser()
 
@@ -317,6 +377,9 @@ def test_cli_requires_all_data_and_output_paths():
     )
     assert args.index_root == "index"
     assert args.device == "cpu"
+    assert args.max_validation_samples_per_class == 512
+    assert args.max_test_samples_per_class == 1024
+    assert args.sampling_seed == 20260823
 
 
 def test_training_wrapper_exposes_uncertainty_mode():
@@ -327,3 +390,49 @@ def test_training_wrapper_exposes_uncertainty_mode():
     assert "'smoke','train','evaluate','uncertainty'" in script
     assert "cattle_health_app.behavior.uncertainty_experiment" in script
     assert "--minimum-actionable-coverage" in script
+
+
+def test_class_stratified_subset_is_deterministic_and_capped_per_class():
+    class Dataset(torch.utils.data.Dataset):
+        def __init__(self, reverse=False):
+            samples = [
+                SimpleNamespace(sample_id=f"class-{label}-{index}", label_id=label)
+                for label in (1, 2, 3)
+                for index in range(5)
+            ]
+            self.samples = list(reversed(samples)) if reverse else samples
+
+        def __len__(self):
+            return len(self.samples)
+
+        def __getitem__(self, index):
+            return self.samples[index].sample_id
+
+    first = experiment.class_stratified_subset(
+        Dataset(), max_samples_per_class=2, seed=20260823
+    )
+    second = experiment.class_stratified_subset(
+        Dataset(reverse=True), max_samples_per_class=2, seed=20260823
+    )
+
+    first_ids = {sample.sample_id for sample in first.samples}
+    second_ids = {sample.sample_id for sample in second.samples}
+    assert first_ids == second_ids
+    assert len(first) == 6
+    assert first.source_sample_count == 15
+    assert first.sampling_method == "class_stratified_sample_id_sha256"
+    assert first.sampling_seed == 20260823
+    assert first.max_samples_per_class == 2
+    assert {
+        label: sum(sample.label_id == label for sample in first.samples)
+        for label in (1, 2, 3)
+    } == {1: 2, 2: 2, 3: 2}
+
+
+@pytest.mark.parametrize("limit,seed", [(0, 1), (True, 1), (1, -1), (1, True)])
+def test_class_stratified_subset_validates_sampling_settings(limit, seed):
+    dataset = SimpleNamespace(samples=[SimpleNamespace(sample_id="x", label_id=1)])
+    dataset.__len__ = lambda: 1
+
+    with pytest.raises((TypeError, ValueError)):
+        experiment.class_stratified_subset(dataset, limit, seed)

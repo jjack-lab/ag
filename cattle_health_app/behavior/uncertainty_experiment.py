@@ -35,6 +35,66 @@ class PredictionSet:
     sample_ids: tuple[str, ...]
     logits: np.ndarray
     labels: np.ndarray
+    source_sample_count: int | None = None
+    sampling_method: str = "all"
+    sampling_seed: int | None = None
+    max_samples_per_class: int | None = None
+
+
+class ClassStratifiedSubset(torch.utils.data.Dataset):
+    def __init__(self, dataset, indices, seed: int, max_samples_per_class: int):
+        self.dataset = dataset
+        self.indices = tuple(indices)
+        self.samples = [dataset.samples[index] for index in self.indices]
+        self.source_sample_count = len(dataset)
+        self.sampling_method = "class_stratified_sample_id_sha256"
+        self.sampling_seed = seed
+        self.max_samples_per_class = max_samples_per_class
+
+    def __len__(self):
+        return len(self.indices)
+
+    def __getitem__(self, index):
+        return self.dataset[self.indices[index]]
+
+
+def class_stratified_subset(dataset, max_samples_per_class: int, seed: int):
+    """Select a reproducible per-class cap using only labels and sample IDs."""
+
+    if (
+        isinstance(max_samples_per_class, bool)
+        or not isinstance(max_samples_per_class, int)
+        or max_samples_per_class <= 0
+    ):
+        raise ValueError("max_samples_per_class must be a positive integer")
+    if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
+        raise ValueError("seed must be a nonnegative integer")
+    samples = getattr(dataset, "samples", None)
+    if samples is None or len(samples) != len(dataset) or not samples:
+        raise ValueError("dataset must expose one ordered sample record per item")
+    grouped = {}
+    seen_ids = set()
+    for index, sample in enumerate(samples):
+        sample_id = getattr(sample, "sample_id", None)
+        label_id = getattr(sample, "label_id", None)
+        if not isinstance(sample_id, str) or not sample_id or sample_id in seen_ids:
+            raise ValueError("dataset sample IDs must be non-empty and unique")
+        if isinstance(label_id, bool) or not isinstance(label_id, (int, np.integer)):
+            raise ValueError("dataset samples must expose integer label IDs")
+        seen_ids.add(sample_id)
+        rank = hashlib.sha256(f"{seed}:{sample_id}".encode("utf-8")).digest()
+        grouped.setdefault(int(label_id), []).append((rank, sample_id, index))
+    selected = []
+    for candidates in grouped.values():
+        candidates.sort(key=lambda item: (item[0], item[1]))
+        selected.extend(candidates[:max_samples_per_class])
+    selected.sort(key=lambda item: item[1])
+    return ClassStratifiedSubset(
+        dataset,
+        [item[2] for item in selected],
+        seed=seed,
+        max_samples_per_class=max_samples_per_class,
+    )
 
 
 def collect_predictions(
@@ -78,7 +138,15 @@ def collect_predictions(
     logits = np.concatenate(logits_rows, axis=0)
     labels = np.concatenate(label_rows, axis=0)
     return _validated_prediction_set(
-        PredictionSet(sample_ids=sample_ids, logits=logits, labels=labels),
+        PredictionSet(
+            sample_ids=sample_ids,
+            logits=logits,
+            labels=labels,
+            source_sample_count=getattr(dataset, "source_sample_count", len(dataset)),
+            sampling_method=getattr(dataset, "sampling_method", "all"),
+            sampling_seed=getattr(dataset, "sampling_seed", None),
+            max_samples_per_class=getattr(dataset, "max_samples_per_class", None),
+        ),
         "collected",
     )
 
@@ -101,7 +169,28 @@ def _validated_prediction_set(values: PredictionSet, name: str) -> PredictionSet
     labels = labels.astype(np.int64, copy=False)
     if (labels < 0).any() or (labels >= logits.shape[1]).any():
         raise ValueError(f"{name} labels must be in the class index range")
-    return PredictionSet(sample_ids, logits, labels)
+    source_count = (
+        len(sample_ids)
+        if values.source_sample_count is None
+        else values.source_sample_count
+    )
+    if (
+        isinstance(source_count, bool)
+        or not isinstance(source_count, int)
+        or source_count < len(sample_ids)
+    ):
+        raise ValueError(f"{name} source sample count must cover selected samples")
+    if not isinstance(values.sampling_method, str) or not values.sampling_method:
+        raise ValueError(f"{name} sampling method must be a non-empty string")
+    return PredictionSet(
+        sample_ids,
+        logits,
+        labels,
+        source_sample_count=source_count,
+        sampling_method=values.sampling_method,
+        sampling_seed=values.sampling_seed,
+        max_samples_per_class=values.max_samples_per_class,
+    )
 
 
 def _validated_sha256(value: str, name: str) -> str:
@@ -112,6 +201,21 @@ def _validated_sha256(value: str, name: str) -> str:
     ):
         raise ValueError(f"{name} must be a lowercase SHA-256 digest")
     return value
+
+
+def _selection_metadata(values: PredictionSet) -> dict:
+    digest = hashlib.sha256()
+    for sample_id in values.sample_ids:
+        digest.update(sample_id.encode("utf-8"))
+        digest.update(b"\n")
+    return {
+        "sampling_method": values.sampling_method,
+        "sampling_seed": values.sampling_seed,
+        "max_samples_per_class": values.max_samples_per_class,
+        "source_sample_count": values.source_sample_count,
+        "selected_sample_count": len(values.sample_ids),
+        "sample_ids_sha256": digest.hexdigest(),
+    }
 
 
 def _json(path: Path, payload: dict) -> None:
@@ -312,6 +416,8 @@ def run_experiment(
         "test_manifest_sha256": test_hash,
         "validation_sample_count": len(validation.sample_ids),
         "test_sample_count": len(test.sample_ids),
+        "validation_selection": _selection_metadata(validation),
+        "test_selection": _selection_metadata(test),
         "selection_split": "validation",
         "temperature": temperature,
         "policy": policy.to_dict(),
@@ -334,6 +440,7 @@ def run_experiment(
         "model_version": model_version,
         "checkpoint_sha256": checkpoint_hash,
         "validation_manifest_sha256": validation_hash,
+        "validation_selection": _selection_metadata(validation),
         "selection_split": "validation",
         "temperature": temperature,
         "policy": policy.to_dict(),
@@ -387,6 +494,9 @@ def run_from_paths(
     confidence_grid=None,
     entropy_grid=None,
     minimum_actionable_coverage: float = 0.60,
+    max_validation_samples_per_class: int | None = None,
+    max_test_samples_per_class: int | None = None,
+    sampling_seed: int = 20260823,
 ) -> dict:
     """Load fixed validation/test splits, collect logits, and run the experiment."""
 
@@ -413,6 +523,14 @@ def run_from_paths(
     test_dataset = CvbClipDataset(
         test_manifest, source_path, training=False, size=size
     )
+    if max_validation_samples_per_class is not None:
+        validation_dataset = class_stratified_subset(
+            validation_dataset, max_validation_samples_per_class, sampling_seed
+        )
+    if max_test_samples_per_class is not None:
+        test_dataset = class_stratified_subset(
+            test_dataset, max_test_samples_per_class, sampling_seed
+        )
     validation_predictions = collect_predictions(
         validation_dataset,
         loaded.model,
@@ -461,6 +579,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--minimum-actionable-coverage", type=float, default=0.60)
     parser.add_argument("--confidence-grid", type=float, nargs="+")
     parser.add_argument("--entropy-grid", type=float, nargs="+")
+    parser.add_argument("--max-validation-samples-per-class", type=int, default=512)
+    parser.add_argument("--max-test-samples-per-class", type=int, default=1024)
+    parser.add_argument("--sampling-seed", type=int, default=20260823)
     return parser
 
 
@@ -477,6 +598,9 @@ def main(argv=None) -> dict:
         confidence_grid=args.confidence_grid,
         entropy_grid=args.entropy_grid,
         minimum_actionable_coverage=args.minimum_actionable_coverage,
+        max_validation_samples_per_class=args.max_validation_samples_per_class,
+        max_test_samples_per_class=args.max_test_samples_per_class,
+        sampling_seed=args.sampling_seed,
     )
     print(json.dumps(result, ensure_ascii=False, allow_nan=False))
     return result
