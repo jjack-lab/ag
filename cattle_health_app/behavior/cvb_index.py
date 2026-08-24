@@ -25,6 +25,7 @@ import cv2
 
 from cattle_health_app.behavior.cvb_labels import CVB_LABELS
 from cattle_health_app.image_io import read_cv_image
+from cattle_health_app.path_ops import replace_path_with_retry
 
 
 FRAME_COUNT = 16
@@ -405,10 +406,10 @@ def build_index(
         database.unlink()
         backup = None
         if output.exists():
-            backup = Path(tempfile.mkdtemp(prefix=f".{output.name}.backup-",dir=output.parent)); backup.rmdir(); os.replace(output,backup)
-        try: os.replace(staging,output)
+            backup = Path(tempfile.mkdtemp(prefix=f".{output.name}.backup-",dir=output.parent)); backup.rmdir(); replace_path_with_retry(output,backup)
+        try: replace_path_with_retry(staging,output)
         except BaseException:
-            if backup is not None: os.replace(backup,output)
+            if backup is not None: replace_path_with_retry(backup,output)
             raise
         if backup is not None: shutil.rmtree(backup)
         return IndexResult(accepted_count,rejected_count,reasons,split_counts,output)

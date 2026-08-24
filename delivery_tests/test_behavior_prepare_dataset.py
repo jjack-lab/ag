@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import pytest
 import cattle_health_app.behavior.prepare_dataset as prepare_module
+import cattle_health_app.path_ops as path_ops
 
 from cattle_health_app.behavior.prepare_dataset import (
     DatasetPreparationError,
@@ -179,6 +180,32 @@ def test_safe_replace_falls_back_when_home_root_cannot_resolve(tmp_path, monkeyp
 
     prepare_module._safe_replace(staging, output, overwrite=False)
 
+    assert (output / "marker.txt").read_text(encoding="utf-8") == "ready"
+
+
+def test_safe_replace_retries_transient_permission_error(tmp_path, monkeypatch):
+    staging = tmp_path / "staging"
+    output = tmp_path / "published"
+    staging.mkdir()
+    (staging / "marker.txt").write_text("ready", encoding="utf-8")
+    real_replace = path_ops.os.replace
+    attempts = 0
+    delays = []
+
+    def transient_replace(source, destination):
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise PermissionError("temporarily busy")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(path_ops.os, "replace", transient_replace)
+    monkeypatch.setattr(path_ops.time, "sleep", delays.append)
+
+    prepare_module._safe_replace(staging, output, overwrite=False)
+
+    assert attempts == 3
+    assert delays == [0.05, 0.1]
     assert (output / "marker.txt").read_text(encoding="utf-8") == "ready"
 
 

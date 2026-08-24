@@ -15,6 +15,8 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from cattle_health_app.path_ops import replace_path_with_retry
+
 
 from .cvb_labels import CVB_LABELS
 from .dataset import CvbClipDataset
@@ -387,11 +389,11 @@ def _publish_directory(staging: Path, output: Path) -> None:
                 tempfile.mkdtemp(prefix=f".{output.name}.backup-", dir=str(output.parent))
             )
             backup.rmdir()
-            os.replace(output, backup)
-        os.replace(staging, output)
+            replace_path_with_retry(output, backup)
+        replace_path_with_retry(staging, output)
     except Exception:
         if backup is not None and backup.exists() and not output.exists():
-            os.replace(backup, output)
+            replace_path_with_retry(backup, output)
         raise
     finally:
         if staging.exists():

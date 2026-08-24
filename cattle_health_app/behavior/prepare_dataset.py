@@ -10,6 +10,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from uuid import uuid4
 
+from cattle_health_app.path_ops import replace_path_with_retry
+
 from cattle_health_app.behavior.clip_extractor import (
     ClipConfig,
     ClipRejected,
@@ -146,7 +148,7 @@ def _safe_replace(staging: Path, output: Path, overwrite: bool):
         if output.is_file():
             raise DatasetPreparationError(f"Output path is a file: {output}")
         shutil.rmtree(output)
-    staging.replace(output)
+    replace_path_with_retry(staging, output)
 
 
 def prepare_dataset(
