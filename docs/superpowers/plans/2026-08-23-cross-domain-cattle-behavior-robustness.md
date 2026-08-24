@@ -580,9 +580,11 @@ Execute `docs/superpowers/plans/2026-08-24-unicode-in-project-verification.md`, 
 
 Actual: supplemental remediation completed with 541 passed, 4 skipped, 0 failed; cross-domain 76/76, frontend 16/16, production build and delivery preflight passed. Final review closed the protected-root alias HIGH and approved integration with no HIGH/MEDIUM blockers.
 
-- [ ] **Step 8: Complete post-merge Windows directory publication hardening**
+- [x] **Step 8: Complete post-merge Windows directory publication hardening**
 
 Execute supplemental Task 5, obtain a failure-free full Python run from both the experiment worktree and merged main directory, repeat final review, and preserve the frozen experiment artifacts.
+
+Actual: bounded permission-only directory publication retries were implemented in `e33da7b`, approved with no HIGH/MEDIUM findings, and fast-forwarded to `integration`. Affected tests passed `89 passed, 3 skipped`; both the experiment worktree and merged main directory passed `545 passed, 4 skipped, 0 failed`. Frontend tests, production builds, explicitly configured delivery preflight, frozen hashes, storage counts, and untracked raw-data boundaries all passed unchanged.
 
 ## Deferred final roadmap: VLM, multimodality, and embodied intelligence
 

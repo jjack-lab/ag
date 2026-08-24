@@ -141,22 +141,24 @@ Actual: final review confirmed the protected-root alias HIGH is closed and found
 - Modify: `cattle_health_app/behavior/uncertainty_experiment.py`
 - Modify: affected rollback/failure-injection tests
 
-- [ ] **Step 1: Preserve the post-merge evidence and write RED tests**
+- [x] **Step 1: Preserve the post-merge evidence and write RED tests**
 
 Record that two main-root full-suite runs produced 1 and 2 drifting `PermissionError` failures at directory-level `os.replace`, while each isolated rerun passed. Test a shared helper that succeeds after two injected permission failures, stops after six persistent permission failures, and never retries a non-permission error.
 
-- [ ] **Step 2: Implement bounded permission-only retry**
+- [x] **Step 2: Implement bounded permission-only retry**
 
 Implement `replace_path_with_retry(source, destination)` with six total attempts and exponential delays `0.05, 0.10, 0.20, 0.40, 0.80` seconds. Preserve the final `PermissionError`; do not catch other exception types.
 
-- [ ] **Step 3: Integrate only directory publication and recovery paths**
+- [x] **Step 3: Integrate only directory publication and recovery paths**
 
 Use the helper for staging¡úoutput, output¡úbackup and backup¡úoutput in dataset preparation, CVB index publication and uncertainty experiment publication. Keep file-level publishers and cleanup logic unchanged.
 
-- [ ] **Step 4: Verify targeted, worktree-full and merged-main suites**
+- [x] **Step 4: Verify targeted, worktree-full and merged-main suites**
 
 Run helper tests, all affected publication/rollback tests, full Python from the Unicode worktree, then fast-forward and run full Python again from the main integration directory using a pre-created project-internal basetemp. Repeat frontend, build, preflight and frozen-hash audits.
 
-- [ ] **Step 5: Review, commit and record final evidence**
+- [x] **Step 5: Review, commit and record final evidence**
 
 Require review to confirm retry scope, bounded timing, exception preservation and rollback semantics before final Goal completion.
+
+Actual: the helper test was RED while the module was absent, then the helper and real-caller retry tests passed. The affected suite passed `89 passed, 3 skipped`; the complete Unicode experiment worktree and fast-forwarded `integration` directory each passed `545 passed, 4 skipped, 0 failed`. The cross-domain acceptance superset passed `80/80`, frontend passed `16/16` in both worktrees, both production builds succeeded, and explicitly configured delivery preflight passed in both locations. The frozen checkpoint, calibration, and metrics SHA-256 values remain `731c6ed39dcf002915e888c829e1f86727f815331a2b3c21d06a17d40d62a08e`, `655f4e32f92dcba08023d4a18b0c457f047affb4bd3f691ac6cdc7d90789cfe2`, and `9ce519210226820659df2de472b4af523e0d97ec7f40acc240badd988b489a48`. The raw store remains 687 MP4 files / 3,480,105,107 bytes, with zero tracked videos, prediction CSVs, or raw-cache files. Commit `e33da7b` received an independent `APPROVE` with no HIGH/MEDIUM findings and was fast-forwarded to `integration`.
