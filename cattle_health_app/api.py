@@ -58,6 +58,7 @@ def _validated_cross_domain_summary(payload):
             "dataset_version": payload.get("dataset_version", "11"),
             "sample_counts": {},
             "model_hash_prefix": None,
+            "quality_policy": None,
             "variant_metrics": {},
             "limitations": limitations,
         }
@@ -116,12 +117,16 @@ def _validated_cross_domain_summary(payload):
         not isinstance(item, str) for item in limitations
     ):
         raise ValueError("claim_boundaries must be a list of text")
+    quality_policy = protocol.get("quality_gate_policy")
+    if quality_policy not in {"predeclared_heuristic", "validation_logistic"}:
+        raise ValueError("complete result requires a known quality_gate_policy")
     return {
         "status": "complete",
         "dataset_id": protocol.get("dataset_id"),
         "dataset_version": protocol.get("dataset_version"),
         "sample_counts": counts,
         "model_hash_prefix": checkpoint_hash[:12].lower(),
+        "quality_policy": quality_policy,
         "variant_metrics": safe_metrics,
         "limitations": limitations,
     }
@@ -218,6 +223,7 @@ def create_app(
                 "dataset_version": "11",
                 "sample_counts": {},
                 "model_hash_prefix": None,
+                "quality_policy": None,
                 "variant_metrics": {},
                 "limitations": ["真实外部实验尚未完成"],
                 "figure_urls": {},

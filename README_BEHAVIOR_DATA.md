@@ -67,3 +67,45 @@ Before training X3D:
 The initial trainable vocabulary intentionally remains limited to feeding,
 lying, standing, and walking. Add another class only after its annotation and
 license have been reviewed.
+
+## External cross-domain benchmark
+
+The CVB → CBVD-5 experiment is a test-only robustness benchmark. It does not
+add CBVD-5 clips to CVB training and does not use external labels to fit the
+temperature, rejection thresholds, or quality rules.
+
+- Dataset: CBVD-5 Kaggle version 11, CC0 Public Domain.
+- Local media: `data/external/cbvd5/raw/videos/videos/` (687 MP4 files,
+  3,480,105,107 bytes; ignored by Git).
+- Auditable manifests: `data/external/cbvd5/manifests/`.
+- Strict external test: 400 clips, four classes, 211 source videos.
+- Extended external test: 600 clips, six classes, 298 source videos.
+- Compact results and defense figures:
+  `outputs/cross_domain/cvb_to_cbvd5/`.
+- Full provenance and operations ledger:
+  `docs/data/2026-08-23-public-cattle-video-data-record.md`.
+- Scientific results and claim boundaries:
+  `docs/experiments/2026-08-23-cross-domain-behavior-results.md`.
+
+The frozen zero-shot result is a failure boundary, not a deployment claim:
+strict Macro-F1 is 0.0048 on 400 samples. Fixed confidence/entropy rejection
+and the predeclared heuristic quality guard do not provide meaningful risk
+improvement. Do not retune those policies on CBVD-5. The recorded Go/No-Go
+decision permits only a new, source-group-isolated few-shot adaptation plan.
+
+```powershell
+& 'F:\deepl\anaconda1\envs\pytorch\python.exe' -X utf8 `
+  -m scripts.run_cross_domain_behavior_experiment `
+  --manifest data/external/cbvd5/manifests/evaluation_clips_strict.csv `
+  --manifest data/external/cbvd5/manifests/evaluation_clips_extended.csv `
+  --output outputs/cross_domain/cvb_to_cbvd5 `
+  --checkpoint models/behavior/cvb_x3d_v2_best.pt `
+  --calibration models/behavior/cvb_x3d_v2_calibration.json `
+  --project-root . --device cuda --batch-size 4 `
+  --stress-per-class 20 --stress-levels 0,1,2,3 `
+  --seed 20260823 --resume
+```
+
+VLM, RGB plus thermal imaging, and embodied-device integration remain the last
+future-research stage. They are not part of the completed benchmark and must
+not be presented as current experimental results.

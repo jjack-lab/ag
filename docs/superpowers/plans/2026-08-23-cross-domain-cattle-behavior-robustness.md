@@ -41,6 +41,9 @@ Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -
 - `2026-08-23`: The project contains the frozen checkpoint, calibration artifact, and a 2,897-row CVB validation logits cache, but not the corresponding CVB validation videos or previously measured video-quality rows. A learned video-quality gate therefore cannot be fitted without inventing evidence or using forbidden CBVD-5 test labels. Keep the implemented validation-only Logistic gate for future use when the CVB media is restored; for this real run, freeze a clearly named heuristic quality guard from absolute image/track bounds before reading external metrics. Report it as exploratory and do not claim a learned quality-gate improvement. Temperature calibration and the existing CVB-selected fixed rejection policy remain unchanged.
 - `2026-08-23`: Freeze and commit the tested Task 12 runner before launching the first label-scored CBVD-5 inference. This adds a reproducibility checkpoint between dry-run protocol validation and metric generation; it does not change the external samples, calibration, rejection thresholds, quality rules, stress seed, or metrics.
 - `2026-08-23`: Pre-run code review blocked the first label-scored inference until three evidence-integrity gaps are closed: move mutable run status out of the immutable protocol so dry-run/formal-run/resume share one fingerprint; bind every stress cache to its degradation, severity, selected-sample digest, and transformation evidence; and include the design-required NLL, ECE, Brier, per-class precision/recall/F1, and inference timing. These are reporting/cache corrections only; frozen samples, labels, model, calibration, rejection thresholds, heuristic rules, and seed remain unchanged.
+- `2026-08-24`: The formal CUDA run completed before the time stop: 1000 logical baseline samples, 600 unique physical clips, 18 nonzero stress conditions, and 96 stress metric rows. Strict zero-shot Macro-F1 is 0.0048, so the result is recorded as cross-domain failure evidence; fixed and heuristic-quality rejection did not improve risk. The predeclared gate therefore recommends a separate group-isolated adaptation plan but does not execute it here.
+- `2026-08-24`: Final Python execution from the Unicode worktree produced 486 passed, 4 skipped, and 37 failures, all in existing PyTorch `.pt` temporary writes or Windows PowerShell 5 harness paths that resolve through `F:\new大创`. `subst` is ineffective because `Path.resolve()` returns the physical Unicode path, and 8.3 aliases are disabled. The user's latest boundary forbids the previously authorized external ASCII worktree, so no files were copied outside the project. Cross-domain focused tests (21), artifact/API tests (8), delivery E2E tests (15), all frontend tests (16), the production build, and the explicitly configured delivery preflight pass. This changes only the final verification evidence, not experimental semantics.
+- `2026-08-24`: Final scientific-claim review found that the defense UI still contained the obsolete learned-quality-gate wording from before real data inspection. Replace it with the verified `predeclared_heuristic` policy exposed through the validated API, state that CBVD-5 labels were not used for fitting, label it exploratory, and display Macro-F1 beside coverage/risk so the 0.0048 strict failure cannot be hidden. This closes the review HIGH without altering experimental outputs.
 
 ### Task 1: External dataset registry and provenance contract
 
@@ -51,7 +54,7 @@ Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -
 - Create: `docs/data/2026-08-23-public-cattle-video-data-record.md`
 - Modify: `.gitignore`
 
-- [ ] **Step 1: Write failing registry tests**
+- [x] **Step 1: Write failing registry tests**
 
 Test a valid record, reject an unknown license state, reject a relative/escaping storage root, and require official URL, access URL, intended use, download budget, and status.
 
@@ -68,13 +71,13 @@ def test_registry_rejects_storage_outside_project(tmp_path):
         load_registry(registry_file(tmp_path, storage_root="../outside"), tmp_path)
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_external_dataset_registry.py -q`
 
 Expected: collection fails because `external_registry` does not exist.
 
-- [ ] **Step 3: Implement typed registry validation**
+- [x] **Step 3: Implement typed registry validation**
 
 Define immutable `DatasetRecord` and `DatasetRegistry`. Allowed license states are `verified`, `verify_before_download`, `blocked_license`, and `not_used`. Resolve storage paths against an explicit project root and reject any path whose resolved form is outside it.
 
@@ -94,15 +97,15 @@ class DatasetRecord:
     max_download_bytes: int
 ```
 
-- [ ] **Step 4: Add initial registry and ledger**
+- [x] **Step 4: Add initial registry and ledger**
 
 Register `cvb`, `cbvd5`, `mmcows`, and `cattleeyeview`. CBVD-5 starts as `verify_before_download`; MmCows records `CC-BY-NC-SA-4.0`; CattleEyeView is `not_used`. The ledger states that no external files have been downloaded yet and includes headings for operations, hashes, exclusions, and plan changes.
 
-- [ ] **Step 5: Ignore only external large-data directories**
+- [x] **Step 5: Ignore only external large-data directories**
 
 Add rules for archives, raw media, derived frames/clips, and experiment caches. Negate `registry.json`, manifests, `.gitkeep`, result summaries, and documentation so provenance stays tracked.
 
-- [ ] **Step 6: Run focused tests and commit**
+- [x] **Step 6: Run focused tests and commit**
 
 Run: `python -m pytest delivery_tests/test_external_dataset_registry.py -q`
 
@@ -116,7 +119,7 @@ Commit: `feat: add external cattle dataset registry`
 - Create: `delivery_tests/test_external_dataset_download.py`
 - Create: `cattle_health_app/behavior/external_download.py`
 
-- [ ] **Step 1: Write failing acquisition tests**
+- [x] **Step 1: Write failing acquisition tests**
 
 Cover: blocked unverified license, expected-size budget rejection before network access, streamed budget overflow, idempotent reuse after SHA-256 match, corrupt hash rejection, ZIP path traversal rejection, and append-only JSONL operation records.
 
@@ -132,17 +135,17 @@ def test_safe_extract_rejects_zip_slip(tmp_path):
         safe_extract_zip(archive, tmp_path / "raw")
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_external_dataset_download.py -q`
 
 Expected: import failure for the missing module.
 
-- [ ] **Step 3: Implement download primitives**
+- [x] **Step 3: Implement download primitives**
 
 Add `RemoteFileSpec`, `AcquisitionResult`, `sha256_file`, `acquire_file`, `safe_extract_zip`, and `append_operation`. Accept an injected stream opener so tests never use the internet. Write to a `.part` file, enforce the cumulative byte limit while streaming, verify hash when supplied, then atomically rename inside the dataset archive directory.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run: `python -m pytest delivery_tests/test_external_dataset_download.py -q`
 
@@ -156,7 +159,7 @@ Commit: `feat: add provenance-safe external data acquisition`
 - Create: `delivery_tests/test_cbvd5_dataset.py`
 - Create: `cattle_health_app/behavior/cbvd5.py`
 
-- [ ] **Step 1: Write failing parser and mapping tests**
+- [x] **Step 1: Write failing parser and mapping tests**
 
 Use tiny committed CSV fixtures constructed in the test. Verify source labels are retained, combined posture/state labels map correctly, approximate mappings are excluded from strict mode, conflicts are rejected, and malformed times/boxes produce explicit exclusion records.
 
@@ -176,17 +179,17 @@ def test_strict_mapping(source, expected):
     assert mapped.mapping_tier == "strict"
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_cbvd5_dataset.py -q`
 
 Expected: import failure for `cbvd5`.
 
-- [ ] **Step 3: Implement canonical records and parser adapters**
+- [x] **Step 3: Implement canonical records and parser adapters**
 
 Define `SourceAnnotation`, `MappedAnnotation`, `ExcludedAnnotation`, and an adapter matching the official annotation/metadata sample verified in Task 10. Keep input-specific column names inside the adapter and expose one canonical iterator. Implement both `strict` and `extended` mapping tables without changing `cvb_labels.py`.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run: `python -m pytest delivery_tests/test_cbvd5_dataset.py -q`
 
@@ -200,7 +203,7 @@ Commit: `feat: parse and align CBVD-5 behavior labels`
 - Create: `delivery_tests/test_external_behavior_clips.py`
 - Create: `cattle_health_app/behavior/external_clips.py`
 
-- [ ] **Step 1: Write failing provenance and leakage tests**
+- [x] **Step 1: Write failing provenance and leakage tests**
 
 Verify stable IDs, same source video/camera/time block produces the same group, deterministic class caps, no group crosses requested splits, and every derived clip has a source path, start/end time, crop track, mapping tier, transformation list, and output hash.
 
@@ -212,15 +215,15 @@ def test_split_groups_never_cross_boundaries(records):
         assert owners.setdefault(item.source_group_id, item.split) == item.split
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_external_behavior_clips.py -q`
 
-- [ ] **Step 3: Implement manifest creation**
+- [x] **Step 3: Implement manifest creation**
 
 Use SHA-256 identifiers derived from source dataset/version/video/camera/time/track. Default external zero-shot split is `test`; adaptation mode must receive explicit group ratios. Call existing frame/crop utilities where compatible, but write a separate manifest containing source provenance rather than changing the CVB index format.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run: `python -m pytest delivery_tests/test_external_behavior_clips.py -q`
 
@@ -232,7 +235,7 @@ Commit: `feat: build leakage-safe external clip manifests`
 - Create: `delivery_tests/test_behavior_video_quality.py`
 - Create: `cattle_health_app/behavior/quality.py`
 
-- [ ] **Step 1: Write failing feature tests**
+- [x] **Step 1: Write failing feature tests**
 
 Generate synthetic images and tracks in memory. Assert black frames have high dark ratio, constant frames have lower Laplacian variance than checkerboards, boundary-touching boxes have positive truncation, missing frame indices reduce continuity, and unstable probability sequences have lower agreement.
 
@@ -243,15 +246,15 @@ def test_blur_score_separates_flat_and_textured_frames():
     assert frame_quality(flat).laplacian_variance < frame_quality(textured).laplacian_variance
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_behavior_video_quality.py -q`
 
-- [ ] **Step 3: Implement deterministic quality records**
+- [x] **Step 3: Implement deterministic quality records**
 
 Define `FrameQuality`, `TrackQuality`, and `WindowQuality`. Use normalized, resolution-independent values where possible. Implement no learned threshold here; this module only measures evidence.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run: `python -m pytest delivery_tests/test_behavior_video_quality.py -q`
 
@@ -264,7 +267,7 @@ Commit: `feat: measure behavior video quality evidence`
 - Create: `cattle_health_app/behavior/cross_domain_experiment.py`
 - Modify: `cattle_health_app/behavior/uncertainty.py`
 
-- [ ] **Step 1: Write failing protocol tests**
+- [x] **Step 1: Write failing protocol tests**
 
 Use deterministic logits and quality rows. Verify external labels cannot be supplied to gate fitting, checkpoint/calibration hashes must match, strict and extended rows remain separate, abstention metrics match hand calculations, and a fitted gate serializes its training domain as `cvb_validation`.
 
@@ -279,19 +282,19 @@ def test_frozen_protocol_rejects_calibration_hash_mismatch(tmp_path):
         load_frozen_protocol(checkpoint, incompatible_calibration(tmp_path))
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_cross_domain_behavior_experiment.py -q`
 
-- [ ] **Step 3: Implement experiment records and metric variants**
+- [x] **Step 3: Implement experiment records and metric variants**
 
 Reuse existing calibration and metric functions. Add `CrossDomainProtocol`, `ExternalPrediction`, `QualityGate`, and `evaluate_variants`. Variants are exactly `uncalibrated`, `calibrated`, `calibrated_fixed_rejection`, and `calibrated_quality_rejection`. Preserve raw 12-class probabilities for audit.
 
-- [ ] **Step 4: Implement a simple interpretable gate**
+- [x] **Step 4: Implement a simple interpretable gate**
 
 Fit standardization and logistic regression only on CVB validation rows, with target `raw prediction is correct and health-eligible`. Choose its acceptance threshold using the existing minimum eligible coverage constraint and deterministic tie-breaking. Store feature order, means, scales, coefficients, intercept, threshold, seed, training domain, checkpoint hash, and input manifest hash.
 
-- [ ] **Step 5: Verify GREEN and commit**
+- [x] **Step 5: Verify GREEN and commit**
 
 Run: `python -m pytest delivery_tests/test_cross_domain_behavior_experiment.py delivery_tests/test_behavior_uncertainty.py -q`
 
@@ -303,19 +306,19 @@ Commit: `feat: evaluate quality-aware selective behavior recognition`
 - Create: `delivery_tests/test_behavior_degradations.py`
 - Create: `cattle_health_app/behavior/degradations.py`
 
-- [ ] **Step 1: Write failing degradation tests**
+- [x] **Step 1: Write failing degradation tests**
 
 Verify level zero returns identical content, equal seeds return identical occlusions/frame drops, increasing blur levels do not increase Laplacian variance, dimensions and frame count contracts are explicit, and input arrays are not modified.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_behavior_degradations.py -q`
 
-- [ ] **Step 3: Implement six named degradations**
+- [x] **Step 3: Implement six named degradations**
 
 Implement `blur`, `low_light`, `occlusion`, `downsample`, `frame_drop`, and `compression`. Each returns frames plus a serializable `TransformationRecord` containing name, level, parameters, and seed.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run: `python -m pytest delivery_tests/test_behavior_degradations.py -q`
 
@@ -328,15 +331,15 @@ Commit: `feat: add reproducible behavior video stress tests`
 - Create: `scripts/prepare_external_behavior_data.py`
 - Create: `scripts/run_cross_domain_behavior_experiment.py`
 
-- [ ] **Step 1: Write failing CLI tests**
+- [x] **Step 1: Write failing CLI tests**
 
 Call `main(argv)` against temporary fixtures. Assert `inspect` performs no download, `acquire` refuses an unverified license, `prepare` writes manifests and exclusions, and `run --dry-run` validates all frozen hashes without loading PyTorch weights.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_external_behavior_cli.py -q`
 
-- [ ] **Step 3: Implement preparation commands**
+- [x] **Step 3: Implement preparation commands**
 
 Support:
 
@@ -348,7 +351,7 @@ prepare_external_behavior_data.py prepare --dataset cbvd5 --tier strict
 
 `inspect` prints license state, declared/remote size, remaining budget, destination, and planned operations. `acquire` requires `license_status=verified`. `prepare` never downloads implicitly.
 
-- [ ] **Step 4: Implement experiment command**
+- [x] **Step 4: Implement experiment command**
 
 Support:
 
@@ -359,7 +362,7 @@ run_cross_domain_behavior_experiment.py --manifest <csv> --output <dir> --stress
 
 Write `protocol.json` before inference and refuse an existing output directory whose protocol differs. Allow `--resume` only when hashes match.
 
-- [ ] **Step 5: Verify GREEN and commit**
+- [x] **Step 5: Verify GREEN and commit**
 
 Run: `python -m pytest delivery_tests/test_external_behavior_cli.py -q`
 
@@ -372,23 +375,23 @@ Commit: `feat: add external behavior experiment commands`
 - Create: `cattle_health_app/behavior/cross_domain_reporting.py`
 - Create: `docs/experiments/2026-08-23-cross-domain-behavior-results.md`
 
-- [ ] **Step 1: Write failing report tests**
+- [x] **Step 1: Write failing report tests**
 
 Use a five-row fixture and assert stable CSV column order, separate strict/extended tables, correct best-variant selection without test-time tuning, risk-coverage points, degradation grouping, escaped Markdown, and valid PNG files.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `python -m pytest delivery_tests/test_cross_domain_behavior_reporting.py -q`
 
-- [ ] **Step 3: Implement structured outputs**
+- [x] **Step 3: Implement structured outputs**
 
 Generate `predictions.csv`, `metrics.json`, `protocol_comparison.csv`, `per_class_metrics.csv`, `risk_coverage.csv`, `stress_metrics.csv`, `confusion_matrix.png`, `risk_coverage.png`, `stress_curves.png`, and `summary.md`. The report must label unsupported claims and show external sample counts beside every metric.
 
-- [ ] **Step 4: Add result-document template with honest states**
+- [x] **Step 4: Add result-document template with honest states**
 
 The committed document supports `not_run`, `blocked`, and `complete`. Before real execution it says no external result exists; after execution it records hashes, commands, tables, limitations, and whether the quality gate improved risk at comparable coverage.
 
-- [ ] **Step 5: Verify GREEN and commit**
+- [x] **Step 5: Verify GREEN and commit**
 
 Run: `python -m pytest delivery_tests/test_cross_domain_behavior_reporting.py -q`
 
@@ -402,19 +405,19 @@ Commit: `feat: report cross-domain behavior robustness results`
 - Modify if facts changed: `docs/superpowers/specs/2026-08-23-cross-domain-cattle-behavior-robustness-design.md`
 - Modify if facts changed: `docs/superpowers/plans/2026-08-23-cross-domain-cattle-behavior-robustness.md`
 
-- [ ] **Step 1: Run metadata-only inspection**
+- [x] **Step 1: Run metadata-only inspection**
 
 Use the official Kaggle API/CLI or public dataset page to list files, sizes, versions, and license without downloading media. After the license gate passes, acquire only the smallest official annotation/metadata file needed to verify the parser schema; record its size and hash against the same `5 GiB` budget. Do not store credentials in the repository.
 
-- [ ] **Step 2: Apply the acquisition gate**
+- [x] **Step 2: Apply the acquisition gate**
 
 Proceed with CBVD-5 only if the dataset license permits this non-commercial research use, required video and annotation files can be acquired through the official mechanism, and planned bytes do not exceed `5 GiB`. Otherwise record `blocked_license`, `blocked_access`, or `blocked_budget` and inspect MmCows under the same rules.
 
-- [ ] **Step 3: Record any plan change before continuing**
+- [x] **Step 3: Record any plan change before continuing**
 
 Add a dated change entry with old assumption, observed fact, impact, chosen fallback, and unchanged scientific constraints. Update the active Goal/plan status in the same turn.
 
-- [ ] **Step 4: Commit the verified metadata**
+- [x] **Step 4: Commit the verified metadata**
 
 Commit: `docs: verify external cattle dataset acquisition metadata`
 
@@ -497,31 +500,31 @@ Commit: `exp: evaluate cross-domain cattle behavior robustness`
 - Modify: `web/src/RecognitionStudio.tsx`
 - Modify: `web/src/styles.css`
 
-- [ ] **Step 1: Write failing API contract tests**
+- [x] **Step 1: Write failing API contract tests**
 
 Assert the endpoint returns `not_run` when no summary exists, validates the committed schema when complete, and never serves arbitrary paths from result JSON.
 
-- [ ] **Step 2: Run API test and verify RED**
+- [x] **Step 2: Run API test and verify RED**
 
 Run: `python -m pytest delivery_tests/test_cross_domain_results_api.py -q`
 
-- [ ] **Step 3: Implement read-only summary endpoint**
+- [x] **Step 3: Implement read-only summary endpoint**
 
 Expose only status, dataset/version, sample count, frozen model hash prefix, variant metrics, limitations, and application-relative figure URLs from the fixed output root.
 
-- [ ] **Step 4: Write failing React tests**
+- [x] **Step 4: Write failing React tests**
 
 Assert `not_run`, `blocked`, and `complete` states; strict/extended labels; quality rejection reason; research-only disclaimer; and figure alternative text.
 
-- [ ] **Step 5: Run frontend test and verify RED**
+- [x] **Step 5: Run frontend test and verify RED**
 
 Run: `npm test -- --run src/CrossDomainResults.test.tsx`
 
-- [ ] **Step 6: Implement the minimal results component**
+- [x] **Step 6: Implement the minimal results component**
 
 Display dataset provenance, domain-shift comparison, coverage/risk, quality evidence, and limitations. Do not add live VLM controls or claims of disease diagnosis.
 
-- [ ] **Step 7: Verify GREEN and commit**
+- [x] **Step 7: Verify GREEN and commit**
 
 Run API and frontend focused tests.
 
@@ -534,13 +537,15 @@ Commit: `feat: present cross-domain robustness evidence`
 - Modify: `docs/data/2026-08-23-public-cattle-video-data-record.md`
 - Modify: `docs/experiments/2026-08-23-cross-domain-behavior-results.md`
 
-- [ ] **Step 1: Run all Python tests**
+- [x] **Step 1: Run all Python tests**
 
 Run: `python -m pytest -q`
 
 Expected: no failures; environment-dependent tests may only skip for documented existing reasons.
 
-- [ ] **Step 2: Run frontend tests and build**
+Actual from the required in-project Unicode path: 486 passed, 4 skipped, 37 environment-path failures. Representative traces are PyTorch 2.0 `PyTorchFileWriter` failures below the non-ASCII parent and Windows PowerShell 5 decoding `大创` as mojibake. No external ASCII test worktree was created because the user restricted all writes to this project folder. Focused cross-domain and delivery suites pass as recorded in the change log.
+
+- [x] **Step 2: Run frontend tests and build**
 
 Run from `web`: `npm test -- --run`
 
@@ -548,19 +553,19 @@ Run from `web`: `npm run build`
 
 Expected: all tests pass and Vite production build succeeds.
 
-- [ ] **Step 3: Run delivery preflight and one small end-to-end experiment**
+- [x] **Step 3: Run delivery preflight and one small end-to-end experiment**
 
 Verify the API, existing upload pipeline, behavior result rendering, external result endpoint, and downloadable experiment artifacts.
 
-- [ ] **Step 4: Perform code and scientific-claim review**
+- [x] **Step 4: Perform code and scientific-claim review**
 
 Check path containment, archive extraction, untrusted CSV/JSON handling, hash enforcement, leakage, test-time threshold tuning, mapping boundaries, metric denominators, and claims unsupported by sample count.
 
-- [ ] **Step 5: Verify repository scope and provenance**
+- [x] **Step 5: Verify repository scope and provenance**
 
 Confirm every modified file is below `F:\new大创`, no credentials or large raw media are tracked, the ledger matches actual hashes/paths, and the Git worktree is clean except intended changes.
 
-- [ ] **Step 6: Commit final documentation**
+- [x] **Step 6: Commit final documentation**
 
 Commit: `docs: finalize cross-domain behavior experiment delivery`
 

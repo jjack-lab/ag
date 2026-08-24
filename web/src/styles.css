@@ -128,7 +128,7 @@ button { cursor: pointer; }
 .cross-domain-tier { margin-top: 14px; }
 .cross-domain-tier h4 { margin: 0 0 8px; }
 .cross-domain-table { overflow-x: auto; }
-.cross-domain-table > div { min-width: 420px; display: grid; grid-template-columns: minmax(180px,1fr) 100px 120px; gap: 14px; padding: 8px 10px; border-top: 1px solid rgba(255,255,255,.07); }
+.cross-domain-table > div { min-width: 520px; display: grid; grid-template-columns: minmax(180px,1fr) 90px 100px 120px; gap: 14px; padding: 8px 10px; border-top: 1px solid rgba(255,255,255,.07); }
 .cross-domain-table .head { color: var(--muted); font-size: 11px; }
 .quality-gate-note { margin: 14px 0; color: #bfdbfe; font-size: 12px; }
 .cross-domain-figures { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }

@@ -91,6 +91,7 @@ export type CrossDomainExperimentResult = {
   dataset_version: string;
   sample_counts: Partial<Record<"strict" | "extended", number>>;
   model_hash_prefix: string | null;
+  quality_policy: "predeclared_heuristic" | "validation_logistic" | null;
   variant_metrics: Partial<
     Record<
       "strict" | "extended",

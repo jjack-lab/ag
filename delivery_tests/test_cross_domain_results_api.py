@@ -38,6 +38,7 @@ def test_results_endpoint_returns_not_run_when_summary_is_absent(tmp_path):
 
     assert response.status_code == 200
     assert response.json()["status"] == "not_run"
+    assert response.json()["quality_policy"] is None
     assert response.json()["variant_metrics"] == {}
 
 
@@ -52,6 +53,7 @@ def test_results_endpoint_returns_only_validated_defense_fields(tmp_path):
             "dataset_id": "cbvd5",
             "dataset_version": "11",
             "checkpoint_sha256": "a" * 64,
+            "quality_gate_policy": "predeclared_heuristic",
             "figure_urls": {"evil": "../../secret.txt"},
         },
         "sample_counts": {"strict": 20},
@@ -75,6 +77,7 @@ def test_results_endpoint_returns_only_validated_defense_fields(tmp_path):
     assert result["status"] == "complete"
     assert result["dataset_version"] == "11"
     assert result["model_hash_prefix"] == "a" * 12
+    assert result["quality_policy"] == "predeclared_heuristic"
     assert result["sample_counts"] == {"strict": 20}
     assert "ignored_secret" not in result
     assert "evil" not in result["figure_urls"]
@@ -116,6 +119,7 @@ def test_real_cross_domain_artifacts_match_the_defense_api_contract(tmp_path):
     assert payload["status"] == "complete"
     assert payload["dataset_version"] == "kaggle-version-11"
     assert payload["model_hash_prefix"] == "731c6ed39dcf"
+    assert payload["quality_policy"] == "predeclared_heuristic"
     assert payload["sample_counts"] == {"strict": 400, "extended": 600}
     assert payload["variant_metrics"]["strict"]["calibrated"][
         "selective_macro_f1"

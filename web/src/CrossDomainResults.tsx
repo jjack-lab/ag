@@ -86,11 +86,12 @@ export default function CrossDomainResults({ result: suppliedResult }: Props) {
                 <h4>{tier === "strict" ? "严格映射" : "扩展映射"}（n={count}）</h4>
                 <div className="cross-domain-table" role="table" aria-label={`${tier} 协议比较`}>
                   <div role="row" className="head">
-                    <span>协议</span><span>覆盖率</span><span>选择性风险</span>
+                    <span>协议</span><span>Macro-F1</span><span>覆盖率</span><span>选择性风险</span>
                   </div>
                   {variantOrder.map((variant) => (
                     <div role="row" key={variant}>
                       <strong>{variantLabels[variant]}</strong>
+                      <span>{percentage(metrics[variant].selective_macro_f1)}</span>
                       <span>{percentage(metrics[variant].coverage)}</span>
                       <span>{percentage(metrics[variant].selective_risk)}</span>
                     </div>
@@ -100,7 +101,9 @@ export default function CrossDomainResults({ result: suppliedResult }: Props) {
             );
           })}
           <p className="quality-gate-note">
-            质量门仅由 CVB 验证集训练；CBVD-5 外部测试标签不参与阈值选择。
+            {loadedResult.quality_policy === "predeclared_heuristic"
+              ? "本次使用查看外部指标前冻结的预声明启发式质量规则，未使用 CBVD-5 标签拟合；仅作探索性证据。"
+              : "质量门仅使用已验证的 CVB 验证质量行训练，未使用 CBVD-5 标签拟合。"}
           </p>
           <div className="cross-domain-figures">
             {loadedResult.figure_urls.confusion_matrix && (
