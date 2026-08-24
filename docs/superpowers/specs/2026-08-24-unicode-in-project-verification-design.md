@@ -15,6 +15,7 @@ CVB→CBVD-5 主实验、报告和答辩界面已经完成，但 Windows 下从 
    对必须验证进程身份竞态的测试，harness 显式注入与被控测试进程一致的 CIM 只读快照，避免测试结果依赖宿主是否授予 WMI 枚举权限；生产脚本在真实 CIM 枚举失败时仍保持状态并失败关闭。
 3. 数据集安全替换仍严格解析实际输出路径；仅对安全根集合中的 `Path.home()` 解析增加受控回退。若实际输出路径无法解析，操作继续失败，不进行覆盖删除。若现有输出需要覆盖且任一安全根无法规范化，必须再用 `os.path.samefile` 证明输出与该根不是同一目录；比较失败或返回同一目录都拒绝覆盖。新目录没有删除风险，可在绝对文本路径不相等时继续发布。
 4. 真实数据集读取与图片识别结果使用项目级 Unicode 安全图像读写函数：读取通过 `Path.read_bytes` 与 `cv2.imdecode`，写入通过 `cv2.imencode` 与 `Path.write_bytes`。这样既避免中文路径下 `cv2.imread` 将有效帧误判为不可解码，也避免 `cv2.imwrite` 静默失败。
+5. ��Ŀ¼�ϲ�����֤��ʾ Windows ���ڲ�ͬĿ¼��������ݾܾ� `os.replace(staging, output)`��ʧ��λ�û�Ư���ҵ������ܿ�ͨ����Ŀ¼��ԭ�ӷ���ͳһͨ���������н����Ժ�����ֻ���� `PermissionError`����� 6 �Σ�ָ���˱��ܵȴ������� 1.55 �룻�����쳣��������������ʧ���Խ���ԭ�б��ݻָ�������·����
 
 不采用以下方案：项目外 ASCII 工作树（违反用户边界）、`subst`（会被 `Path.resolve()` 还原）、全局替换 `torch.save`/`cv2.imwrite`（可能掩盖真实缺陷）。
 
@@ -24,6 +25,8 @@ CVB→CBVD-5 主实验、报告和答辩界面已经完成，但 Windows 下从 
 - `cattle_health_app/image_io.py`：产品专用 `read_cv_image` 与 `write_cv_image`；通过 Python 文件 API 读写，并验证扩展名与编码结果。
 - `cattle_health_app/behavior/dataset.py`、`cattle_health_app/behavior/cvb_index.py` 与 `cattle_health_app/behavior/validate_index.py`：使用统一读图函数，保留现有不可解码处理语义。
 - `cattle_health_app/behavior/prepare_dataset.py`：输出路径保持严格解析；安全根解析失败时使用规范化绝对文本路径进行保守比较。
+- `cattle_health_app/path_ops.py`������ `replace_path_with_retry`��ֻ���� Windows ˲̬���ʾܾ������ı� `os.replace` ��ԭ���滻���塣
+- `cattle_health_app/behavior/prepare_dataset.py`��`cattle_health_app/behavior/cvb_index.py` �� `cattle_health_app/behavior/uncertainty_experiment.py`��Ŀ¼�����ͱ��ݻָ����ù����滻���������ԵĻع��ṹ���ֲ��䡣
 - `delivery_tests/test_process_lifecycle_races.py`：唯一 PowerShell harness 执行入口改用 BOM。
   需要真实启动受控进程的用例在 harness 内模拟该进程的 `Get-CimInstance` 快照，不模拟停止/身份复核的核心竞态逻辑。
 
@@ -36,6 +39,7 @@ CVB→CBVD-5 主实验、报告和答辩界面已经完成，但 Windows 下从 
 - PyTorch 测试夹具创建父目录并使用上下文管理文件句柄。
 - `_safe_replace` 对真实输出路径仍调用严格 `resolve()`；失败即中止。仅安全根的比较值允许回退。覆盖现有目录时，无法规范化的安全根必须通过 `samefile` 排除别名/联接点；`samefile` 不可用即失败关闭，不扩大可删除范围。
 - PowerShell harness 仍有 20 秒超时并捕获输出；只改变文件编码。
+- ·���滻ֻ�� `PermissionError` �н����ԣ���Ȩ���쳣�����ԣ�����������ԭ�쳣�����׳������Բ㲻ɾ��Դ/Ŀ�꣬Ҳ���̵��ع�ʧ�ܡ�
 - 测试用 CIM 快照只包含当前用例创建且随后清理的受控进程；不读取或终止任意宿主进程。生产 `start_delivery.ps1` / `stop_delivery.ps1` 不做放宽。
 
 ## 验证标准
@@ -45,6 +49,7 @@ CVB→CBVD-5 主实验、报告和答辩界面已经完成，但 Windows 下从 
 3. 原 18 个 behavior-model、7 个 training、3 个 data 和 11 个 PowerShell 路径失败分组全部通过。
 4. 全量 Python 测试从 `F:\new大创` 内运行无失败；预期环境跳过保留并记录。
 5. 跨域 22 项聚焦测试、前端 16 项测试、生产构建与配置了项目 Python 的交付预检继续通过。
+7. ����ע����֤·���滻��ǰ���� `PermissionError` ��ɹ����־�Ȩ��ʧ���ڵ� 6 ��ԭ���׳�����Ȩ���쳣ֻ����һ�Σ�����Ŀ¼����ģ��ļ���ʧ�ָܻ����Լ���ͨ����
 6. Git 不跟踪测试临时文件、视频、逐样本预测或原始压力缓存。
 
 ## 非目标

@@ -48,6 +48,7 @@ Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -
 - `2026-08-24`: After explicit Unicode-safe test fixtures became green, the CVB dataset/index tests exposed a product defect hidden by their previous setup failures: OpenCV `cv2.imread(path)` returns `None` for valid frames below the Chinese project path. Expand supplemental Task 2 from output-only handling to explicit product image read/write using Python file APIs plus `cv2.imdecode`/`cv2.imencode`, including dataset, index and validation callers. This is an application path-compatibility correction only; frozen samples, experiment metrics, hashes, thresholds, quality policy and VLM deferral remain unchanged.
 - `2026-08-24`: Adding the PowerShell UTF-8 BOM removed the 11 path-decoding failures, after which 3 lifecycle tests exposed a separate restricted-host dependency: WMI/CIM enumeration is denied. Keep production process ownership checks fail-closed; make only the real-process test harnesses inject deterministic CIM identity snapshots for the controlled processes they create and clean up. This changes verification portability, not delivery process safety or experimental semantics.
 - `2026-08-24`: Final code review found a deletion-safety gap in the first safety-root fallback: an existing output alias could resolve to a protected root while that root's own `resolve()` failed, making canonical-vs-text comparison insufficient. Reopen supplemental Task 3 and final verification. For any existing-directory overwrite, require `os.path.samefile(output, unresolved_safety_root)` to prove the paths differ; equality or comparison failure rejects before `rmtree`. New-output publication remains allowed because it performs no deletion. Experiment semantics and frozen artifacts remain unchanged.
+- `2026-08-24`: After fast-forward integration, main-root full-suite runs exposed drifting transient Windows `PermissionError` failures at directory-level `os.replace`: first CVB index, then dataset preparation and uncertainty experiment; each isolated rerun passed, while the same branch had 541/541 passing in the experiment worktree. Reopen final verification and add supplemental Task 5: a shared six-attempt exponential retry only for `PermissionError` on directory publication/backup restoration. Non-permission errors, bounded final failure, rollback safety, frozen experiments and VLM deferral remain unchanged.
 
 ### Task 1: External dataset registry and provenance contract
 
@@ -578,6 +579,10 @@ Commit: `docs: finalize cross-domain behavior experiment delivery`
 Execute `docs/superpowers/plans/2026-08-24-unicode-in-project-verification.md`, obtain a failure-free full Python run from an in-project temporary root, and then repeat final integration review. Do not use an external ASCII worktree.
 
 Actual: supplemental remediation completed with 541 passed, 4 skipped, 0 failed; cross-domain 76/76, frontend 16/16, production build and delivery preflight passed. Final review closed the protected-root alias HIGH and approved integration with no HIGH/MEDIUM blockers.
+
+- [ ] **Step 8: Complete post-merge Windows directory publication hardening**
+
+Execute supplemental Task 5, obtain a failure-free full Python run from both the experiment worktree and merged main directory, repeat final review, and preserve the frozen experiment artifacts.
 
 ## Deferred final roadmap: VLM, multimodality, and embodied intelligence
 

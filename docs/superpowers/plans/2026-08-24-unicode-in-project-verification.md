@@ -130,3 +130,33 @@ Actual: 687 MP4 files total 3,480,105,107 bytes; tracked video, `predictions.csv
 Commit: `test: verify project from unicode workspace`
 
 Actual: final review confirmed the protected-root alias HIGH is closed and found no remaining HIGH/MEDIUM blockers. The branch is approved for integration.
+
+### Task 5: Post-merge Windows atomic directory publication
+
+**Files:**
+- Create: `cattle_health_app/path_ops.py`
+- Create: `delivery_tests/test_path_ops.py`
+- Modify: `cattle_health_app/behavior/prepare_dataset.py`
+- Modify: `cattle_health_app/behavior/cvb_index.py`
+- Modify: `cattle_health_app/behavior/uncertainty_experiment.py`
+- Modify: affected rollback/failure-injection tests
+
+- [ ] **Step 1: Preserve the post-merge evidence and write RED tests**
+
+Record that two main-root full-suite runs produced 1 and 2 drifting `PermissionError` failures at directory-level `os.replace`, while each isolated rerun passed. Test a shared helper that succeeds after two injected permission failures, stops after six persistent permission failures, and never retries a non-permission error.
+
+- [ ] **Step 2: Implement bounded permission-only retry**
+
+Implement `replace_path_with_retry(source, destination)` with six total attempts and exponential delays `0.05, 0.10, 0.20, 0.40, 0.80` seconds. Preserve the final `PermissionError`; do not catch other exception types.
+
+- [ ] **Step 3: Integrate only directory publication and recovery paths**
+
+Use the helper for staging¡úoutput, output¡úbackup and backup¡úoutput in dataset preparation, CVB index publication and uncertainty experiment publication. Keep file-level publishers and cleanup logic unchanged.
+
+- [ ] **Step 4: Verify targeted, worktree-full and merged-main suites**
+
+Run helper tests, all affected publication/rollback tests, full Python from the Unicode worktree, then fast-forward and run full Python again from the main integration directory using a pre-created project-internal basetemp. Repeat frontend, build, preflight and frozen-hash audits.
+
+- [ ] **Step 5: Review, commit and record final evidence**
+
+Require review to confirm retry scope, bounded timing, exception preservation and rollback semantics before final Goal completion.
