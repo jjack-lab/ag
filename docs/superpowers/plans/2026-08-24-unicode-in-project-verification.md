@@ -125,6 +125,8 @@ Confirm no media/raw prediction caches are tracked and all frozen hashes/metrics
 
 Actual: 687 MP4 files total 3,480,105,107 bytes; tracked video, `predictions.csv`, and raw-cache counts are all zero. Checkpoint SHA-256 remains `731c6ed39dcf002915e888c829e1f86727f815331a2b3c21d06a17d40d62a08e`, calibration remains `655f4e32f92dcba08023d4a18b0c457f047affb4bd3f691ac6cdc7d90789cfe2`, and `metrics.json` remains `9ce519210226820659df2de472b4af523e0d97ec7f40acc240badd988b489a48`.
 
-- [ ] **Step 4: Review and commit final verification evidence**
+- [x] **Step 4: Review and commit final verification evidence**
 
 Commit: `test: verify project from unicode workspace`
+
+Actual: final review confirmed the protected-root alias HIGH is closed and found no remaining HIGH/MEDIUM blockers. The branch is approved for integration.

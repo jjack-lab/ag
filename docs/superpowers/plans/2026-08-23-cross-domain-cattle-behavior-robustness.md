@@ -573,9 +573,11 @@ Confirm every modified file is below `F:\new大创`, no credentials or large raw
 
 Commit: `docs: finalize cross-domain behavior experiment delivery`
 
-- [ ] **Step 7: Complete in-project Unicode verification remediation**
+- [x] **Step 7: Complete in-project Unicode verification remediation**
 
 Execute `docs/superpowers/plans/2026-08-24-unicode-in-project-verification.md`, obtain a failure-free full Python run from an in-project temporary root, and then repeat final integration review. Do not use an external ASCII worktree.
+
+Actual: supplemental remediation completed with 541 passed, 4 skipped, 0 failed; cross-domain 76/76, frontend 16/16, production build and delivery preflight passed. Final review closed the protected-root alias HIGH and approved integration with no HIGH/MEDIUM blockers.
 
 ## Deferred final roadmap: VLM, multimodality, and embodied intelligence
 
