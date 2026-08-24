@@ -4,7 +4,7 @@
 
 **Goal:** Make the existing Windows test and image-output paths Unicode-safe so the complete project can be verified entirely below `F:\new大创`.
 
-**Architecture:** Use explicit test fixture helpers for PyTorch and OpenCV writes, a product image writer based on `cv2.imencode`, UTF-8 BOM for Windows PowerShell 5 harnesses, and a fail-closed safety-root fallback. Do not globally monkeypatch libraries or touch frozen experiment artifacts.
+**Architecture:** Use explicit test fixture helpers for PyTorch and OpenCV writes, product image I/O based on Python file APIs plus `cv2.imdecode`/`cv2.imencode`, UTF-8 BOM for Windows PowerShell 5 harnesses, and a fail-closed safety-root fallback. Do not globally monkeypatch libraries or touch frozen experiment artifacts.
 
 **Tech Stack:** Python 3.8, pathlib, PyTorch 2.0, OpenCV, pytest, Windows PowerShell 5, React/Vitest.
 
@@ -42,32 +42,35 @@ Replace only test-fixture calls to `torch.save(path)` and `cv2.imwrite(path)`. R
 
 Commit: `test: support unicode fixture paths`
 
-### Task 2: Unicode-safe application image output
+### Task 2: Unicode-safe application image I/O
 
 **Files:**
 - Create: `cattle_health_app/image_io.py`
+- Modify: `cattle_health_app/behavior/dataset.py`
+- Modify: `cattle_health_app/behavior/cvb_index.py`
+- Modify: `cattle_health_app/behavior/validate_index.py`
 - Modify: `cattle_health_app/media_processor.py`
 - Modify: `delivery_tests/test_unicode_project_io.py`
 
-- [ ] **Step 1: Add failing product writer tests**
+- [ ] **Step 1: Add failing product image-I/O tests**
 
-Assert a PNG can be written below a non-ASCII nested directory and an extensionless target is rejected without creating a file.
+Assert a PNG can be written and read below a non-ASCII nested directory, missing/empty/invalid files return `None`, and an extensionless target is rejected without creating a file.
 
 - [ ] **Step 2: Run the tests and verify RED**
 
 Expected: import failure because `cattle_health_app.image_io` does not exist.
 
-- [ ] **Step 3: Implement and integrate `write_cv_image`**
+- [ ] **Step 3: Implement and integrate `read_cv_image` / `write_cv_image`**
 
-Create the parent, encode from the target suffix with `cv2.imencode`, write bytes with `Path.write_bytes`, and raise `ValueError` for an absent suffix or failed encoding. Use it in `LocalMediaProcessor.detect_image`.
+Read bytes with `Path.read_bytes` and decode with `cv2.imdecode`; return `None` for missing, empty, unreadable, or invalid images so existing callers preserve their undecodable-frame behavior. Create the parent, encode from the target suffix with `cv2.imencode`, write bytes with `Path.write_bytes`, and raise `ValueError` for an absent suffix or failed encoding. Use the reader in behavior dataset/index paths and the writer in `LocalMediaProcessor.detect_image`.
 
 - [ ] **Step 4: Verify product and delivery tests**
 
-Run the Unicode writer test, delivery API tests, and image recognition contract tests.
+Run the Unicode image-I/O test, affected behavior dataset/index tests, delivery API tests, and image recognition contract tests.
 
 - [ ] **Step 5: Commit**
 
-Commit: `fix: write recognition images on unicode paths`
+Commit: `fix: read and write images on unicode paths`
 
 ### Task 3: PowerShell and safe-replace compatibility
 
