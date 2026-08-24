@@ -5,6 +5,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 import cattle_health_app.behavior.train as training
+from delivery_tests.io_helpers import save_torch_fixture, write_cv_image_fixture
 
 @pytest.mark.parametrize('kwargs',[{'epochs':0},{'batch_size':0},{'accumulation_steps':0},{'learning_rate':0},{'weight_decay':-1},{'patience':0},{'workers':-1},{'seed':-1},{'amp':1},{'freeze_backbone_epochs':31}])
 def test_config_rejects_invalid_values(kwargs):
@@ -63,7 +64,7 @@ def test_state_roundtrip_and_rng(tmp_path):
     assert expected[0]==actual[0] and expected[1]==actual[1] and torch.equal(expected[2],actual[2])
 
 def test_corrupt_state_rejected_without_destination_change(tmp_path):
-    path=tmp_path/'bad.pt'; torch.save({'schema':1},path)
+    path=tmp_path/'bad.pt'; save_torch_fixture(path, {'schema':1})
     model=nn.Linear(1,1); opt=torch.optim.AdamW(model.parameters()); sched=torch.optim.lr_scheduler.CosineAnnealingLR(opt,1)
     with pytest.raises(ValueError): training.load_training_state(path,model,opt,sched,training._scaler(False))
 
@@ -157,7 +158,7 @@ def test_resume_rejects_incompatible_config(tmp_path,monkeypatch):
 def test_late_corrupt_state_does_not_mutate_targets(tmp_path):
     import copy
     model=nn.Linear(2,2); optimizer=torch.optim.AdamW(model.parameters()); scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,2); scaler=training._scaler(False)
-    training.save_training_state(tmp_path/'x.pt',0,model,optimizer,scheduler,scaler,.1,0,[],training.TrainingConfig()); payload=torch.load(tmp_path/'x.pt',weights_only=True); payload['rng']['torch']='bad'; torch.save(payload,tmp_path/'x.pt')
+    training.save_training_state(tmp_path/'x.pt',0,model,optimizer,scheduler,scaler,.1,0,[],training.TrainingConfig()); payload=torch.load(tmp_path/'x.pt',weights_only=True); payload['rng']['torch']='bad'; save_torch_fixture(tmp_path/'x.pt', payload)
     before=copy.deepcopy(model.state_dict()); opt_before=copy.deepcopy(optimizer.state_dict())
     with pytest.raises(ValueError): training.load_training_state(tmp_path/'x.pt',model,optimizer,scheduler,scaler)
     assert all(torch.equal(before[k],v) for k,v in model.state_dict().items()) and optimizer.state_dict()==opt_before
@@ -209,7 +210,7 @@ def test_resume_rejects_changed_epochs_before_restore(tmp_path):
 @pytest.mark.parametrize('mutate',[lambda p:p.update(best_f1=float('nan')),lambda p:p['rng'].update(torch=torch.zeros(2)),lambda p:p['rng'].update(numpy_pos=999)])
 def test_semantically_malformed_state_rejected(tmp_path,mutate):
     model=nn.Linear(1,1); opt=torch.optim.AdamW(model.parameters()); sched=torch.optim.lr_scheduler.CosineAnnealingLR(opt,2); scaler=training._scaler(False)
-    training.save_training_state(tmp_path/'x.pt',0,model,opt,sched,scaler,.1,0,[],training.TrainingConfig()); payload=torch.load(tmp_path/'x.pt',weights_only=True); mutate(payload); torch.save(payload,tmp_path/'x.pt')
+    training.save_training_state(tmp_path/'x.pt',0,model,opt,sched,scaler,.1,0,[],training.TrainingConfig()); payload=torch.load(tmp_path/'x.pt',weights_only=True); mutate(payload); save_torch_fixture(tmp_path/'x.pt', payload)
     with pytest.raises(ValueError): training.load_training_state(tmp_path/'x.pt',model,opt,sched,scaler)
 
 def test_epoch_generator_sequence_is_resume_equivalent(tmp_path,monkeypatch):
@@ -255,7 +256,7 @@ def test_real_getitem_augmentation_is_epoch_index_deterministic(tmp_path):
     from cattle_health_app.behavior.dataset import ClipSample, CvbClipDataset
     paths=[]
     for index in range(16):
-        path=tmp_path/f'{index}.png'; image=np.arange(12*12*3,dtype=np.uint8).reshape(12,12,3); image=(image+index).astype(np.uint8); assert cv2.imwrite(str(path),image); paths.append(path.name)
+        path=tmp_path/f'{index}.png'; image=np.arange(12*12*3,dtype=np.uint8).reshape(12,12,3); image=(image+index).astype(np.uint8); write_cv_image_fixture(path, image); paths.append(path.name)
     sample=ClipSample('s',tuple(paths),(.1,.1,.9,.9),1,'v',1.,0,'g')
     dataset=CvbClipDataset.__new__(CvbClipDataset); dataset.samples=[sample]; dataset.data_root=tmp_path; dataset.training=True; dataset.context=.15; dataset.size=16; dataset._injected_rng=None; dataset.seed=3; dataset._worker_rng=None; dataset._worker_rng_key=None
     continuous=training.EpochSeededDataset(dataset,23); continuous.set_epoch(1); expected=continuous[0][0]
@@ -267,7 +268,7 @@ def test_real_getitem_epoch_changes_augmentation(tmp_path):
     from cattle_health_app.behavior.dataset import ClipSample, CvbClipDataset
     paths=[]
     for index in range(16):
-        path=tmp_path/f'{index}.png'; assert cv2.imwrite(str(path),np.full((10,12,3),30+index,dtype=np.uint8)); paths.append(path.name)
+        path=tmp_path/f'{index}.png'; write_cv_image_fixture(path, np.full((10,12,3),30+index,dtype=np.uint8)); paths.append(path.name)
     dataset=CvbClipDataset.__new__(CvbClipDataset); dataset.samples=[ClipSample('s',tuple(paths),(.1,.1,.9,.9),1,'v',1.,0,'g')]; dataset.data_root=tmp_path; dataset.training=True; dataset.context=.15; dataset.size=16; dataset._injected_rng=None; dataset.seed=3; dataset._worker_rng=None; dataset._worker_rng_key=None
     wrapped=training.EpochSeededDataset(dataset,23); wrapped.set_epoch(0); first=wrapped[0][0]; wrapped.set_epoch(1); second=wrapped[0][0]
     assert not torch.equal(first,second)

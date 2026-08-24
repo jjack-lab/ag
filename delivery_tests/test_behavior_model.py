@@ -7,6 +7,7 @@ from torch import nn
 
 from cattle_health_app.behavior.cvb_labels import CVB_LABELS
 from cattle_health_app.behavior import model as behavior_model
+from delivery_tests.io_helpers import save_torch_fixture
 
 
 class TinyX3D(nn.Module):
@@ -147,7 +148,7 @@ def test_invalid_payload_rejected_before_model_build(tmp_path, tiny_builder, cha
     payload = torch.load(good, map_location="cpu")
     change(payload)
     bad = tmp_path / "bad.pt"
-    torch.save(payload, bad)
+    save_torch_fixture(bad, payload)
     tiny_builder["pretrained"].clear()
     with pytest.raises(ValueError, match=match):
         behavior_model.load_behavior_checkpoint(bad)
@@ -182,7 +183,7 @@ def test_load_rejects_invalid_nested_json_metadata_before_build(tmp_path, tiny_b
     _save(path, tiny_builder)
     payload = torch.load(path, map_location="cpu")
     payload["metrics"] = bad
-    torch.save(payload, path)
+    save_torch_fixture(path, payload)
     tiny_builder["pretrained"].clear()
     with pytest.raises(ValueError, match="JSON-compatible"):
         behavior_model.load_behavior_checkpoint(path)
@@ -232,7 +233,7 @@ def test_shared_acyclic_metadata_is_accepted(tmp_path, tiny_builder):
 @pytest.mark.parametrize("payload", [None, [], "bad"])
 def test_non_mapping_payload_rejected(tmp_path, payload):
     path = tmp_path / "bad.pt"
-    torch.save(payload, path)
+    save_torch_fixture(path, payload)
     with pytest.raises(ValueError, match="mapping"):
         behavior_model.load_behavior_checkpoint(path)
 
@@ -242,7 +243,7 @@ def test_bad_state_dict_is_wrapped_as_value_error(tmp_path, tiny_builder):
     _save(path, tiny_builder)
     payload = torch.load(path, map_location="cpu")
     payload["state_dict"].pop(next(iter(payload["state_dict"])))
-    torch.save(payload, path)
+    save_torch_fixture(path, payload)
     with pytest.raises(ValueError, match="state_dict"):
         behavior_model.load_behavior_checkpoint(path)
 

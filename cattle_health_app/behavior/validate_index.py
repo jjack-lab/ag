@@ -5,6 +5,8 @@ from collections import Counter
 from pathlib import Path
 import cv2
 
+from cattle_health_app.image_io import read_cv_image
+
 SPLITS=("train","val","test")
 
 def _sha256(path):
@@ -36,7 +38,7 @@ def validate_index(index_root,source_data_root,output=None):
                 path=(source_root/relative).resolve()
                 try: path.relative_to(source_root)
                 except ValueError: errors.append(f"{split}/class {label}: path escape {relative}"); continue
-                image=cv2.imread(str(path),cv2.IMREAD_COLOR); frames+=1
+                image=read_cv_image(path,cv2.IMREAD_COLOR); frames+=1
                 if image is None or image.size==0: errors.append(f"{split}/class {label}: unreadable {relative}")
             clips+=1
         missing=[label for label in range(1,13) if not counts[label]]

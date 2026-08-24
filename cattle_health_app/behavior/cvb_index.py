@@ -24,6 +24,7 @@ from typing import Dict, Iterable, Iterator, Mapping, Sequence, Tuple
 import cv2
 
 from cattle_health_app.behavior.cvb_labels import CVB_LABELS
+from cattle_health_app.image_io import read_cv_image
 
 
 FRAME_COUNT = 16
@@ -338,7 +339,7 @@ def build_index(
                 if resolved not in validation_cache:
                     if not resolved.is_file(): validation_cache[resolved] = "missing_frame"
                     elif resolved.with_name(resolved.name + ".aria2").exists(): validation_cache[resolved] = "partial_frame"
-                    elif cv2.imread(str(resolved), cv2.IMREAD_COLOR) is None: validation_cache[resolved] = "undecodable_frame"
+                    elif read_cv_image(resolved, cv2.IMREAD_COLOR) is None: validation_cache[resolved] = "undecodable_frame"
                     else: validation_cache[resolved] = None
                 if validation_cache[resolved]:
                     bad_reason = validation_cache[resolved]

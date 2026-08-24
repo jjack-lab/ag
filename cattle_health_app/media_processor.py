@@ -5,7 +5,6 @@ from dataclasses import replace
 from pathlib import Path
 from threading import Lock
 
-import cv2
 import torch
 
 from cattle_health_app.behavior.runtime import BehaviorRuntime, TorchBehaviorClassifier
@@ -14,6 +13,7 @@ from cattle_health_app.behavior.calibration import (
     load_behavior_calibration,
 )
 from cattle_health_app.media_inference import detect_image
+from cattle_health_app.image_io import write_cv_image
 from cattle_health_app.model_registry import (
     resolve_behavior_model,
     resolve_detector_model,
@@ -78,9 +78,10 @@ class LocalMediaProcessor:
                 self._load_model(), source_path, conf, iou, class_id
             )
         result_path = Path(result_path)
-        result_path.parent.mkdir(parents=True, exist_ok=True)
-        if not cv2.imwrite(str(result_path), result.annotated_frame):
-            raise ValueError(f"无法保存识别结果: {result_path}")
+        try:
+            write_cv_image(result_path, result.annotated_frame)
+        except (OSError, ValueError) as exc:
+            raise ValueError(f"无法保存识别结果: {result_path}") from exc
         return result.detection_count
 
     def track_video(

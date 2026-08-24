@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 import torch
 from torch.utils.data import DataLoader
+from delivery_tests.io_helpers import write_cv_image_fixture
+import cattle_health_app.behavior.dataset as dataset_module
 
 from cattle_health_app.behavior.dataset import (
     CvbClipDataset,
@@ -30,7 +32,7 @@ def _manifest(tmp_path, **changes):
         path.parent.mkdir(parents=True, exist_ok=True)
         image = np.zeros((60, 100, 3), np.uint8)
         image[15:45, 20:80] = (10, 20, 240)  # BGR, strongly red after conversion
-        assert cv2.imwrite(str(path), image)
+        write_cv_image_fixture(path, image)
         paths.append(path.relative_to(root).as_posix())
     row = dict(sample_id="sample-1", video_id="v1", timestamp_seconds="2", x1="0.2", y1="0.25", x2="0.8", y2="0.75", label_id="2", track_id="7", group_id="g1", frame_paths=json.dumps(paths))
     row.update(changes)
@@ -185,8 +187,12 @@ def test_expected_schema_matches_task2_output():
 def test_manifest_parsing_is_lazy_but_getitem_decodes(monkeypatch, tmp_path):
     manifest, root, _ = _manifest(tmp_path)
     calls = []
-    original = cv2.imread
-    monkeypatch.setattr(cv2, "imread", lambda *a, **k: (calls.append(a[0]), original(*a, **k))[1])
+    original = dataset_module.read_cv_image
+    monkeypatch.setattr(
+        dataset_module,
+        "read_cv_image",
+        lambda *a, **k: (calls.append(a[0]), original(*a, **k))[1],
+    )
     ds = CvbClipDataset(manifest, root)
     assert calls == []
     ds[0]
@@ -207,7 +213,11 @@ def test_missing_and_undecodable_frames_report_sample_and_path(tmp_path):
 def test_cv2_decode_exception_is_wrapped(monkeypatch, tmp_path):
     manifest, root, _ = _manifest(tmp_path)
     error = cv2.error("decode failed")
-    monkeypatch.setattr(cv2, "imread", lambda *_: (_ for _ in ()).throw(error))
+    monkeypatch.setattr(
+        dataset_module,
+        "read_cv_image",
+        lambda *_: (_ for _ in ()).throw(error),
+    )
     with pytest.raises(UnreadableClipError, match=r"sample-1.*img_00000") as caught:
         CvbClipDataset(manifest, root)[0]
     assert caught.value.__cause__ is error
@@ -219,6 +229,10 @@ def test_symlink_escape_rejected_before_decode(monkeypatch, tmp_path):
     link = root / paths[0]; link.unlink()
     try: link.symlink_to(external)
     except OSError: pytest.skip("symlink privilege unavailable")
-    monkeypatch.setattr(cv2, "imread", lambda *_: pytest.fail("must reject before decode"))
+    monkeypatch.setattr(
+        dataset_module,
+        "read_cv_image",
+        lambda *_: pytest.fail("must reject before decode"),
+    )
     with pytest.raises(UnreadableClipError, match=r"sample-1.*img_00000"):
         CvbClipDataset(manifest, root)[0]

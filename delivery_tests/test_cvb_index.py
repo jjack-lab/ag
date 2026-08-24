@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import pytest
 import cattle_health_app.behavior.cvb_index as indexer
+from delivery_tests.io_helpers import write_cv_image_fixture
 
 from cattle_health_app.behavior.validate_index import validate_index
 from cattle_health_app.behavior.cvb_index import (
@@ -20,7 +21,7 @@ from cattle_health_app.behavior.cvb_index import (
 
 def _jpeg(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    assert cv2.imwrite(str(path), np.full((8, 8, 3), 127, np.uint8))
+    write_cv_image_fixture(path, np.full((8, 8, 3), 127, np.uint8))
 
 
 def _video(root: Path, video_id: str, count: int = 90) -> None:
@@ -201,7 +202,7 @@ def test_build_blocks_traversal_without_decoding_outside_images(tmp_path: Path, 
     def unexpected_decode(*args, **kwargs):
         raise AssertionError("decoder must not read a traversal target")
 
-    monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread", unexpected_decode)
+    monkeypatch.setattr(indexer, "read_cv_image", unexpected_decode)
     result = build_index(data, train, test, tmp_path / ("out-" + str(abs(hash(video_id)))))
     assert result.accepted_count == 0
     assert result.rejected_by_reason == {"invalid_annotation": 1}
@@ -240,10 +241,11 @@ def test_selected_frame_symlink_escape_is_rejected_before_decode(tmp_path: Path,
     try: selected.symlink_to(external)
     except OSError: pytest.skip("symlinks unavailable")
     train,test=data/"train.csv",data/"test.csv"; _ava(train,[_row("clip")]); _ava(test,[])
+    original_read = indexer.read_cv_image
     def spy(path,*args,**kwargs):
         assert Path(path).resolve()!=external.resolve()
-        return cv2.imread(path,*args,**kwargs)
-    monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread",spy)
+        return original_read(path,*args,**kwargs)
+    monkeypatch.setattr(indexer,"read_cv_image",spy)
     result=build_index(data,train,test,tmp_path/"out")
     assert result.accepted_count==0 and result.rejected_by_reason["frame_path_escape"]==1
 
@@ -256,7 +258,7 @@ def test_video_directory_symlink_escape_is_rejected_before_scan_or_decode(tmp_pa
     try: link.symlink_to(external, target_is_directory=True)
     except OSError: pytest.skip("directory symlinks unavailable")
     train,test=data/"train.csv",data/"test.csv"; _ava(train,[_row("escape")]); _ava(test,[])
-    monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread", lambda *args,**kwargs: (_ for _ in ()).throw(AssertionError("must not decode")))
+    monkeypatch.setattr(indexer, "read_cv_image", lambda *args,**kwargs: (_ for _ in ()).throw(AssertionError("must not decode")))
     result=build_index(data,train,test,tmp_path/"out")
     assert result.accepted_count==0 and result.rejected_by_reason["invalid_video_path"]==1
 
@@ -278,7 +280,7 @@ def test_raw_frames_root_symlink_escape_is_rejected_before_decode(tmp_path: Path
     try: (data/"raw_frames").symlink_to(external,target_is_directory=True)
     except OSError: pytest.skip("directory symlinks unavailable")
     train,test=data/"train.csv",data/"test.csv"; _ava(train,[_row("clip")]); _ava(test,[])
-    monkeypatch.setattr("cattle_health_app.behavior.cvb_index.cv2.imread",lambda *a,**k: (_ for _ in ()).throw(AssertionError("must not decode")))
+    monkeypatch.setattr(indexer, "read_cv_image",lambda *a,**k: (_ for _ in ()).throw(AssertionError("must not decode")))
     with pytest.raises(ValueError,match="raw_frames"):
         build_index(data,train,test,tmp_path/"out")
 

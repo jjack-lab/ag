@@ -15,6 +15,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, get_worker_info
 
+from cattle_health_app.image_io import read_cv_image
+
 FRAME_COUNT = 16
 KINETICS_MEAN = (0.45, 0.45, 0.45)
 KINETICS_STD = (0.225, 0.225, 0.225)
@@ -220,7 +222,7 @@ class CvbClipDataset(Dataset):
             except (OSError, ValueError) as exc:
                 raise UnreadableClipError(f"sample {sample.sample_id}: unreadable frame {relative}") from exc
             try:
-                image = cv2.imread(str(resolved), cv2.IMREAD_COLOR)
+                image = read_cv_image(resolved, cv2.IMREAD_COLOR)
             except Exception as exc:
                 raise UnreadableClipError(
                     f"sample {sample.sample_id}: unreadable frame {relative}") from exc
