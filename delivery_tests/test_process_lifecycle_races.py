@@ -31,7 +31,7 @@ def _extract_powershell_function(path, name):
 
 def _run_powershell_harness(tmp_path, script):
     harness = tmp_path / "harness.ps1"
-    harness.write_text(script, encoding="utf-8")
+    harness.write_text(script, encoding="utf-8-sig")
     return subprocess.run(
         ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(harness)],
         cwd=tmp_path,
@@ -39,6 +39,39 @@ def _run_powershell_harness(tmp_path, script):
         text=True,
         timeout=20,
     )
+
+
+def _run_stop_with_controlled_cim_snapshot(project, process_id, start_ticks):
+    stop_script = project / "stop_delivery.ps1"
+    harness = f"""
+$ErrorActionPreference = "Stop"
+function Get-CimInstance {{
+    [CmdletBinding()]
+    param([string]$ClassName)
+    [pscustomobject]@{{
+        ProcessId = {process_id}
+        ParentProcessId = 1
+        CommandLine = {_ps_quote(project / 'recovery-sleeper.ps1')}
+        CreationDate = [DateTime]::new({start_ticks}, [DateTimeKind]::Utc)
+    }}
+}}
+. {_ps_quote(stop_script)}
+"""
+    return _run_powershell_harness(project, harness)
+
+
+def test_powershell_harness_is_written_with_utf8_bom(tmp_path, monkeypatch):
+    captured = {}
+
+    def fake_run(*args, **kwargs):
+        captured["bytes"] = (tmp_path / "harness.ps1").read_bytes()
+        return subprocess.CompletedProcess(args[0], 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    _run_powershell_harness(tmp_path, "Write-Output '中文路径'")
+
+    assert captured["bytes"].startswith(b"\xef\xbb\xbf")
 
 
 def test_stop_script_waits_for_owned_controlled_process(tmp_path):
@@ -72,8 +105,19 @@ def test_stop_script_waits_for_owned_controlled_process(tmp_path):
         harness = f"""
 $ErrorActionPreference = "Stop"
 $script:controlledPid = {process.pid}
+$script:controlledStart = (Microsoft.PowerShell.Management\\Get-Process -Id $script:controlledPid).StartTime.ToUniversalTime()
 $script:stopRequested = $false
 $script:raceInjected = $false
+function Get-CimInstance {{
+    [CmdletBinding()]
+    param([string]$ClassName)
+    [pscustomobject]@{{
+        ProcessId = $script:controlledPid
+        ParentProcessId = 1
+        CommandLine = {_ps_quote(sleeper)}
+        CreationDate = $script:controlledStart
+    }}
+}}
 function Get-Process {{
     [CmdletBinding()]
     param([int]$Id)
@@ -232,8 +276,19 @@ $ErrorActionPreference = "Stop"
 {rollback_function}
 $process = Start-Process powershell.exe -ArgumentList @("-NoProfile", "-File", {_ps_quote(sleeper)}) -WindowStyle Hidden -PassThru
 $script:controlledPid = $process.Id
+$script:controlledStart = $process.StartTime.ToUniversalTime()
 $script:stopRequested = $false
 $script:raceInjected = $false
+function Get-CimInstance {{
+    [CmdletBinding()]
+    param([string]$ClassName)
+    [pscustomobject]@{{
+        ProcessId = $script:controlledPid
+        ParentProcessId = 1
+        CommandLine = {_ps_quote(sleeper)}
+        CreationDate = $script:controlledStart
+    }}
+}}
 function Get-Process {{
     [CmdletBinding()]
     param([int]$Id)
@@ -330,18 +385,8 @@ def test_stop_recovery_state_ignores_reused_pid_then_stops_exact_survivor(tmp_pa
         }
         state_path.write_text(json.dumps(state), encoding="utf-8")
 
-        mismatch = subprocess.run(
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                str(project / "stop_delivery.ps1"),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=15,
+        mismatch = _run_stop_with_controlled_cim_snapshot(
+            project, process.pid, exact_ticks
         )
         assert mismatch.returncode == 0, mismatch.stdout + mismatch.stderr
         assert process.poll() is None
@@ -349,18 +394,8 @@ def test_stop_recovery_state_ignores_reused_pid_then_stops_exact_survivor(tmp_pa
 
         state["recovery_processes"][0]["start_time_ticks"] = exact_ticks
         state_path.write_text(json.dumps(state), encoding="utf-8")
-        exact = subprocess.run(
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                str(project / "stop_delivery.ps1"),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=15,
+        exact = _run_stop_with_controlled_cim_snapshot(
+            project, process.pid, exact_ticks
         )
         assert exact.returncode == 0, exact.stdout + exact.stderr
         process.wait(timeout=2)

@@ -5,6 +5,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pytest
+import cattle_health_app.behavior.prepare_dataset as prepare_module
 
 from cattle_health_app.behavior.prepare_dataset import (
     DatasetPreparationError,
@@ -159,3 +160,63 @@ def test_prepare_dataset_records_segment_shorter_than_window(tmp_path):
         rejected = list(csv.DictReader(source))
     assert rejected[0]["segment_id"] == "segment-short"
     assert rejected[0]["reason"] == "segment_shorter_than_window"
+
+
+def test_safe_replace_falls_back_when_home_root_cannot_resolve(tmp_path, monkeypatch):
+    staging = tmp_path / "staging"
+    output = tmp_path / "published"
+    staging.mkdir()
+    (staging / "marker.txt").write_text("ready", encoding="utf-8")
+    real_resolve = Path.resolve
+    home = Path.home()
+
+    def selective_resolve(path, *args, **kwargs):
+        if path == home:
+            raise PermissionError("restricted home")
+        return real_resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", selective_resolve)
+
+    prepare_module._safe_replace(staging, output, overwrite=False)
+
+    assert (output / "marker.txt").read_text(encoding="utf-8") == "ready"
+
+
+def test_safe_replace_keeps_output_resolution_fail_closed(tmp_path, monkeypatch):
+    staging = tmp_path / "staging"
+    output = tmp_path / "published"
+    staging.mkdir()
+    real_resolve = Path.resolve
+
+    def fail_output_only(path, *args, **kwargs):
+        if path == output:
+            raise PermissionError("cannot resolve actual output")
+        return real_resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", fail_output_only)
+
+    with pytest.raises(PermissionError, match="actual output"):
+        prepare_module._safe_replace(staging, output, overwrite=False)
+
+    assert staging.is_dir()
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("unsafe", [Path.cwd(), Path.home(), Path(Path.cwd().anchor)])
+def test_safe_replace_rejects_unsafe_roots_without_removing_them(tmp_path, unsafe, monkeypatch):
+    staging = tmp_path / "staging"
+    staging.mkdir()
+    real_resolve = Path.resolve
+
+    def resolve_known_unsafe_root(path, *args, **kwargs):
+        if path == unsafe:
+            return Path(prepare_module.os.path.abspath(path))
+        return real_resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", resolve_known_unsafe_root)
+
+    with pytest.raises(DatasetPreparationError, match="Unsafe output"):
+        prepare_module._safe_replace(staging, unsafe, overwrite=True)
+
+    assert staging.is_dir()
+    assert unsafe.exists()

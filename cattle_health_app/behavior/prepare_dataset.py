@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import shutil
 from collections import Counter
 from dataclasses import asdict, dataclass
@@ -104,11 +105,19 @@ def _quality_report(clips, rejected, config, seed):
     }
 
 
+def _resolve_safety_root(path: Path) -> Path:
+    """Resolve comparison-only roots without weakening output resolution."""
+    try:
+        return path.resolve()
+    except OSError:
+        return Path(os.path.abspath(path))
+
+
 def _safe_replace(staging: Path, output: Path, overwrite: bool):
     resolved = output.resolve()
     unsafe_roots = {
-        Path.cwd().resolve(),
-        Path.home().resolve(),
+        _resolve_safety_root(Path.cwd()),
+        _resolve_safety_root(Path.home()),
     }
     if resolved == resolved.parent or resolved in unsafe_roots:
         raise DatasetPreparationError(f"Unsafe output directory: {resolved}")
