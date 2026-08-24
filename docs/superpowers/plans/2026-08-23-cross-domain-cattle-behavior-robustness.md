@@ -44,6 +44,7 @@ Execute tasks in this dependency order: `1 -> 2 -> 10 -> 3 -> 4 -> 5 -> 6 -> 7 -
 - `2026-08-24`: The formal CUDA run completed before the time stop: 1000 logical baseline samples, 600 unique physical clips, 18 nonzero stress conditions, and 96 stress metric rows. Strict zero-shot Macro-F1 is 0.0048, so the result is recorded as cross-domain failure evidence; fixed and heuristic-quality rejection did not improve risk. The predeclared gate therefore recommends a separate group-isolated adaptation plan but does not execute it here.
 - `2026-08-24`: Final Python execution from the Unicode worktree produced 486 passed, 4 skipped, and 37 failures, all in existing PyTorch `.pt` temporary writes or Windows PowerShell 5 harness paths that resolve through `F:\new大创`. `subst` is ineffective because `Path.resolve()` returns the physical Unicode path, and 8.3 aliases are disabled. The user's latest boundary forbids the previously authorized external ASCII worktree, so no files were copied outside the project. Cross-domain focused tests (21), artifact/API tests (8), delivery E2E tests (15), all frontend tests (16), the production build, and the explicitly configured delivery preflight pass. This changes only the final verification evidence, not experimental semantics.
 - `2026-08-24`: Final scientific-claim review found that the defense UI still contained the obsolete learned-quality-gate wording from before real data inspection. Replace it with the verified `predeclared_heuristic` policy exposed through the validated API, state that CBVD-5 labels were not used for fitting, label it exploratory, and display Macro-F1 beside coverage/risk so the 0.0048 strict failure cannot be hidden. This closes the review HIGH without altering experimental outputs.
+- `2026-08-24`: Local integration is gated because the branch-finishing workflow forbids merging while 37 full-suite failures remain. The latest user boundary also forbids the earlier external ASCII worktree. Add the approved supplemental plan `2026-08-24-unicode-in-project-verification.md`: fix explicit test fixture I/O, PowerShell BOM handling, fail-closed safety-root resolution, and real recognition-image output entirely below `F:\new大创`. Frozen external samples, metrics, hashes, thresholds and VLM deferral remain unchanged.
 
 ### Task 1: External dataset registry and provenance contract
 
@@ -568,6 +569,10 @@ Confirm every modified file is below `F:\new大创`, no credentials or large raw
 - [x] **Step 6: Commit final documentation**
 
 Commit: `docs: finalize cross-domain behavior experiment delivery`
+
+- [ ] **Step 7: Complete in-project Unicode verification remediation**
+
+Execute `docs/superpowers/plans/2026-08-24-unicode-in-project-verification.md`, obtain a failure-free full Python run from an in-project temporary root, and then repeat final integration review. Do not use an external ASCII worktree.
 
 ## Deferred final roadmap: VLM, multimodality, and embodied intelligence
 
