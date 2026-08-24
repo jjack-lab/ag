@@ -12,6 +12,7 @@ CVB→CBVD-5 主实验、报告和答辩界面已经完成，但 Windows 下从 
 
 1. 测试夹具保存 PyTorch 对象时打开二进制文件句柄再调用 `torch.save`；生成 OpenCV 图片时先 `cv2.imencode`，再由 `Path.write_bytes` 写入。这样只修复测试准备阶段，不会掩盖产品代码中的直接路径调用。
 2. Windows PowerShell 5 测试 harness 使用 `utf-8-sig` 写入，使中文绝对路径按 BOM 正确解码。测试脚本的业务逻辑保持不变。
+   对必须验证进程身份竞态的测试，harness 显式注入与被控测试进程一致的 CIM 只读快照，避免测试结果依赖宿主是否授予 WMI 枚举权限；生产脚本在真实 CIM 枚举失败时仍保持状态并失败关闭。
 3. 数据集安全替换仍严格解析实际输出路径；仅对安全根集合中的 `Path.home()` 解析增加受控回退。若实际输出路径无法解析，操作继续失败，不进行覆盖删除。
 4. 真实数据集读取与图片识别结果使用项目级 Unicode 安全图像读写函数：读取通过 `Path.read_bytes` 与 `cv2.imdecode`，写入通过 `cv2.imencode` 与 `Path.write_bytes`。这样既避免中文路径下 `cv2.imread` 将有效帧误判为不可解码，也避免 `cv2.imwrite` 静默失败。
 
@@ -24,6 +25,7 @@ CVB→CBVD-5 主实验、报告和答辩界面已经完成，但 Windows 下从 
 - `cattle_health_app/behavior/dataset.py`、`cattle_health_app/behavior/cvb_index.py` 与 `cattle_health_app/behavior/validate_index.py`：使用统一读图函数，保留现有不可解码处理语义。
 - `cattle_health_app/behavior/prepare_dataset.py`：输出路径保持严格解析；安全根解析失败时使用规范化绝对文本路径进行保守比较。
 - `delivery_tests/test_process_lifecycle_races.py`：唯一 PowerShell harness 执行入口改用 BOM。
+  需要真实启动受控进程的用例在 harness 内模拟该进程的 `Get-CimInstance` 快照，不模拟停止/身份复核的核心竞态逻辑。
 
 数据和实验产物不经过这些兼容层重写；本修复只影响测试临时文件与应用新生成的识别图片。
 
@@ -34,6 +36,7 @@ CVB→CBVD-5 主实验、报告和答辩界面已经完成，但 Windows 下从 
 - PyTorch 测试夹具创建父目录并使用上下文管理文件句柄。
 - `_safe_replace` 对真实输出路径仍调用严格 `resolve()`；失败即中止。仅安全根的比较值允许回退，不扩大可删除范围。
 - PowerShell harness 仍有 20 秒超时并捕获输出；只改变文件编码。
+- 测试用 CIM 快照只包含当前用例创建且随后清理的受控进程；不读取或终止任意宿主进程。生产 `start_delivery.ps1` / `stop_delivery.ps1` 不做放宽。
 
 ## 验证标准
 

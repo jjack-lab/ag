@@ -81,15 +81,15 @@ Commit: `fix: read and write images on unicode paths`
 
 - [ ] **Step 1: Preserve the reproduced failures**
 
-Record that PowerShell paths contain `new澶у垱` with UTF-8 and that `Path.home().resolve()` raises `PermissionError` in the restricted environment.
+Record that PowerShell paths contain `new澶у垱` with UTF-8, that `Path.home().resolve()` raises `PermissionError`, and that the restricted environment denies WMI/CIM process enumeration even after BOM decoding is fixed.
 
-- [ ] **Step 2: Write BOM and safety-fallback tests**
+- [ ] **Step 2: Write BOM, controlled CIM snapshot, and safety-fallback tests**
 
-Assert the harness file begins with UTF-8 BOM and a simulated home-resolution failure does not prevent a safe nested output replacement or allow current/home/root output deletion.
+Assert the harness file begins with UTF-8 BOM; lifecycle race tests inject a read-only snapshot only for the controlled process they create; and a simulated home-resolution failure does not prevent a safe nested output replacement or allow current/home/root output deletion.
 
 - [ ] **Step 3: Implement minimal compatibility**
 
-Write harness files with `encoding="utf-8-sig"`. Add a helper that tries `path.resolve()` for a safety root and falls back to `Path(os.path.abspath(path))`; keep `output.resolve()` strict.
+Write harness files with `encoding="utf-8-sig"` and give real-process race tests deterministic CIM snapshots without changing production fail-closed behavior. Add a helper that tries `path.resolve()` for a safety root and falls back to `Path(os.path.abspath(path))`; keep `output.resolve()` strict.
 
 - [ ] **Step 4: Verify affected suites**
 
