@@ -105,23 +105,40 @@ def _quality_report(clips, rejected, config, seed):
     }
 
 
-def _resolve_safety_root(path: Path) -> Path:
-    """Resolve comparison-only roots without weakening output resolution."""
+def _matches_safety_root(
+    resolved_output: Path,
+    output: Path,
+    safety_root: Path,
+    output_exists: bool,
+) -> bool:
+    """Compare a protected root without allowing uncertain overwrite deletion."""
     try:
-        return path.resolve()
+        resolved_root = safety_root.resolve()
     except OSError:
-        return Path(os.path.abspath(path))
+        fallback_root = Path(os.path.abspath(safety_root))
+        if resolved_output == fallback_root:
+            return True
+        if not output_exists:
+            return False
+        try:
+            return os.path.samefile(output, safety_root)
+        except OSError as exc:
+            raise DatasetPreparationError(
+                f"Unable to verify output against protected root: {safety_root}"
+            ) from exc
+    return resolved_output == resolved_root
 
 
 def _safe_replace(staging: Path, output: Path, overwrite: bool):
     resolved = output.resolve()
-    unsafe_roots = {
-        _resolve_safety_root(Path.cwd()),
-        _resolve_safety_root(Path.home()),
-    }
-    if resolved == resolved.parent or resolved in unsafe_roots:
+    output_exists = output.exists()
+    protected_roots = (Path.cwd(), Path.home())
+    if resolved == resolved.parent or any(
+        _matches_safety_root(resolved, output, root, output_exists)
+        for root in protected_roots
+    ):
         raise DatasetPreparationError(f"Unsafe output directory: {resolved}")
-    if output.exists():
+    if output_exists:
         if not overwrite:
             raise DatasetPreparationError(
                 f"Output directory already exists: {output}"

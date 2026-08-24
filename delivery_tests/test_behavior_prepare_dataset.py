@@ -202,6 +202,51 @@ def test_safe_replace_keeps_output_resolution_fail_closed(tmp_path, monkeypatch)
     assert not output.exists()
 
 
+@pytest.mark.parametrize("samefile_result", [True, PermissionError("cannot compare")])
+def test_safe_replace_rejects_existing_alias_when_safety_root_cannot_resolve(
+    tmp_path, monkeypatch, samefile_result
+):
+    staging = tmp_path / "staging"
+    output = tmp_path / "existing-alias"
+    protected_root = tmp_path / "protected-root-text"
+    canonical_root = tmp_path / "protected-root-canonical"
+    staging.mkdir()
+    output.mkdir()
+    protected_root.mkdir()
+    real_resolve = Path.resolve
+    removals = []
+
+    def selective_resolve(path, *args, **kwargs):
+        if path == output:
+            return canonical_root
+        if path == protected_root:
+            raise PermissionError("restricted protected root")
+        return real_resolve(path, *args, **kwargs)
+
+    def controlled_samefile(left, right):
+        if {Path(left), Path(right)} == {output, protected_root}:
+            if isinstance(samefile_result, OSError):
+                raise samefile_result
+            return samefile_result
+        return False
+
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: protected_root))
+    monkeypatch.setattr(Path, "resolve", selective_resolve)
+    monkeypatch.setattr(prepare_module.os.path, "samefile", controlled_samefile)
+    monkeypatch.setattr(
+        prepare_module.shutil,
+        "rmtree",
+        lambda path: removals.append(Path(path)),
+    )
+
+    with pytest.raises(DatasetPreparationError, match="Unsafe|verify"):
+        prepare_module._safe_replace(staging, output, overwrite=True)
+
+    assert removals == []
+    assert output.is_dir()
+    assert staging.is_dir()
+
+
 @pytest.mark.parametrize("unsafe", [Path.cwd(), Path.home(), Path(Path.cwd().anchor)])
 def test_safe_replace_rejects_unsafe_roots_without_removing_them(tmp_path, unsafe, monkeypatch):
     staging = tmp_path / "staging"

@@ -64,11 +64,11 @@ Expected: import failure because `cattle_health_app.image_io` does not exist.
 
 Read bytes with `Path.read_bytes` and decode with `cv2.imdecode`; return `None` for missing, empty, unreadable, or invalid images so existing callers preserve their undecodable-frame behavior. Create the parent, encode from the target suffix with `cv2.imencode`, write bytes with `Path.write_bytes`, and raise `ValueError` for an absent suffix or failed encoding. Use the reader in behavior dataset/index paths and the writer in `LocalMediaProcessor.detect_image`.
 
-- [ ] **Step 4: Verify product and delivery tests**
+- [x] **Step 4: Verify product and delivery tests**
 
 Run the Unicode image-I/O test, affected behavior dataset/index tests, delivery API tests, and image recognition contract tests. Directly cover `LocalMediaProcessor.detect_image()` writing to a Unicode result path and translating writer `OSError`/`ValueError` into its public save-error contract.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `fix: read and write images on unicode paths`
 
@@ -83,19 +83,19 @@ Commit: `fix: read and write images on unicode paths`
 
 Record that PowerShell paths contain `new澶у垱` with UTF-8, that `Path.home().resolve()` raises `PermissionError`, and that the restricted environment denies WMI/CIM process enumeration even after BOM decoding is fixed.
 
-- [ ] **Step 2: Write BOM, controlled CIM snapshot, and safety-fallback tests**
+- [x] **Step 2: Write BOM, controlled CIM snapshot, and safety-fallback tests**
 
 Assert the harness file begins with UTF-8 BOM; lifecycle race tests inject a read-only snapshot only for the controlled process they create; and a simulated home-resolution failure does not prevent a safe new output or allow current/home/root output deletion. Add an existing-output alias regression: if a safety root cannot resolve, `samefile=True` or a failed `samefile` check must reject overwrite before `rmtree`.
 
-- [ ] **Step 3: Implement minimal compatibility**
+- [x] **Step 3: Implement minimal compatibility**
 
 Write harness files with `encoding="utf-8-sig"` and give real-process race tests deterministic CIM snapshots without changing production fail-closed behavior. Keep `output.resolve()` strict. A failed safety-root resolve may use `Path(os.path.abspath(path))` for new outputs; overwriting an existing directory additionally requires `os.path.samefile(output, safety_root)` to return false, otherwise reject.
 
-- [ ] **Step 4: Verify affected suites**
+- [x] **Step 4: Verify affected suites**
 
 Run process lifecycle, dataset preparation, behavior model/training and CVB dataset tests from an in-project `--basetemp`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `fix: verify safely from unicode project paths`
 
@@ -105,21 +105,21 @@ Commit: `fix: verify safely from unicode project paths`
 - Modify: `docs/superpowers/plans/2026-08-23-cross-domain-cattle-behavior-robustness.md`
 - Modify: `README_BEHAVIOR_DATA.md` only if commands or limitations change
 
-- [ ] **Step 1: Run all Python tests inside the project**
+- [x] **Step 1: Run all Python tests inside the project**
 
 Run: `python -m pytest -q --basetemp outputs/test-temp/full-unicode-green`
 
 Expected: no failures; only already documented environment-dependent skips.
 
-Actual: `536 passed, 4 skipped, 0 failed` in 35.80 seconds from the Unicode worktree with `--basetemp outputs/test-temp/full-unicode-green`.
+Actual after the deletion-safety review fix: `541 passed, 4 skipped, 0 failed` in 37.10 seconds from the Unicode worktree with `--basetemp outputs/test-temp/full-unicode-green-after-safety-review-rerun`.
 
-- [ ] **Step 2: Run cross-domain, frontend, build and preflight checks**
+- [x] **Step 2: Run cross-domain, frontend, build and preflight checks**
 
 Run the 22 focused cross-domain tests, all 16 frontend tests, `npm run build`, and `start_delivery.ps1 -CheckOnly` with `AGRINEBULA_PYTHON` set to the verified environment.
 
 Actual: the comprehensive cross-domain superset passed `76/76`, frontend passed `16/16`, Vite production build succeeded, and delivery preflight passed with the expected detector and behavior artifacts.
 
-- [ ] **Step 3: Re-audit repository scope and scientific outputs**
+- [x] **Step 3: Re-audit repository scope and scientific outputs**
 
 Confirm no media/raw prediction caches are tracked and all frozen hashes/metrics remain unchanged.
 

@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from threading import Lock
+from types import SimpleNamespace
+
 import cv2
 import numpy as np
 import pytest
 import torch
 
+import cattle_health_app.media_processor as media_processor_module
 from cattle_health_app.image_io import read_cv_image, write_cv_image
+from cattle_health_app.media_processor import LocalMediaProcessor
 from delivery_tests.io_helpers import (
     save_torch_fixture,
     write_cv_image_fixture,
@@ -69,3 +74,57 @@ def test_product_image_writer_rejects_extensionless_target(tmp_path):
         write_cv_image(path, np.zeros((2, 2, 3), dtype=np.uint8))
 
     assert not path.exists()
+
+
+def _processor_without_registry_initialization():
+    processor = object.__new__(LocalMediaProcessor)
+    processor._inference_lock = Lock()
+    processor._load_model = lambda: object()
+    return processor
+
+
+def test_local_media_processor_writes_unicode_result_path(tmp_path, monkeypatch):
+    frame = np.full((8, 9, 3), (25, 125, 225), dtype=np.uint8)
+    monkeypatch.setattr(
+        media_processor_module,
+        "detect_image",
+        lambda *args: SimpleNamespace(annotated_frame=frame, detection_count=3),
+    )
+    result_path = tmp_path / "牛只识别结果" / "annotated.png"
+
+    count = _processor_without_registry_initialization().detect_image(
+        tmp_path / "source.png", result_path, 0.25, 0.45, 1
+    )
+
+    assert count == 3
+    assert np.array_equal(read_cv_image(result_path), frame)
+
+
+@pytest.mark.parametrize("error", [OSError("disk denied"), ValueError("encode failed")])
+def test_local_media_processor_translates_unicode_writer_errors(
+    tmp_path, monkeypatch, error
+):
+    monkeypatch.setattr(
+        media_processor_module,
+        "detect_image",
+        lambda *args: SimpleNamespace(
+            annotated_frame=np.zeros((2, 2, 3), dtype=np.uint8),
+            detection_count=1,
+        ),
+    )
+    monkeypatch.setattr(
+        media_processor_module,
+        "write_cv_image",
+        lambda *args: (_ for _ in ()).throw(error),
+    )
+
+    with pytest.raises(ValueError, match="无法保存识别结果") as caught:
+        _processor_without_registry_initialization().detect_image(
+            tmp_path / "source.png",
+            tmp_path / "牛只识别结果" / "annotated.png",
+            0.25,
+            0.45,
+            1,
+        )
+
+    assert caught.value.__cause__ is error

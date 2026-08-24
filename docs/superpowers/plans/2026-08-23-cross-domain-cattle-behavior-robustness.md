@@ -547,7 +547,7 @@ Run: `python -m pytest -q`
 
 Expected: no failures; environment-dependent tests may only skip for documented existing reasons.
 
-Final actual from the required in-project Unicode path after executing the supplemental remediation: 536 passed, 4 skipped, 0 failed in 35.80 seconds. The earlier 37 failures and their root causes remain preserved in the dated change log. No external ASCII test worktree was created; all implementation, test temporary files, data and outputs remained below `F:\new大创`.
+Final actual from the required in-project Unicode path after executing the supplemental remediation and deletion-safety review fix: 541 passed, 4 skipped, 0 failed in 37.10 seconds. The earlier 37 failures and their root causes remain preserved in the dated change log. No external ASCII test worktree was created; all implementation, test temporary files, data and outputs remained below `F:\new大创`.
 
 - [x] **Step 2: Run frontend tests and build**
 
