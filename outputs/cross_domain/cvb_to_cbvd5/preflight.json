@@ -1,0 +1,6 @@
+{
+  "available_disk_bytes": 335389237248,
+  "cuda_available": true,
+  "requested_device": "cuda",
+  "status": "validated_pending_inference"
+}

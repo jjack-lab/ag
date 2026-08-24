@@ -202,7 +202,7 @@ def test_summary_states_claim_boundaries_and_external_sample_count(tmp_path):
     assert metrics["inference_timing"]["baseline"]["wall_seconds"] == 2.0
 
 
-def test_committed_result_document_starts_in_honest_not_run_state():
+def test_committed_result_document_records_verified_complete_evidence():
     project_root = Path(__file__).resolve().parents[1]
     document = (
         project_root
@@ -211,6 +211,9 @@ def test_committed_result_document_starts_in_honest_not_run_state():
         / "2026-08-23-cross-domain-behavior-results.md"
     ).read_text(encoding="utf-8")
 
-    assert "status: not_run" in document
-    assert "尚未" in document
+    assert "status: complete" in document
+    assert "731c6ed39dcf002915e888c829e1f86727f815331a2b3c21d06a17d40d62a08e" in document
+    assert "Strict 主结果（4 类，n=400）" in document
+    assert "现有 CVB 模型不能直接迁移到 CBVD-5" in document
+    assert "不支持疾病诊断" in document
     assert "VLM" in document

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -96,3 +97,31 @@ def test_figure_endpoint_uses_a_fixed_allowlist(tmp_path):
     assert allowed.status_code == 200
     assert allowed.headers["content-type"] == "image/png"
     assert rejected.status_code == 404
+
+
+def test_real_cross_domain_artifacts_match_the_defense_api_contract(tmp_path):
+    result_root = (
+        Path(__file__).resolve().parents[1]
+        / "outputs"
+        / "cross_domain"
+        / "cvb_to_cbvd5"
+    )
+
+    result = _client(tmp_path, result_root).get(
+        "/api/experiments/cross-domain-behavior"
+    )
+
+    assert result.status_code == 200
+    payload = result.json()
+    assert payload["status"] == "complete"
+    assert payload["dataset_version"] == "kaggle-version-11"
+    assert payload["model_hash_prefix"] == "731c6ed39dcf"
+    assert payload["sample_counts"] == {"strict": 400, "extended": 600}
+    assert payload["variant_metrics"]["strict"]["calibrated"][
+        "selective_macro_f1"
+    ] == 0.0047619047619047615
+    assert set(payload["figure_urls"]) == {
+        "confusion_matrix",
+        "risk_coverage",
+        "stress_curves",
+    }

@@ -1,0 +1,13 @@
+{
+  "checkpoint_sha256": "731c6ed39dcf002915e888c829e1f86727f815331a2b3c21d06a17d40d62a08e",
+  "frozen_before_manifest_sha256": "48384dcc2400203fcaf94e82ac07049a7750d132bc85cb5f0db11db3bc820320",
+  "maximum_brightness": 0.95,
+  "maximum_dark_ratio": 0.85,
+  "maximum_overexposed_ratio": 0.7,
+  "maximum_track_truncation_ratio": 0.75,
+  "minimum_brightness": 0.05,
+  "minimum_laplacian_variance": 1e-05,
+  "minimum_track_continuity": 0.95,
+  "policy_kind": "predeclared_heuristic",
+  "uses_external_labels": false
+}

@@ -1,0 +1,1119 @@
+{
+  "claim_boundaries": [
+    "behavior recognition robustness only",
+    "not disease diagnosis",
+    "not unattended production deployment evidence"
+  ],
+  "inference_timing": {
+    "baseline": {
+      "device": "cuda",
+      "kind": "baseline",
+      "logical_sample_count": 1000,
+      "logical_samples_per_second": 0.7786628742894293,
+      "physical_clip_count": 600,
+      "physical_clips_per_second": 0.46719772457365755,
+      "scope": "decode_transform_model_forward_and_quality_measurement",
+      "wall_seconds": 1284.2528301
+    },
+    "protocol_fingerprint": "9a51fe39ef42a6f8e3553cf0b878ff6dd301925ea865b15b90b2e190888f6c65",
+    "schema_version": 1,
+    "stress": [
+      {
+        "degradation": "blur",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 1,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5524910163420677,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.47790472913588855,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 361.9968362999998
+      },
+      {
+        "degradation": "blur",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 2,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.546849557183513,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.47302486696373874,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 365.7313009999998
+      },
+      {
+        "degradation": "blur",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 3,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5454523500088364,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.47181628275764353,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 366.66814250000016
+      },
+      {
+        "degradation": "low_light",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 1,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5232607434651791,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.45262054309738,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 382.2186214000003
+      },
+      {
+        "degradation": "low_light",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 2,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5442926886819414,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.47081317570987924,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 367.4493597999999
+      },
+      {
+        "degradation": "low_light",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 3,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5380808602223379,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4654399440923223,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 371.6913475000001
+      },
+      {
+        "degradation": "occlusion",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 1,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5374236134357777,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4648714256219477,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 372.1459106000002
+      },
+      {
+        "degradation": "occlusion",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 2,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5465942295542685,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4728040085644422,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 365.90214309999965
+      },
+      {
+        "degradation": "occlusion",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 3,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5261131265438139,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.455087854460399,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 380.1463790000007
+      },
+      {
+        "degradation": "downsample",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 1,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5469908319110074,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4731470696030214,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 365.6368413
+      },
+      {
+        "degradation": "downsample",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 2,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5321467880437115,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4603069716578104,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 375.83614990000024
+      },
+      {
+        "degradation": "downsample",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 3,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5404937445921326,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4675270890721947,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 370.03203460000077
+      },
+      {
+        "degradation": "frame_drop",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 1,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5485887775191041,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.474529292554025,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 364.5718035
+      },
+      {
+        "degradation": "frame_drop",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 2,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5307182486005264,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4590712850394553,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 376.8477917
+      },
+      {
+        "degradation": "frame_drop",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 3,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5464119407888828,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4726463287823836,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 366.0242118999995
+      },
+      {
+        "degradation": "compression",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 1,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5282161860683204,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.4569070009490972,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 378.6328500999998
+      },
+      {
+        "degradation": "compression",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 2,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5449469029908809,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.471379071087112,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 367.0082330999994
+      },
+      {
+        "degradation": "compression",
+        "device": "cuda",
+        "kind": "stress",
+        "level": 3,
+        "logical_sample_count": 200,
+        "logical_samples_per_second": 0.5445222129374897,
+        "physical_clip_count": 173,
+        "physical_clips_per_second": 0.47101171419092863,
+        "scope": "decode_transform_model_forward_and_quality_measurement",
+        "wall_seconds": 367.2944743999997
+      }
+    ]
+  },
+  "metrics": {
+    "extended": {
+      "calibrated": {
+        "accepted_count": 600,
+        "accuracy": 0.06666666666666667,
+        "actionable_count": 600,
+        "actionable_coverage": 1.0,
+        "brier": 1.1263238098653097,
+        "coverage": 1.0,
+        "ece": 0.3998295265835955,
+        "nll": 2.957102074019765,
+        "per_class": [
+          {
+            "accepted": 0,
+            "class_id": 0,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 1,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 2,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 3,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 4,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 5,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 6,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 7,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 8,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 9,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 10,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 11,
+            "rejected": 0,
+            "support": 0
+          }
+        ],
+        "probability_metric_sample_count": 600,
+        "rejected_count": 0,
+        "rejection_precision_for_unsafe": null,
+        "rejection_recall_for_unsafe": 0.0,
+        "sample_count": 600,
+        "selective_accuracy": 0.06666666666666667,
+        "selective_macro_f1": 0.03611947671807553,
+        "selective_risk": 0.9333333333333333,
+        "threshold_accepted_count": 600,
+        "unsafe_count": 560,
+        "unsafe_detection_auprc": 0.9281986638095369,
+        "unsafe_detection_auroc": 0.4723214285714285,
+        "unsafe_detection_score": "one_minus_max_probability"
+      },
+      "calibrated_fixed_rejection": {
+        "accepted_count": 332,
+        "accuracy": 0.0572289156626506,
+        "actionable_count": 600,
+        "actionable_coverage": 0.5533333333333333,
+        "brier": 1.2361023032443343,
+        "coverage": 0.5533333333333333,
+        "ece": 0.5385973725448552,
+        "nll": 3.1572965697160673,
+        "per_class": [
+          {
+            "accepted": 0,
+            "class_id": 0,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 68,
+            "class_id": 1,
+            "rejected": 32,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 2,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 70,
+            "class_id": 3,
+            "rejected": 30,
+            "support": 100
+          },
+          {
+            "accepted": 42,
+            "class_id": 4,
+            "rejected": 58,
+            "support": 100
+          },
+          {
+            "accepted": 46,
+            "class_id": 5,
+            "rejected": 54,
+            "support": 100
+          },
+          {
+            "accepted": 45,
+            "class_id": 6,
+            "rejected": 55,
+            "support": 100
+          },
+          {
+            "accepted": 61,
+            "class_id": 7,
+            "rejected": 39,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 8,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 9,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 10,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 11,
+            "rejected": 0,
+            "support": 0
+          }
+        ],
+        "probability_metric_sample_count": 332,
+        "rejected_count": 268,
+        "rejection_precision_for_unsafe": 0.9216417910447762,
+        "rejection_recall_for_unsafe": 0.44107142857142856,
+        "sample_count": 600,
+        "selective_accuracy": 0.0572289156626506,
+        "selective_macro_f1": 0.02278177458033573,
+        "selective_risk": 0.9427710843373494,
+        "threshold_accepted_count": 332,
+        "unsafe_count": 560,
+        "unsafe_detection_auprc": 0.9281986638095369,
+        "unsafe_detection_auroc": 0.4723214285714285,
+        "unsafe_detection_score": "one_minus_max_probability"
+      },
+      "calibrated_quality_rejection": {
+        "accepted_count": 565,
+        "accuracy": 0.06017699115044248,
+        "actionable_count": 600,
+        "actionable_coverage": 0.9416666666666667,
+        "brier": 1.128382147548042,
+        "coverage": 0.9416666666666667,
+        "ece": 0.40396861363462866,
+        "nll": 2.9655789112837025,
+        "per_class": [
+          {
+            "accepted": 0,
+            "class_id": 0,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 92,
+            "class_id": 1,
+            "rejected": 8,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 2,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 89,
+            "class_id": 3,
+            "rejected": 11,
+            "support": 100
+          },
+          {
+            "accepted": 98,
+            "class_id": 4,
+            "rejected": 2,
+            "support": 100
+          },
+          {
+            "accepted": 94,
+            "class_id": 5,
+            "rejected": 6,
+            "support": 100
+          },
+          {
+            "accepted": 93,
+            "class_id": 6,
+            "rejected": 7,
+            "support": 100
+          },
+          {
+            "accepted": 99,
+            "class_id": 7,
+            "rejected": 1,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 8,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 9,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 10,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 11,
+            "rejected": 0,
+            "support": 0
+          }
+        ],
+        "probability_metric_sample_count": 565,
+        "rejected_count": 35,
+        "rejection_precision_for_unsafe": 0.8285714285714286,
+        "rejection_recall_for_unsafe": 0.05178571428571429,
+        "sample_count": 600,
+        "selective_accuracy": 0.06017699115044248,
+        "selective_macro_f1": 0.03384262198630022,
+        "selective_risk": 0.9398230088495575,
+        "threshold_accepted_count": 565,
+        "unsafe_count": 560,
+        "unsafe_detection_auprc": 0.9281986638095369,
+        "unsafe_detection_auroc": 0.4723214285714285,
+        "unsafe_detection_score": "one_minus_max_probability"
+      },
+      "uncalibrated": {
+        "accepted_count": 600,
+        "accuracy": 0.06666666666666667,
+        "actionable_count": 600,
+        "actionable_coverage": 1.0,
+        "brier": 0.9290854446430906,
+        "coverage": 1.0,
+        "ece": 0.09710687342475681,
+        "nll": 2.534618113383054,
+        "per_class": [
+          {
+            "accepted": 0,
+            "class_id": 0,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 1,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 2,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 3,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 4,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 5,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 6,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 7,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 8,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 9,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 10,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 11,
+            "rejected": 0,
+            "support": 0
+          }
+        ],
+        "probability_metric_sample_count": 600,
+        "rejected_count": 0,
+        "rejection_precision_for_unsafe": null,
+        "rejection_recall_for_unsafe": 0.0,
+        "sample_count": 600,
+        "selective_accuracy": 0.06666666666666667,
+        "selective_macro_f1": 0.03611947671807553,
+        "selective_risk": 0.9333333333333333,
+        "threshold_accepted_count": 600,
+        "unsafe_count": 560,
+        "unsafe_detection_auprc": 0.9279420537900985,
+        "unsafe_detection_auroc": 0.47142857142857136,
+        "unsafe_detection_score": "one_minus_max_probability"
+      }
+    },
+    "strict": {
+      "calibrated": {
+        "accepted_count": 400,
+        "accuracy": 0.0025,
+        "actionable_count": 400,
+        "actionable_coverage": 1.0,
+        "brier": 1.198942436498657,
+        "coverage": 1.0,
+        "ece": 0.4814834120376311,
+        "nll": 3.1513148642192323,
+        "per_class": [
+          {
+            "accepted": 0,
+            "class_id": 0,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 1,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 2,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 3,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 4,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 5,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 6,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 7,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 8,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 9,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 10,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 11,
+            "rejected": 0,
+            "support": 0
+          }
+        ],
+        "probability_metric_sample_count": 400,
+        "rejected_count": 0,
+        "rejection_precision_for_unsafe": null,
+        "rejection_recall_for_unsafe": 0.0,
+        "sample_count": 400,
+        "selective_accuracy": 0.0025,
+        "selective_macro_f1": 0.0047619047619047615,
+        "selective_risk": 0.9975,
+        "threshold_accepted_count": 400,
+        "unsafe_count": 399,
+        "unsafe_detection_auprc": 0.9860402764632168,
+        "unsafe_detection_auroc": 0.0,
+        "unsafe_detection_score": "one_minus_max_probability"
+      },
+      "calibrated_fixed_rejection": {
+        "accepted_count": 241,
+        "accuracy": 0.0,
+        "actionable_count": 400,
+        "actionable_coverage": 0.6025,
+        "brier": 1.3052377677495546,
+        "coverage": 0.6025,
+        "ece": 0.599471004678486,
+        "nll": 3.3280266796391405,
+        "per_class": [
+          {
+            "accepted": 0,
+            "class_id": 0,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 68,
+            "class_id": 1,
+            "rejected": 32,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 2,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 70,
+            "class_id": 3,
+            "rejected": 30,
+            "support": 100
+          },
+          {
+            "accepted": 42,
+            "class_id": 4,
+            "rejected": 58,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 5,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 6,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 61,
+            "class_id": 7,
+            "rejected": 39,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 8,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 9,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 10,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 11,
+            "rejected": 0,
+            "support": 0
+          }
+        ],
+        "probability_metric_sample_count": 241,
+        "rejected_count": 159,
+        "rejection_precision_for_unsafe": 0.9937106918238994,
+        "rejection_recall_for_unsafe": 0.39598997493734334,
+        "sample_count": 400,
+        "selective_accuracy": 0.0,
+        "selective_macro_f1": 0.0,
+        "selective_risk": 1.0,
+        "threshold_accepted_count": 241,
+        "unsafe_count": 399,
+        "unsafe_detection_auprc": 0.9860402764632168,
+        "unsafe_detection_auroc": 0.0,
+        "unsafe_detection_score": "one_minus_max_probability"
+      },
+      "calibrated_quality_rejection": {
+        "accepted_count": 378,
+        "accuracy": 0.0026455026455026454,
+        "actionable_count": 400,
+        "actionable_coverage": 0.945,
+        "brier": 1.1945411122089735,
+        "coverage": 0.945,
+        "ece": 0.4768882834474467,
+        "nll": 3.144860818201033,
+        "per_class": [
+          {
+            "accepted": 0,
+            "class_id": 0,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 92,
+            "class_id": 1,
+            "rejected": 8,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 2,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 89,
+            "class_id": 3,
+            "rejected": 11,
+            "support": 100
+          },
+          {
+            "accepted": 98,
+            "class_id": 4,
+            "rejected": 2,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 5,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 6,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 99,
+            "class_id": 7,
+            "rejected": 1,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 8,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 9,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 10,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 11,
+            "rejected": 0,
+            "support": 0
+          }
+        ],
+        "probability_metric_sample_count": 378,
+        "rejected_count": 22,
+        "rejection_precision_for_unsafe": 1.0,
+        "rejection_recall_for_unsafe": 0.05513784461152882,
+        "sample_count": 400,
+        "selective_accuracy": 0.0026455026455026454,
+        "selective_macro_f1": 0.004807692307692308,
+        "selective_risk": 0.9973544973544973,
+        "threshold_accepted_count": 378,
+        "unsafe_count": 399,
+        "unsafe_detection_auprc": 0.9860402764632168,
+        "unsafe_detection_auroc": 0.0,
+        "unsafe_detection_score": "one_minus_max_probability"
+      },
+      "uncalibrated": {
+        "accepted_count": 400,
+        "accuracy": 0.0025,
+        "actionable_count": 400,
+        "actionable_coverage": 1.0,
+        "brier": 0.9424051649414287,
+        "coverage": 1.0,
+        "ece": 0.16461660170208703,
+        "nll": 2.592580783055958,
+        "per_class": [
+          {
+            "accepted": 0,
+            "class_id": 0,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 1,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 2,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 3,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 100,
+            "class_id": 4,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 5,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 6,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 100,
+            "class_id": 7,
+            "rejected": 0,
+            "support": 100
+          },
+          {
+            "accepted": 0,
+            "class_id": 8,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 9,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 10,
+            "rejected": 0,
+            "support": 0
+          },
+          {
+            "accepted": 0,
+            "class_id": 11,
+            "rejected": 0,
+            "support": 0
+          }
+        ],
+        "probability_metric_sample_count": 400,
+        "rejected_count": 0,
+        "rejection_precision_for_unsafe": null,
+        "rejection_recall_for_unsafe": 0.0,
+        "sample_count": 400,
+        "selective_accuracy": 0.0025,
+        "selective_macro_f1": 0.0047619047619047615,
+        "selective_risk": 0.9975,
+        "threshold_accepted_count": 400,
+        "unsafe_count": 399,
+        "unsafe_detection_auprc": 0.9860402764632168,
+        "unsafe_detection_auroc": 0.0,
+        "unsafe_detection_score": "one_minus_max_probability"
+      }
+    }
+  },
+  "protocol": {
+    "batch_size": 4,
+    "calibration_sha256": "655f4e32f92dcba08023d4a18b0c457f047affb4bd3f691ac6cdc7d90789cfe2",
+    "checkpoint_sha256": "731c6ed39dcf002915e888c829e1f86727f815331a2b3c21d06a17d40d62a08e",
+    "dataset_id": "cbvd5",
+    "dataset_version": "kaggle-version-11",
+    "device": "cuda",
+    "external_class_counts": {
+      "extended": {
+        "drinking": 100,
+        "grazing": 100,
+        "resting-lying": 100,
+        "resting-standing": 100,
+        "ruminating-lying": 100,
+        "ruminating-standing": 100
+      },
+      "strict": {
+        "drinking": 100,
+        "grazing": 100,
+        "ruminating-lying": 100,
+        "ruminating-standing": 100
+      }
+    },
+    "external_sample_count": 1000,
+    "external_sample_counts": {
+      "extended": 600,
+      "strict": 400
+    },
+    "fixed_max_normalized_entropy": 0.85,
+    "fixed_min_confidence": 0.45,
+    "manifest_sha256": "48384dcc2400203fcaf94e82ac07049a7750d132bc85cb5f0db11db3bc820320",
+    "manifest_sha256s": {
+      "extended": "15a05f1d3c6b06a29f9443d7e32951966d04b46b22cd529b4bebcbcdf019b001",
+      "strict": "4d8e5c188a1ddde01b4182f3ffcb1133af183cf777cfc119db35bb44afc89a62"
+    },
+    "manifests": [
+      {
+        "class_counts": {
+          "drinking": 100,
+          "grazing": 100,
+          "resting-lying": 100,
+          "resting-standing": 100,
+          "ruminating-lying": 100,
+          "ruminating-standing": 100
+        },
+        "mapping_tier": "extended",
+        "path": "F:\\new大创\\.worktrees\\cross-domain-behavior\\data\\external\\cbvd5\\manifests\\evaluation_clips_extended.csv",
+        "sample_count": 600,
+        "sha256": "15a05f1d3c6b06a29f9443d7e32951966d04b46b22cd529b4bebcbcdf019b001"
+      },
+      {
+        "class_counts": {
+          "drinking": 100,
+          "grazing": 100,
+          "ruminating-lying": 100,
+          "ruminating-standing": 100
+        },
+        "mapping_tier": "strict",
+        "path": "F:\\new大创\\.worktrees\\cross-domain-behavior\\data\\external\\cbvd5\\manifests\\evaluation_clips_strict.csv",
+        "sample_count": 400,
+        "sha256": "4d8e5c188a1ddde01b4182f3ffcb1133af183cf777cfc119db35bb44afc89a62"
+      }
+    ],
+    "metric_definitions": {
+      "brier": "mean_sum_squared_error_over_12_class_probability_vector",
+      "ece": "15_equal_width_bins_top_label_confidence",
+      "inference_timing": "decode_transform_model_forward_and_quality_measurement",
+      "macro_f1": "unweighted_over_target_classes_present_in_mapping_tier",
+      "nll": "mean_negative_log_target_probability"
+    },
+    "quality_gate_combines_fixed_rejection": false,
+    "quality_gate_policy": "predeclared_heuristic",
+    "schema_version": 1,
+    "seed": 20260823,
+    "stress_degradations": [
+      "blur",
+      "low_light",
+      "occlusion",
+      "downsample",
+      "frame_drop",
+      "compression"
+    ],
+    "stress_levels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "stress_per_class": 20,
+    "stress_selection_policy": "seeded_source_group_round_robin",
+    "temperature": 0.3334679763052262,
+    "validation_manifest_sha256": "2f77aa5c86717a207c83abc0078e8da0a114812b1ba1ee919b306277dc35a638"
+  },
+  "sample_counts": {
+    "extended": 600,
+    "strict": 400
+  },
+  "status": "complete"
+}

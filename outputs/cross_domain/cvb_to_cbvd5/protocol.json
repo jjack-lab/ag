@@ -1,0 +1,93 @@
+{
+  "batch_size": 4,
+  "calibration_sha256": "655f4e32f92dcba08023d4a18b0c457f047affb4bd3f691ac6cdc7d90789cfe2",
+  "checkpoint_sha256": "731c6ed39dcf002915e888c829e1f86727f815331a2b3c21d06a17d40d62a08e",
+  "dataset_id": "cbvd5",
+  "dataset_version": "kaggle-version-11",
+  "device": "cuda",
+  "external_class_counts": {
+    "extended": {
+      "drinking": 100,
+      "grazing": 100,
+      "resting-lying": 100,
+      "resting-standing": 100,
+      "ruminating-lying": 100,
+      "ruminating-standing": 100
+    },
+    "strict": {
+      "drinking": 100,
+      "grazing": 100,
+      "ruminating-lying": 100,
+      "ruminating-standing": 100
+    }
+  },
+  "external_sample_count": 1000,
+  "external_sample_counts": {
+    "extended": 600,
+    "strict": 400
+  },
+  "fixed_max_normalized_entropy": 0.85,
+  "fixed_min_confidence": 0.45,
+  "manifest_sha256": "48384dcc2400203fcaf94e82ac07049a7750d132bc85cb5f0db11db3bc820320",
+  "manifest_sha256s": {
+    "extended": "15a05f1d3c6b06a29f9443d7e32951966d04b46b22cd529b4bebcbcdf019b001",
+    "strict": "4d8e5c188a1ddde01b4182f3ffcb1133af183cf777cfc119db35bb44afc89a62"
+  },
+  "manifests": [
+    {
+      "class_counts": {
+        "drinking": 100,
+        "grazing": 100,
+        "resting-lying": 100,
+        "resting-standing": 100,
+        "ruminating-lying": 100,
+        "ruminating-standing": 100
+      },
+      "mapping_tier": "extended",
+      "path": "F:\\new大创\\.worktrees\\cross-domain-behavior\\data\\external\\cbvd5\\manifests\\evaluation_clips_extended.csv",
+      "sample_count": 600,
+      "sha256": "15a05f1d3c6b06a29f9443d7e32951966d04b46b22cd529b4bebcbcdf019b001"
+    },
+    {
+      "class_counts": {
+        "drinking": 100,
+        "grazing": 100,
+        "ruminating-lying": 100,
+        "ruminating-standing": 100
+      },
+      "mapping_tier": "strict",
+      "path": "F:\\new大创\\.worktrees\\cross-domain-behavior\\data\\external\\cbvd5\\manifests\\evaluation_clips_strict.csv",
+      "sample_count": 400,
+      "sha256": "4d8e5c188a1ddde01b4182f3ffcb1133af183cf777cfc119db35bb44afc89a62"
+    }
+  ],
+  "metric_definitions": {
+    "brier": "mean_sum_squared_error_over_12_class_probability_vector",
+    "ece": "15_equal_width_bins_top_label_confidence",
+    "inference_timing": "decode_transform_model_forward_and_quality_measurement",
+    "macro_f1": "unweighted_over_target_classes_present_in_mapping_tier",
+    "nll": "mean_negative_log_target_probability"
+  },
+  "quality_gate_combines_fixed_rejection": false,
+  "quality_gate_policy": "predeclared_heuristic",
+  "schema_version": 1,
+  "seed": 20260823,
+  "stress_degradations": [
+    "blur",
+    "low_light",
+    "occlusion",
+    "downsample",
+    "frame_drop",
+    "compression"
+  ],
+  "stress_levels": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "stress_per_class": 20,
+  "stress_selection_policy": "seeded_source_group_round_robin",
+  "temperature": 0.3334679763052262,
+  "validation_manifest_sha256": "2f77aa5c86717a207c83abc0078e8da0a114812b1ba1ee919b306277dc35a638"
+}

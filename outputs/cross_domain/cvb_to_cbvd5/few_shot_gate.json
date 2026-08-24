@@ -1,0 +1,13 @@
+{
+  "adaptation_executed": false,
+  "decision": "go_separate_adaptation_plan",
+  "reasons": [],
+  "required_total_groups_per_class": 5,
+  "source_group_counts": {
+    "drinking": 66,
+    "grazing": 74,
+    "ruminating-lying": 80,
+    "ruminating-standing": 47
+  },
+  "strict_calibrated_zero_shot_macro_f1": 0.0047619047619047615
+}

@@ -1,0 +1,1211 @@
+{
+  "logical_sample_count": 200,
+  "per_class": 20,
+  "physical_clip_count": 173,
+  "policy": "seeded_source_group_round_robin",
+  "sample_set_sha256": "cf25bf15640389812cbea0edaefedeb7793448435207a8d6261790423997e6a2",
+  "samples": [
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_e4df4f21ee7328f0f4ff8eb8f7089a8e34e4860771f51f66cb896ce6b03ed6b8",
+      "source_group_id": "group_7b8be46b3a9629b06597171dd1b31c2abf326de77eb595e8ebe850d34b0d83ff"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_7774ad8d81b6c236d1e4630e479118276b4134a800d880b1075fbdee0c4465e1",
+      "source_group_id": "group_4c9bc58e5ae73b3621314f16362e3895d970a83232ae8854cfaa78c42424828c"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_17290f69ec8b6da1bbbd14dab2127ee601dfb0321f9fde6dde0990ef25569fb0",
+      "source_group_id": "group_a321d6544a00385758356db8f74257b23887840e1a6a9a6a890bc5876588d83e"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_12549280d1ef9cbd51c26c1eb3462c1eedf517dc7bbc455d95489ad5b04db454",
+      "source_group_id": "group_93243fd8aed3ca4088a99ff9d036512843de5cd6e46ea48bca296c4e7746c347"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_80f0c968368625619f26c597f56254109f49802cfe4d8276988ab92cbeb18693",
+      "source_group_id": "group_45f43d0cc3fb72d811204ea54355d820e794c210fcd8f72a9a5bfb229cba30dd"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_738a9edfe45ffa744cd291c7be566474a48b5289b23d29df5f184f0218a5e5cb",
+      "source_group_id": "group_b212bd017bed5014e6116d817b88223eb2ec7db157f3c58f79a06465dfa7b65f"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_03e485add63fb17ac87161492cb8944dd572a5381d0aa6e2fbacd3b9867fe9ae",
+      "source_group_id": "group_38e744c5d296fbd21f55802a894c7d8e29263c984f8e66f0ec12ea9f8ef6c457"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_d700c1f61ec6b79013a6663ea2bb43ca97e60c33aab1fd9736a1c38c7d4a413b",
+      "source_group_id": "group_814c8f8f20d1717f193e6bdf5728ebb3672d735a4da204b73c221032ff41e42c"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_26153bb9f8b9741053cd15ea6c665b0e0c38855dbb6842197c9b5595d1fea839",
+      "source_group_id": "group_77d2f06c305c27086e04705deec21c84e9677c9461b95307923c685064d34f87"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_bd4ffb55e1d3316ca3127376a3836417687272c5d5db82756a466a695990144c",
+      "source_group_id": "group_1ad5ce15a1ba9a8f65dacc556eb01354ed30cc9e9832d0a50ae621616a708607"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_a9eacada49612eefdb9e761a016ef997ccf06be9ef4b85a242126fedec958c67",
+      "source_group_id": "group_8b3225555c848889587e23fc12ea16f7dc4e6ed3d49433cda9a42fefc12a40a2"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_239b837cccd68d862a34ad3a99a23ff60584c54428f82c748c58408129d7fe9f",
+      "source_group_id": "group_eaa018727f6c9b31cdd70f07ce97b31a8c5b5daec4344334e3de6aeb6172c43f"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_4ec36ca3998645c74baf129ffb2f0b2502f817954a53b560e4c1af1afe6e0b9a",
+      "source_group_id": "group_1d4fdb9fd41fff540dfa370d371eca3420c8369485631d4cc334c02eaa5267bb"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_1019f0cb44f04bab4c2e5b28194e1da152c848fe7f799431630297720b6344ac",
+      "source_group_id": "group_1b9b1a9b5b8b6b13bb07dbded4cb506383096873ac11267bae0f2f05570dd476"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_5696a095d3827cad747442b08aaf9a3efc9aad46b6777e224a0e401fabab1455",
+      "source_group_id": "group_9bf56b80f94744f89faeee6e758d21654b33a7c5c4a4138cbef4034d141b4d25"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_c5c5d028d8ab823801940020cd5d29a57ec7417141ce8b5e0f03157962460005",
+      "source_group_id": "group_9606028dff17256b5e0f5d8f47e7e90eb2af8c533303895a69cb893f009402af"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_8c448782b4ce79c97f6d7b60d50f1c2246aab6b3bb65944d33962dde82d0c1d4",
+      "source_group_id": "group_4e03ca76e1ca1b6315d55fdf86f6aff73d1903278d096d962ede53e48406ba81"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_03c2a3daa75b2386be0cde6a2bf8cbd5314c35985c8e30819d523213ad100b73",
+      "source_group_id": "group_f5b59ccbc52aa2915fb71c886cb5a418a185404ff672e66727f8c6ff19131d0c"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_5347bb5b2564e68e1c90db79ed3fdaefb29d0ca0dc8f2d70d48ffe3fe88438bf",
+      "source_group_id": "group_09c13fd31e199a565c41db77509f3fdaf60ff440fafd1be0f6019943e06e8891"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "extended",
+      "sample_id": "sample_4bdfe4dab325ee4daa5d1e57fffcb4b8a80d83ac21bec4c1dc287792330a2c81",
+      "source_group_id": "group_4bd181fdd023d497dd845539c4b37b1c7b30a2bbe004eb0cc0607b7d9a537a4d"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_f4d977b55efaba30a1dfef7206e5bc81866071406b5e46b4303db1d3e22acb07",
+      "source_group_id": "group_ac1c2869be33e2d8aaddabd58e142b487ce1780e6bf16b5d525ab68deb39ac1d"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_6c6d9fb58843447200a653d5715d2568020e1c684da0ecba6246fc7aa7a57d47",
+      "source_group_id": "group_548dcc2a77d446758d730358d909b54d1c00c7959223c8c9d3490b07bdf5d6b5"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_2bd70c6160cd48f780138dfcdf5228814b255482bfb058a0440161ff05c44a5f",
+      "source_group_id": "group_737db76ed90214212eee6887110fe02e641188e50ab11e39d50a2972e2a2da76"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_36e22e2d0b67ec15eb1dd6187f454c7c75d54121a2c7050c3d0a160d447df06d",
+      "source_group_id": "group_d6db373dee9b450c2d6d3e96ee8c50e280c6e0a0f84a03060a41fc99d5bd11f3"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_559aa7fd7d7e0a4a452ef06100d189850955f91c5c7386b77e0f546dc70a5fb2",
+      "source_group_id": "group_bd080b6321351d2ab336c6921b48a31143530bc2b6c88634682a0fe31e31bf0b"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_f7e2f0404c389fc8c3634b68ecd0dd79ccc6a0bb6147d17d5d21d6023ba11f03",
+      "source_group_id": "group_81bc0df0783c1311736d0ccc2d8f9e74eef015db347b4cfdad3a19cfc4cbb4d0"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_14cf3027d741621f202b8f3e370eab0163ba1c9214947c78c8ffb096c00b3461",
+      "source_group_id": "group_5e0250ef65579b1be48f576004b209bce97b732d4b34bffdf31ca0decf2f4118"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_e621fccac46b9d33c7f6a2297d75215eb3eea66cb04d624b4895c71a6ccb06b3",
+      "source_group_id": "group_4bd181fdd023d497dd845539c4b37b1c7b30a2bbe004eb0cc0607b7d9a537a4d"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_741956e45af336aa096d9004514b06c16557d6345d6274490475185e6fae87e5",
+      "source_group_id": "group_8f15f6cd3d45169fee98371001a5709517241bff9763b5421fcf4c5193c2144a"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_1e716e31f76b5ff8ed23befecc63338a320c224bdfd73b5d7d4cdbc4cad523db",
+      "source_group_id": "group_a8540ca380eaafeb1cb226345675d5c3309bed3477b34565607d25b0e280309a"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_68ba92dd39b10ea1547e7d3c56b613881bccd7eac88956d8e8f95cb0c3fb7a09",
+      "source_group_id": "group_a45d5845146c6448b43f76eb6d8ad77c39390a292bea5438eba31f2bc11fb072"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_f4be1bce60ac3cd85cc09d82d90ddd4c52b1d886efda9d6bcefbc22fa4b37e57",
+      "source_group_id": "group_814c8f8f20d1717f193e6bdf5728ebb3672d735a4da204b73c221032ff41e42c"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_0c7e3626a8ea37d62f43104a993465eacc96a454c77a5fde02530f55d827b739",
+      "source_group_id": "group_93243fd8aed3ca4088a99ff9d036512843de5cd6e46ea48bca296c4e7746c347"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_e7cfffab21f0b7979c43ded94a9c27f54897e15565088f802933c33a8492c708",
+      "source_group_id": "group_b30de2c73158534aa94ae56e74171531f82b96db7e0d869b615a58f74f1e5cf3"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_1130245c3ab3b438522de47df0589de242095c58d160a2cee8869b55fbd0292a",
+      "source_group_id": "group_9606028dff17256b5e0f5d8f47e7e90eb2af8c533303895a69cb893f009402af"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_54bb22b7124c8d15d0b800c9fbff7b012e549be2870e226b5a06ddc34eb31002",
+      "source_group_id": "group_0c76c2b371460ba380f7da9cd6f20dd6908091e1cf5c6c975ac0459e413c17e0"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_b048d690653dac5e45fbeb5bd75fcd5c8eaedad6d01cf79e827aaf621e4fe801",
+      "source_group_id": "group_77003e0b27169fd46c252e41ead33afdb40bc559f482262449c6b0ca6f0d3bf0"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_06b43eea0110a0ad01792b1e005209e11f573008ec994cd0dadc8d9bc11e6001",
+      "source_group_id": "group_e59ad88ae10eaddda9b24dd5ea545c88ab7daf4e401796f3233b430a1e561756"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_17f9adec9bfb6562e2c8707a3fb5c4422b3443cc57dbc6847a8c515b5f49ea2b",
+      "source_group_id": "group_246adbaa2cf3f175c2e59649d48755268e4fb97054c60d94fb8388e3995ade8a"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_f508566dd7ffb2485cdc46750f40da27d409b8463be260f4a3ce9ee4f00f311c",
+      "source_group_id": "group_7cfeae5229883208a581c775c4b508554c2ef2d1334e1e9a0db6ffa0ad6f86b9"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_4de9b7ac5b6cd231c0fab058ea4b80f41fa3569c4cc0e07754e85bd4c7f3e272",
+      "source_group_id": "group_add1ab778a83793dc75ef4d4c9792786bce128258d59e8abb7fc8121d47759c1"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_60ee025cd65e5bed9a972deb7bad5a9462ebd9b79bb7ebebdf0aa7e79beb096b",
+      "source_group_id": "group_7818c032cb9ea315e2d0e09609f23d36a6f8727d90a7e02ea98d0ab09ec5b85e"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_5d879e3f3db97525b056beda701a4e9efaa10061628a5e9b5fba7662420a805f",
+      "source_group_id": "group_f7f345f926616f52686afe67417ace82e69d874bbdfb47bba3768c8dd4cd774b"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_1e2a88ec8d3442e02c651830daa7870680280b8c64b597f1bd130a8efdf8b038",
+      "source_group_id": "group_410d60ea139d3122568cf8a44c4cfbbd9bcd7e26a800dda21bcb669aa042e8f1"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_523e829aa2b4658411369d389e5403804df63da117d30a5e07e8bd4250550ef2",
+      "source_group_id": "group_5c5f74a172ade986e7d2f65ec31bf99a26830d5a02f7ae8fee6db379fdce50d8"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_d4952673f5197c7c7bac173d81ac259d7422869ae8d5498e2d726cdc07c23a73",
+      "source_group_id": "group_85dd14e0c9a17fe1acf0e9cab509ad6fde0268b446e5d5114d8d30db24f74a14"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_6e9b305ab5ae3994aa1cb6888b9a03823f0117b1d66ed40383cd819467b3ca7f",
+      "source_group_id": "group_94b50a2b74af7d001877462354212a4a62be012d0a99717880e46237c34b7902"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_972a4a421cb38e1000d44f0c21fdccac83cd9f390df96fa0fba83eb6fbfebf9e",
+      "source_group_id": "group_09d5418b70359e63df9581ee4ec9c98b3701149a1a1b102221e9a24c7c165ac3"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_2a91a345c369456d0e616aa83e75003d4afa9af8f93961680597fcf1cd9c3f68",
+      "source_group_id": "group_85e8229e64b9ccb0dc74d1838a75d5e1b4b9f1b628797216e8ca79c9cef8c630"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_ade4b72b84079efa7e91c59da0cd9d6fac2deb3772d2c2787d4c6945ea4ef394",
+      "source_group_id": "group_b36cee3bb1c853ba237e4bf3341be50471a2e6bd186a8e51e843ce72e327abe2"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_cd74bed7eaddb1c9fbe8669383990568cdd7043d96e9f7f3e1358dc1a3282f90",
+      "source_group_id": "group_888a3032c494fc25baf15bfef170b755ec7f9e1597c2ed712001e9d9a4fec686"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_5c2319cdecf158953da2c828c7e11ab1b1883b299b8066f347bdfc41792dbdf6",
+      "source_group_id": "group_9c8058ad44176734be6593238af63b26e119f0b48792991b4617153d1549125b"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_a4d755075917b3b672acf7e8e44306eb64aaeb5b136b783b1e2126340b13a21c",
+      "source_group_id": "group_a9d3787536c136dee609862255932cdafc54e4c5852d8701ca35a6b5f62818b6"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_72b85de5214192b9c99ef1b983a634a332b90d47b26c71e24334f261fe1452cc",
+      "source_group_id": "group_752a1a9b1df7211ea857be168964a29bb801b389fbee20f68ad6840b3d87f5da"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_6f63bdce8ce318c982246329c969bf24034e4037bfcc8223a1eebdba346c3b49",
+      "source_group_id": "group_083da31d6f43026038efac905a94170d343582ca104e41e13d3c213b33702017"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_21ebf566d8b884a3756c259214fd82202873965ce0dec600161d79836d690999",
+      "source_group_id": "group_c887bd4b2e23fcf6dc62974c412216870051a8b4e3ba8ca32dbe0dc49b52bac6"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_50f3d7ea94a77a267698a398060c5bcbcd2eef7c213447bd61f4094d529519f3",
+      "source_group_id": "group_486ad8f0bc0ff4b85349cd3d26dff602cfd5ddab64fb116a0f4f4f468cc71f27"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_ea68a00c3d461eab14c7829aa9dbe61602d04679f357ce8e82237de5e36a497b",
+      "source_group_id": "group_a602d602177e19b118fbe75bd787a3394959fa086a0305f3e715e5b7ff153345"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_6c769fba4c6ab5294f417774165431e54d1fccc044a11c13b1b3499de9f4af8e",
+      "source_group_id": "group_20c2560b432b95d6fb98adf041b4b16ad0d71d1e8db22d8dc622aa26744a7718"
+    },
+    {
+      "mapped_label": "resting-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_0b05c6f449385888f25abff20dcf1839606f17b82816f13c23b4aecf122dd0fc",
+      "source_group_id": "group_38e744c5d296fbd21f55802a894c7d8e29263c984f8e66f0ec12ea9f8ef6c457"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_f08ce0a7419de18589e825871b7268cad4950956e8ac153d4cbc086b76d5516c",
+      "source_group_id": "group_6ee48c6df5f4a060b75389a14b6a838c657c14daa059da496099606f16db017a"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_9dacfdc59280b0c112fef56330381a584600a9ce16c0ef0e725caa3f5fe1c35f",
+      "source_group_id": "group_a58dbd71a41c35e50f40f938318b20f0c8c30aa4760e1dba9a1f1d56e851d959"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_86afe579905f39a2320dffcc9980c3a2377612b78e65d69df82cb4b9dc66405e",
+      "source_group_id": "group_1bf2698560bb67890f91aa7aa0e5ae61a32595e17924c8d0fa433cae7dad31ff"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_c2f9a4409a5ce36c5b405d886aa6262a01e947644f130ff2467c43b3e16891d1",
+      "source_group_id": "group_07182d34ee07d0b81d6341fb28956cc438b78939298091bb1cbdb5998210cb87"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_e86e6ccd59539e04b4e45a3336709778d3116ebd0f819879b809b94ad23f8454",
+      "source_group_id": "group_524290241e02f008de6be8f1cb63505a43f3d26b34a74647229588868a43977d"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_9f8c1bac6906a66d24b56f84a625595d5a10d6c6774ad3aeea81dd897cb63f39",
+      "source_group_id": "group_6090d9759755242dfcc24c23e21309ba73ce389d02c6da199cbe85ae36de842d"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_96664afe806c899c0df2c337233f426b09478c4c82edcc0a0c5d39ed04f53b6d",
+      "source_group_id": "group_cfdf3c454ea3b8819a561c99002f47a1167ddd16aaae2aaf0248c5877c65d15d"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_3b88b6678cf41c3f1fe6d7154616d5fd8e4399fe3b6c3a884894a1390c5d090d",
+      "source_group_id": "group_6a8fa3b08de72af8706b134555350c1583508b75b5a18c3e4c740c8c9f8d470a"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_7e3275bb8df0015948a5606cffd4b6909fed718f7a5898122474b78465ec8921",
+      "source_group_id": "group_a9d3787536c136dee609862255932cdafc54e4c5852d8701ca35a6b5f62818b6"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_7ce6df7cc102d50dfc2813b79c05808d7c2ca5c45d206073a1553b16b9040552",
+      "source_group_id": "group_0b26d55f3440dc6a04e50174b1c56e50177cf3b40eec31dd97d6d8ab809fcaeb"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_3b549ee80e654665c06f93c9e04659b447d3397be53742cc38dec08efe7c0184",
+      "source_group_id": "group_dcc72cf0bce79802db67b154a0c0577da58ec2e571fae69914982ec603093770"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_b06865da0217a6688d7b46d2996fde6de9659d19ffa61e116d2554c8a28127d4",
+      "source_group_id": "group_310e5b8ef93658affaf6c899e3e70140aa13e493e7bd422936e58d5a2e6fa11a"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_6b87ce86f32dc0b594df30e797c9a577e4c1bc27b570c4e0c868bbaa6e64560f",
+      "source_group_id": "group_e171fc2d650977745afbc6680a020a8b0b9b585033478b4e86cc02333e46c821"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_81d69069d037e1187fd73888f30ca26722b8ffc25a9f718cba0c1e621f385625",
+      "source_group_id": "group_38e744c5d296fbd21f55802a894c7d8e29263c984f8e66f0ec12ea9f8ef6c457"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_6eb0d5f63a50051480f27cb78a9b93ea086ad91a260fb1e02f44e77d9e4c88db",
+      "source_group_id": "group_386087cc0ebdb083b1177f7c4a616185bd5f66389e069d0e6a52adac410ce6a7"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_1eb02936d0973d0c271bf9d85147550d4ae96671abc5de3f096047a061072dc4",
+      "source_group_id": "group_b2c9d840c504a1b22b57ec47c9284a6a278ce6cece58b30d1b381b3e33dc227c"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_3fe75e69452a4da2751901565a722e11840ec88b73289f6e7aae7cfdd733bafb",
+      "source_group_id": "group_d19be7ce8dc9ffc5eb7f82f0d26f0bc67413f001c2a86a46b4e0b8efa0358006"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_8fcb280af37a2ead838b6e13777d553f00f2e298be120acdb41268fbbb06f554",
+      "source_group_id": "group_a1d93ebc8f081445a5e8a7de341dac8e9457ac690145f3114b159815a7359d1a"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_a7a83ffee180e79fb2226199c9b8026e620fd6b015216956702caf53da86e60c",
+      "source_group_id": "group_7f4273d6d9e24cfa0d8b43db52e5a52db3c2d813721ecea8e955cbf62bdcb54c"
+    },
+    {
+      "mapped_label": "resting-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_7d2143869451889e80590276695b5327732b0c9e4d78b36971d48bf8695c3471",
+      "source_group_id": "group_84d41af50be0a89b84e67bc8eac14bc62e9601c9c26221f0c103b902da404f07"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_959b0e768b84b506211b82a371333a62cbe9235fe250203df8d2af96612930d2",
+      "source_group_id": "group_d38576451d14b20ea2f2000838b40841cc406802216201a7cbd90d99ce36cb82"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_9a034216919e1a4e9330cb198c3330225400225138e4cf9c2b7028ee2fb1f127",
+      "source_group_id": "group_a0366ed3f405c38fd3a07229854fa5267f51e3ea155dd65ab79c23a71ff8347a"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_2c927aaed20cd129645bb2f53709f43aea26a85e6026c6fbb6dd22da6fff59b0",
+      "source_group_id": "group_d8b2e582c6d5feff645ec5cc30e6019b9cad8c592e1f1000484f64192388f67f"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_2859d5ab3ee76c47ce8279dbd27fb571ca18d2e37654d8942af5f635e50b1c63",
+      "source_group_id": "group_6b4126a895c0ca9271447dc64f8ec99933facda5b8620864e02be03d246475a2"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_553bbabc90bbc13a11f8a41687c5b3a6101efbbad5258d3af2f40b42f4aa6945",
+      "source_group_id": "group_dfdbcbb24239ae866047e006f0fb2a8929aecd754849b846b18567ba7c91278d"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_be4c318c1199757b26021f64a90cae836745ecbe2ebbdc9a6bf61ff3d37defe0",
+      "source_group_id": "group_9606028dff17256b5e0f5d8f47e7e90eb2af8c533303895a69cb893f009402af"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_5d15640eb078c91f87765992983d37dc814f82ca27bec5b80f6b18283ced418d",
+      "source_group_id": "group_b6a3ab300e1bba4baaff7664da637b988686392dce943e52c4c1b0fad7c78d31"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_c6da0c25af109b69afe529727fd1532ae1654d76e360da7ac690f52f4f7f98c8",
+      "source_group_id": "group_ece2459d4526da1aeca21f9ad7dfb7b6addd29939a9befb8911f3884f0554754"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_71709a51b0b07ab85a967af75006ae2bed054f1da9a53b74b10f447ac9f81dc3",
+      "source_group_id": "group_36758574b2aebab03c4f8d5d69b53d8b1c2a29ebd4468b4400a7fc2d41bbdc90"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_c83eebb76eb555a5739029fa082d64f3326b943463495886e1ff15bca9402814",
+      "source_group_id": "group_4252ea6d15ceea540a72abb9449c5d19f371249d08741ec8e7af6550a1d9b2f1"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_4bb43074b2765dbbb7986d13a1b4d82a49d4781c0dedd2f07b5047a359c55247",
+      "source_group_id": "group_988d5e6386362cd817800a1f08643e7dc869812564d9715dd82c9129447b7dad"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_bb49181624e1837e9e62cb891dc39e41dfc4f8dfc9028724433f343e96587c83",
+      "source_group_id": "group_85e8229e64b9ccb0dc74d1838a75d5e1b4b9f1b628797216e8ca79c9cef8c630"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_f07f39a7098108d33b3b32bbbf8da4f1fd6af29e890cd49eabf7260120173168",
+      "source_group_id": "group_31a11bf4073568da734a5accd32daedf42b2d0bbd155e423a0667d6449700ccc"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_5e81bc8b9951f7ce0be4361dcb7d97db8794943ed636fc51a90d45c9399cfb6e",
+      "source_group_id": "group_be73fd1dcf9d8b66143d45e13f8ddbe63dc03bb8897f3d8a71440cf06c75e54b"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_cda45fd425a336509fb2b1ecc0bbd4c1486dd66a8576203d9f2533848f216929",
+      "source_group_id": "group_789af9bb72c9ab2679cf6090267fa5b0199f33d1613d784cd11055a39ed83e9f"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_cfe6bb3d8b904978fa58193b46bb13358a550d81313512921fadc96cf54882c0",
+      "source_group_id": "group_e9244df2ca6d40afb90ff702f8461c3f41978bbb4e6c7833e4eba0edec28e169"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_358f80c3c254071422e39e83c2f4d62ad5447107f6966be3913a3fb0996d5e03",
+      "source_group_id": "group_083da31d6f43026038efac905a94170d343582ca104e41e13d3c213b33702017"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_649235ca8117d73dff69928a2ea46df4fc8e044d18b00b2130bd102661992a3c",
+      "source_group_id": "group_5a32462df92bc635d97d8402890e89803b58d7454781515f4ab8368e4791d2af"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_df16e75b2164df6a0516fbd06fd433cb6a6e437382d6480cb1ed998c4c294ed8",
+      "source_group_id": "group_035669feeebab2a0d7f438feaa3c1c0769ec92731f0ec677eb73f4eb2d3f37e5"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "extended",
+      "sample_id": "sample_cbb607fd4091441ed892764fec45bad7fc4dfbb9192c91b0a3d07cf492d48a7d",
+      "source_group_id": "group_5f6e15f49cd0e022d563111452865ff8a272810d6609a8e39a7ce9965dde85fa"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_815650cd9c5440c660e0711d6daa8009563b979e7cc8d20f72f87961c81084ea",
+      "source_group_id": "group_dd972f6d52a1ad013e9c9090a0c9cca9f9e4483ab6ad0c7734967ed56ee9ea21"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_7df2a35c52c6ad084c18f5cd46eb15240840ecbbea2b175b9d23fb74def225c4",
+      "source_group_id": "group_561bb49cb86ac53b80e7937346d2ccd5a0d624a59c7dcdb8617031053f0ac0fc"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_1d328a244a9bb62b6d929fb1cf4611b5e6e4c5d24d4bfb6048e7dd6aa06fdffd",
+      "source_group_id": "group_c3ee38daf441732e8b83e2ad90b8d64106041f38ed3ae81b0098332f317a4c5c"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_38efb3cffc7a573bfa787240407c589cc41ba3a4702c7f3f6023e91735919f4e",
+      "source_group_id": "group_683dbddb5a95be073c9c87318b28983b09662d40a0b7ba9addfefcd026743314"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_7b8cf4f7c238d227759006eb605c234e1deac75273e6262a3eb1a59101c0c7bc",
+      "source_group_id": "group_86ba2e5659fca124a59929bc3e8b3795c189d0951db723cdbb7b2357ae930d03"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_4d2cfdc1da744c3991557ebfecabb8e9cd653513a97e2740197a4e59a1bc651e",
+      "source_group_id": "group_e36e51be112d2f8b6f009fc65893dfc2fd101b2feccd1b90c59add594362e34d"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_2fd999787969d0802007654f83484e1b902cf0d90e2ca5a824b14959dd548246",
+      "source_group_id": "group_1631043b241629d78970e88df48ad81741981dabf91b3d5d2645e2c9e71b415a"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_e71b3dc45aa02b827d8e516847e6400559b440bc6ac65cd479c1170c82d99493",
+      "source_group_id": "group_b363153330840d26c70651c7e875295061696afd20189ec60d5bab9d6101fd1a"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_0dad1fdb60ffb62caab8be8d945bcb3ae872d698adbe10b871920a6726d851c1",
+      "source_group_id": "group_31c2ed495d1cdcdc8a6d5117dd262c2035b293e86b8713b41e803dfc5f75e2d9"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_0edd9451ea28b917e4f3a863452e2249d7c2c76c220a8ddc26d7a3f8c0de0318",
+      "source_group_id": "group_bc7e7ba96ba6b54e2fbd669c76cc8a9a1d432b54bbe3c6b53532b5c5949f71db"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_911601aff873bc003413ee138f6b7959f178e71af8207cc63ce5035dc2fadcb4",
+      "source_group_id": "group_beca3f80c090f3b819ae25741a3befa7f1ec7d8bf68920da979a4830602319a1"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_2e8e8cbb2f06d3d76f2d1fd2eda11f7c7d8c2706bf42acc16dc5a1fad69a3f04",
+      "source_group_id": "group_31935ddd1e516f0cbe7e39b1d8470f0b6c01769bba1cb19f5353628e3ad76009"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_5a9180f92f91c1cc29d40aeb766e177c1d46faa39d890eac371e398119079671",
+      "source_group_id": "group_865dc9ce1bc4744a740911a87b0a36375fe71245a6e26dd91b8d2d538ded2715"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_ec756daf2beafbf9ed48decb16c8138610019d7976f91b1397032da8d188d0e3",
+      "source_group_id": "group_a271706cf5ed365f45376ab9a8e33d931b93b096dcbb25e96fd076dddd816623"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_eb2fdbdd610742dce082a3f51d5d4df2479a5f55b9873dec81a21c250fa18e3f",
+      "source_group_id": "group_789af9bb72c9ab2679cf6090267fa5b0199f33d1613d784cd11055a39ed83e9f"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_146898f84a9eee364c77860eae5e8d90a8fa1c225d2607afe574fdfd0d838923",
+      "source_group_id": "group_5108841b64975aca1f92a57205c85befa825f9cb01f7a78b9f15d523ef412a2c"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_1e08d2b4dacd3d2e1d4da293bc20370b93f8053c4661f813945e86ad0fb04238",
+      "source_group_id": "group_2d98f47a544af5060ab4c932c3a2669001ca6d06353e194b8266d0e443c30fe8"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_ed0401672f81d62379d43980dc7e2dab41047c6f20de7b7c7363e4ca80ae9f09",
+      "source_group_id": "group_e171fc2d650977745afbc6680a020a8b0b9b585033478b4e86cc02333e46c821"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_670cb33c2c862eadf9089276af8af6367e75ed4eaa75dd71785f820e7f3cce1c",
+      "source_group_id": "group_5f754589974cb5f73ec2f859a3135d2e83a8a63ef881f87c1dff191becb006a0"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "extended",
+      "sample_id": "sample_a026cc49935b9885251fceeeb0bb7c8763933e1f436de0051b5f05b4b6e57403",
+      "source_group_id": "group_40b4d2708f96be860d6f1cc0006a0778c9e65785fa466e6a3bbd622eb1b31a94"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_17290f69ec8b6da1bbbd14dab2127ee601dfb0321f9fde6dde0990ef25569fb0",
+      "source_group_id": "group_a321d6544a00385758356db8f74257b23887840e1a6a9a6a890bc5876588d83e"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_12fb1d5143671dbbdf2ec881c3bdff3bd7874208f86beb12ec1d8f7fbd73f32a",
+      "source_group_id": "group_96cbe04e6e7056c60171c9fe5088d9c3abf19771a40dc4bbc7407406cfc2b646"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_dd92a83b81fed60eac8b0b4d1eebe0009d8cffbf92ecb9af4d70b324385f5927",
+      "source_group_id": "group_65ae7e80d24503be83a71a1a750049465a9aa5f37fb42fd5915e72feac2a33b4"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_239b837cccd68d862a34ad3a99a23ff60584c54428f82c748c58408129d7fe9f",
+      "source_group_id": "group_eaa018727f6c9b31cdd70f07ce97b31a8c5b5daec4344334e3de6aeb6172c43f"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_51cc8227573ee9fc72ebf69c7a0f51e1310ef12bced8f9a05cb400533fcd5cd5",
+      "source_group_id": "group_35855d6f0f69699f93c7984b710be8704f97ea61f1e679ea0a8b5413275f9b6d"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_645a9d68451b752abff9644a51ff7fec4acf386a1d0a4c378ed150431648323a",
+      "source_group_id": "group_04385d87988e2428f7130b53bbe5b5ab2d4785683ebf51596b96473d15f2db65"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_bd4ffb55e1d3316ca3127376a3836417687272c5d5db82756a466a695990144c",
+      "source_group_id": "group_1ad5ce15a1ba9a8f65dacc556eb01354ed30cc9e9832d0a50ae621616a708607"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_d700c1f61ec6b79013a6663ea2bb43ca97e60c33aab1fd9736a1c38c7d4a413b",
+      "source_group_id": "group_814c8f8f20d1717f193e6bdf5728ebb3672d735a4da204b73c221032ff41e42c"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_72e31de94055600912fd8c55e068387bcdb5521c579830deed8404221f28384d",
+      "source_group_id": "group_29df6697d8f20a469921c4354f530f3212d6f2f2d20049677bf179155322ec2d"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_2181fc2063a0cd4bcba06f1bbc7daeb05596585026b14c250e348821360c3e6c",
+      "source_group_id": "group_04c8d5520964a65af085e3fea03c0725a246c4ebdca6a6b41582653a7b8069f1"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_66906ca6b80b8145b103f4cb22929078cda41bdfbdbbf9c2d6f2604a945bc6a8",
+      "source_group_id": "group_be73fd1dcf9d8b66143d45e13f8ddbe63dc03bb8897f3d8a71440cf06c75e54b"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_d040d7270482f1319afa8087ed57e0319b55f2dfdd74f5f62de6761bcc83e2e0",
+      "source_group_id": "group_01c9cca90b37dbf3195670a2cc456efbb6c1bb638fe33bae1e952bda7f965e3f"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_a156778209488475234cda09d2375bc5b6842d6252f54f9e59d6851b008fff51",
+      "source_group_id": "group_86ba2e5659fca124a59929bc3e8b3795c189d0951db723cdbb7b2357ae930d03"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_1019f0cb44f04bab4c2e5b28194e1da152c848fe7f799431630297720b6344ac",
+      "source_group_id": "group_1b9b1a9b5b8b6b13bb07dbded4cb506383096873ac11267bae0f2f05570dd476"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_a0a70852b8af75550dff34643f7a5999cc7ca15b860383bc44e3692f4ec61ad9",
+      "source_group_id": "group_df0ad28f715ebe699f440d0076fe5edb19dea510102f57d676c1bd28fbaa95c6"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_cf36e6011a417272a1ba8746868b266bd00b86b3f5b4324ce904e4a42cbff90a",
+      "source_group_id": "group_0156d7942fa7b18dfcc90222b31b32156c43d7d6fd885849ff172a3f9b5cb7ba"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_a6f3ee8291905c9b208e7a30828358b92608f42aec2ee7fab9a794e18bfd5331",
+      "source_group_id": "group_72283122f8a11a665197a37d05b366aca85b5dd6a9105ac039675ac46cafda55"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_e4df4f21ee7328f0f4ff8eb8f7089a8e34e4860771f51f66cb896ce6b03ed6b8",
+      "source_group_id": "group_7b8be46b3a9629b06597171dd1b31c2abf326de77eb595e8ebe850d34b0d83ff"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_c5c5d028d8ab823801940020cd5d29a57ec7417141ce8b5e0f03157962460005",
+      "source_group_id": "group_9606028dff17256b5e0f5d8f47e7e90eb2af8c533303895a69cb893f009402af"
+    },
+    {
+      "mapped_label": "drinking",
+      "mapping_tier": "strict",
+      "sample_id": "sample_fb18883e36b455fc71e2485b77ca85279a2bb920581cf49ca60aac9b09a1a0fd",
+      "source_group_id": "group_bb258a16f6915ccfea92d85e70bbb691ddc6462c2716f386e1006aaf4fbada21"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_60f10d8692efba34e16775c044667cc89574c72dadd26bc8d6e6b84f3f37259b",
+      "source_group_id": "group_43ce9d7b88f48cda5846022046d9a64df09320fd6a331993b451691753679375"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_a9970ec393204d0de39938639082bc4e392eaa336537cb6a1567ab5a5f57256a",
+      "source_group_id": "group_194b3625e05b636c1b4d4dd630eb0419dd45ac8b768a0dbf1e46b15e9a8c10ef"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_28f5cdc32f0310d8bcc0362ac629c39e6aa1a15e387735f2945ddad6378f7d07",
+      "source_group_id": "group_acd2caf363164bed40490fb4603aa31e4b56df892d03e5616aec0d43b692432e"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_8b827bb9d00f3e21eeea3bde43f5271eb97d6042870cd82d6f3d2ecc950263a4",
+      "source_group_id": "group_f81fb34ceed0133d62781072c57870f9935b3f7506a5c5460f79deaf0b6f1aae"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_17f9adec9bfb6562e2c8707a3fb5c4422b3443cc57dbc6847a8c515b5f49ea2b",
+      "source_group_id": "group_246adbaa2cf3f175c2e59649d48755268e4fb97054c60d94fb8388e3995ade8a"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_521dcbedeb5f4a5f2279299b78d2e1b51f73be585f188faaa62b85e2adcd3b5f",
+      "source_group_id": "group_0156d7942fa7b18dfcc90222b31b32156c43d7d6fd885849ff172a3f9b5cb7ba"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_91aa00276110892a92a96f1afc1e1307b6c593e337544b31cf08bb53ea59cf1c",
+      "source_group_id": "group_52824139f79315fb9e8e3f429b96714a71e0a3a25ece53b2883aa6772ba73458"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_99548bf006eaa3d68de29cf683ed427c61863b8e76d3fb928dd158587f1c72a4",
+      "source_group_id": "group_aa058a52706ea525d67a1291dec2d4dc230a36a7fee70d818f33caa6f7e63f49"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_e621fccac46b9d33c7f6a2297d75215eb3eea66cb04d624b4895c71a6ccb06b3",
+      "source_group_id": "group_4bd181fdd023d497dd845539c4b37b1c7b30a2bbe004eb0cc0607b7d9a537a4d"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_9deae9311de4a8ece481a08067df6be99f5e394fa62f9e4f6cc03c401c7e0761",
+      "source_group_id": "group_c7b29e8530b75a02a070a870961539b3e4d89596ebf5b29ffc767bda78156b26"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_406a487f59e0bca90fa4b13ad7a556087345cc2948e1f9cfa3ac8425c97f2591",
+      "source_group_id": "group_219bddf927d601f93dbb7471e414e51f235500465227c42fec07e8afe631fdbf"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_3a4819b3e7d1209ede9d7e5a2abbfddcb34adf2ff65a34fb99224fbb982dea3d",
+      "source_group_id": "group_b1d98c3f203aa70064156bc430f3c4c721d5e192988f92e0e8bcc12e685819cd"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_490d0ba286621e9c3ae27fac3063723b55d5c4cc4ecdd4918352e825f9a35298",
+      "source_group_id": "group_2d92d536d21f0f98780b1b1a1dc9d54d1c780f4d38fe555eff0107f7a43bea94"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_3079d6fc10183923f17112b819c65d0d2e3e467bad80ee61407e4dbb4eb686be",
+      "source_group_id": "group_410d60ea139d3122568cf8a44c4cfbbd9bcd7e26a800dda21bcb669aa042e8f1"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_b048d690653dac5e45fbeb5bd75fcd5c8eaedad6d01cf79e827aaf621e4fe801",
+      "source_group_id": "group_77003e0b27169fd46c252e41ead33afdb40bc559f482262449c6b0ca6f0d3bf0"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_3ce8e2828fb3d71d345be94feb4d0abab966ffeaa54aa5bc3c08e898c5810a11",
+      "source_group_id": "group_7be06165452e74bb0ce238acee2720cf1a43b92f51e5972049e108514daa0509"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_48adb7aeb4799fbb0a5903ed3ad0c03cb108bde86bb0a7c404dcfb5ebc225193",
+      "source_group_id": "group_22975e222d8b066b117d44a2787f95c67e02231f3b5c210678cced1543db0bff"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_875db71dddf281c712846417a7bfd54b752cbe3f74144e324081eeb3e118b43a",
+      "source_group_id": "group_2276d3ff32b14f76263046b18b9c12525186eac5372e36865bef997a6ac0474f"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_16d1ce4a7b38296c5937d44bfca11215ebfcf9bd6722c1af5407d71a0c16e782",
+      "source_group_id": "group_1d40c7c1a431b0b37c8254773bcae8a71260eb3f051c3957204a9d703e212b56"
+    },
+    {
+      "mapped_label": "grazing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_a6fc67b411f0a3fa9e9c35911dbb9d9fe76a758e513d63a274aeb6553807aaf6",
+      "source_group_id": "group_d6818ce5ac75eea9b840b5e5fe013f76a4dbf1d20c2057ef406c2ce105e6efe4"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_0d51d5797744c8f0f13a69acb042b77f266e4f89aa8595122429c67810554f49",
+      "source_group_id": "group_a80f0537a852d88109ce0c60b7c70ad6dfe73ec29901b4d8d02679af16f701d7"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_53ac11f6e0acb0375d7b1252a73905276f7b0067fd588c554d6ec085968dfbef",
+      "source_group_id": "group_9516468eb44eb02d820f98b08e77700faae55323eefb09791446e725f0f6acaa"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_c5b033d1daec5c67f5ac8b02c3ce9a633075c2b4f022facc36b1b157d9f36cc0",
+      "source_group_id": "group_663c4c2c8ecbf0d282de5fec1890606d9151fb5e3c2e4ca7815a79b4bf1c2d1b"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_040462576ac9cecff352cabfe59c7d513dcdcb137a8cc50dc2f889d398021744",
+      "source_group_id": "group_f04c55822fef81a32a0496c86af448dfeaf7650ecb1203ab1dc959a4204061b8"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_358f80c3c254071422e39e83c2f4d62ad5447107f6966be3913a3fb0996d5e03",
+      "source_group_id": "group_083da31d6f43026038efac905a94170d343582ca104e41e13d3c213b33702017"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_cbb607fd4091441ed892764fec45bad7fc4dfbb9192c91b0a3d07cf492d48a7d",
+      "source_group_id": "group_5f6e15f49cd0e022d563111452865ff8a272810d6609a8e39a7ce9965dde85fa"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_2859d5ab3ee76c47ce8279dbd27fb571ca18d2e37654d8942af5f635e50b1c63",
+      "source_group_id": "group_6b4126a895c0ca9271447dc64f8ec99933facda5b8620864e02be03d246475a2"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_d95aa367c5e8df5c4d40085358c167da40bc9a02740d923d05225d4cd24bd30d",
+      "source_group_id": "group_b1d98c3f203aa70064156bc430f3c4c721d5e192988f92e0e8bcc12e685819cd"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_649235ca8117d73dff69928a2ea46df4fc8e044d18b00b2130bd102661992a3c",
+      "source_group_id": "group_5a32462df92bc635d97d8402890e89803b58d7454781515f4ab8368e4791d2af"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_3ee0625d855a2717366f1bf2d1cdccd2a83a4c1b335649ba948ede3a5586b933",
+      "source_group_id": "group_524290241e02f008de6be8f1cb63505a43f3d26b34a74647229588868a43977d"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_baa1d9898d66226969599994d865a0ccc5af6cf6211926ce154db54ab962837c",
+      "source_group_id": "group_2c21c4ac964c35e0351b9bdb5bd0e0f0c8cc378c8d413d6717fe1f5572de27dc"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_5e81bc8b9951f7ce0be4361dcb7d97db8794943ed636fc51a90d45c9399cfb6e",
+      "source_group_id": "group_be73fd1dcf9d8b66143d45e13f8ddbe63dc03bb8897f3d8a71440cf06c75e54b"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_59563b17282475ef403608cb3296ec88931753e807cd80a8e35b0e5dc9eba636",
+      "source_group_id": "group_1ad5ce15a1ba9a8f65dacc556eb01354ed30cc9e9832d0a50ae621616a708607"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_7ac633ac2bf7ca1ce4933f964011aeb487e0d0e0c139773eca80f57b4913ef7a",
+      "source_group_id": "group_544dbd8bc8ce48fcfa7311cfa5067a764deed32fe3a5c1c758482358fe8cadb9"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_959b0e768b84b506211b82a371333a62cbe9235fe250203df8d2af96612930d2",
+      "source_group_id": "group_d38576451d14b20ea2f2000838b40841cc406802216201a7cbd90d99ce36cb82"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_df16e75b2164df6a0516fbd06fd433cb6a6e437382d6480cb1ed998c4c294ed8",
+      "source_group_id": "group_035669feeebab2a0d7f438feaa3c1c0769ec92731f0ec677eb73f4eb2d3f37e5"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_75a805b7e3e2ddbec9bf7400c8be3947968b014299e0403cd2ad48251b4ce2ed",
+      "source_group_id": "group_f13e8abb553d6ce566f4dcae13fe8f1c61209af6947f7e0f66b8a24722a77981"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_bb49181624e1837e9e62cb891dc39e41dfc4f8dfc9028724433f343e96587c83",
+      "source_group_id": "group_85e8229e64b9ccb0dc74d1838a75d5e1b4b9f1b628797216e8ca79c9cef8c630"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_e14d0f2f58b8657ace5f0b88e219104b0c8f15be70e872a1e9755aa5756ef22f",
+      "source_group_id": "group_d5d73040fa7c25f75f66999d1e7396fa77a0b4f91adc39b8b1a488a48dc73505"
+    },
+    {
+      "mapped_label": "ruminating-lying",
+      "mapping_tier": "strict",
+      "sample_id": "sample_5d15640eb078c91f87765992983d37dc814f82ca27bec5b80f6b18283ced418d",
+      "source_group_id": "group_b6a3ab300e1bba4baaff7664da637b988686392dce943e52c4c1b0fad7c78d31"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_6c933a36081e1ee38da60b5069f8a317cbad688acdd21736c6696775374f151d",
+      "source_group_id": "group_d34769eba8f1e4ef3979b5dedb19b4aaca521ed9ee816d0133429463b4e4440c"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_0edd9451ea28b917e4f3a863452e2249d7c2c76c220a8ddc26d7a3f8c0de0318",
+      "source_group_id": "group_bc7e7ba96ba6b54e2fbd669c76cc8a9a1d432b54bbe3c6b53532b5c5949f71db"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_ca85e2ffc2c8d3c4d6ebb1883742a929442dbef7cbc6762a2878ff5117276c29",
+      "source_group_id": "group_2276d3ff32b14f76263046b18b9c12525186eac5372e36865bef997a6ac0474f"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_46ccaf883d006cd25637e32324bdc4382d2e82898243e905493e5a9c77633b58",
+      "source_group_id": "group_d2a2f2072b614142af2f97632d276f24380c494d96f4bc6cc7d19088d4af0b43"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_5a9180f92f91c1cc29d40aeb766e177c1d46faa39d890eac371e398119079671",
+      "source_group_id": "group_865dc9ce1bc4744a740911a87b0a36375fe71245a6e26dd91b8d2d538ded2715"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_2fd999787969d0802007654f83484e1b902cf0d90e2ca5a824b14959dd548246",
+      "source_group_id": "group_1631043b241629d78970e88df48ad81741981dabf91b3d5d2645e2c9e71b415a"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_df0eb1f086a779070105e70bb4f0cc84f9034857a7b1606e695a06ae540403e2",
+      "source_group_id": "group_410d60ea139d3122568cf8a44c4cfbbd9bcd7e26a800dda21bcb669aa042e8f1"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_2e8e8cbb2f06d3d76f2d1fd2eda11f7c7d8c2706bf42acc16dc5a1fad69a3f04",
+      "source_group_id": "group_31935ddd1e516f0cbe7e39b1d8470f0b6c01769bba1cb19f5353628e3ad76009"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_1d328a244a9bb62b6d929fb1cf4611b5e6e4c5d24d4bfb6048e7dd6aa06fdffd",
+      "source_group_id": "group_c3ee38daf441732e8b83e2ad90b8d64106041f38ed3ae81b0098332f317a4c5c"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_ec756daf2beafbf9ed48decb16c8138610019d7976f91b1397032da8d188d0e3",
+      "source_group_id": "group_a271706cf5ed365f45376ab9a8e33d931b93b096dcbb25e96fd076dddd816623"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_d571ad701e765288d02cdd7c144a8322560aa4c6cfd3c18d44d160d4f2b8b3df",
+      "source_group_id": "group_5434d079bf1c8725bc78bef13a3c237e5246d1ec6c85264a792801d2429c13da"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_bc770de0a5ae5518964d727b59b34251f432d782cfd7219dfece8f0adabbc415",
+      "source_group_id": "group_9d1c8eb8f3df1c53ee9b621d22020dc81652ff647743a032214af60da14e5d94"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_2baa04e97f772b5522f2f1096d96f3ec41ef1ec8b5c68e3d9747c53a8d8991c1",
+      "source_group_id": "group_04c8d5520964a65af085e3fea03c0725a246c4ebdca6a6b41582653a7b8069f1"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_6b49e844601b0a315a67f10e43c7ebca8fbf45296db8b8d3e61a84a8f0e70311",
+      "source_group_id": "group_b212bd017bed5014e6116d817b88223eb2ec7db157f3c58f79a06465dfa7b65f"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_8fdbbe257349e109d5aa1f1efe6a637729df961fde944b80b53e7f62f59e7a67",
+      "source_group_id": "group_9fdea17941461511a1b93751375545215a72b2356299350a75b94ebbd44bbccd"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_4ce9d9545c217f340a3b353ec33717def3c3563df756335e462e426b83efb634",
+      "source_group_id": "group_f7f3f96d3ef0479a7673bb7c272ecd557325e5c3fe899219df908c48df9410f6"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_815650cd9c5440c660e0711d6daa8009563b979e7cc8d20f72f87961c81084ea",
+      "source_group_id": "group_dd972f6d52a1ad013e9c9090a0c9cca9f9e4483ab6ad0c7734967ed56ee9ea21"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_7df2a35c52c6ad084c18f5cd46eb15240840ecbbea2b175b9d23fb74def225c4",
+      "source_group_id": "group_561bb49cb86ac53b80e7937346d2ccd5a0d624a59c7dcdb8617031053f0ac0fc"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_7e5ae3a5fe5485411c0153fa57c7c9c52cb2d360c93e5fd6a5f30f0728ae1bc9",
+      "source_group_id": "group_1d1e3367e1d38e44031dd3f11ed797cabd28a41a0468ec5c8e225075689656c4"
+    },
+    {
+      "mapped_label": "ruminating-standing",
+      "mapping_tier": "strict",
+      "sample_id": "sample_8db588d41c04e7219ea011ea68278dd81357669e119624c58ee16969decf1aaf",
+      "source_group_id": "group_5c5f74a172ade986e7d2f65ec31bf99a26830d5a02f7ae8fee6db379fdce50d8"
+    }
+  ],
+  "schema_version": 1,
+  "seed": 20260823
+}

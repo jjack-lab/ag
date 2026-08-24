@@ -1,0 +1,10 @@
+{
+  "external_sample_count": 1000,
+  "few_shot_decision": "go_separate_adaptation_plan",
+  "protocol_fingerprint": "9a51fe39ef42a6f8e3553cf0b878ff6dd301925ea865b15b90b2e190888f6c65",
+  "report_status": "complete",
+  "status": "complete",
+  "stress_result_rows": 96,
+  "stress_sample_count": 200,
+  "stress_sample_set_sha256": "cf25bf15640389812cbea0edaefedeb7793448435207a8d6261790423997e6a2"
+}

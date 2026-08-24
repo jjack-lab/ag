@@ -462,27 +462,27 @@ Commit: `data: register external cattle behavior benchmark subset`
 
 Verify checkpoint SHA-256, calibration/checkpoint binding, manifest hash, class mapping, output location, CUDA/CPU selection, and available disk space.
 
-- [ ] **Step 2: Run zero-shot strict and extended baselines once**
+- [x] **Step 2: Run zero-shot strict and extended baselines once**
 
 Do not change thresholds after seeing results. Preserve per-sample logits, quality evidence, and inference timing. The immutable protocol fingerprint must remain identical across dry-run, formal execution, and `--resume`; mutable status belongs in `preflight.json`/`run_state.json`.
 
-- [ ] **Step 3: Apply the frozen quality policy without external-label fitting**
+- [x] **Step 3: Apply the frozen quality policy without external-label fitting**
 
 Use the learned Logistic gate only if CVB validation video-quality rows with a verified manifest hash are present. In the current verified workspace they are absent, so write a `predeclared_heuristic` gate artifact with absolute image/track bounds fixed before external metrics are read, apply it without fitting, and record the missing-CVB-quality limitation. Never fit or retune from CBVD-5 labels.
 
-- [ ] **Step 4: Run controlled degradations**
+- [x] **Step 4: Run controlled degradations**
 
 Use the same selected source clips and fixed seed for all variants and levels. Persist the selected stress subset hash. Bind each stress cache to degradation name, severity, subset hash, and recorded transformations; reject copied or swapped condition caches.
 
-- [ ] **Step 5: Generate reports and check numerical invariants**
+- [x] **Step 5: Generate reports and check numerical invariants**
 
 Confirm counts reconcile across prediction/metric files, coverage is within `[0,1]`, confusion-matrix totals match eligible samples, and calibration does not change argmax predictions. Report tier-aware Macro-F1 plus NLL, ECE, Brier score, per-class precision/recall/F1, and inference timing.
 
-- [ ] **Step 6: Evaluate the few-shot Go/No-Go gate**
+- [x] **Step 6: Evaluate the few-shot Go/No-Go gate**
 
 Start a separate adaptation plan only when strict zero-shot Macro-F1 is below `0.30` and every included class has at least four independent source groups after reserving a final test group. Otherwise write the exact skip reason. No adaptation code is added inside this plan.
 
-- [ ] **Step 7: Commit compact results**
+- [x] **Step 7: Commit compact results**
 
 Commit: `exp: evaluate cross-domain cattle behavior robustness`
 
