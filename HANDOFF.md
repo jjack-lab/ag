@@ -24,16 +24,21 @@
 - validation-only 逐样本推理和六单元汇总工具已提交（`38a4517`），输出
   `validation_predictions.csv`、`validation_metrics.csv`、`aggregate.json`
   和 `report.md`，保留 checkpoint/validation manifest 哈希且不作晋级决定；
-  36 项聚焦测试通过，计划状态提交为 `ed91bbb`。
+  之后通过三轮失败关闭审查加固（`30ed5f8`、`7cba9f5`、`e7723b3`）：
+  六单元先整体校验 checkpoint/矩阵绑定后才推理，正式 test 路径在任何读取前
+  拒绝，新训练仅允许 train/val 哈希。最终 60 项聚焦测试通过，规格与质量
+  复审均无剩余 Critical/Important；计划状态提交为 `ed91bbb`。
 - 完整评估：`docs/2026-08-24-new-dachuang-complete-project-assessment.md`；
   路线图（P0/P1/P2 与执行顺序）：worktree 内 `docs/2026-08-24-project-status-and-roadmap.md`。
 
 ## 进行中
 
 - `codex/cross-domain-behavior`：Kinetics seed 20260901 已从绑定有效的 epoch
-  11 `last.pt` 原参数恢复；2026-09-23 检查时 PID 6164 正在运行 epoch 12，
-  history 仍有 12 个已完成 epoch（0--11），stderr 仅有 PyTorch
-  TypedStorage 弃用警告。输出
+  11 `last.pt` 原参数恢复；2026-09-23 最后检查时 PID 6164 为唯一匹配进程，
+  history 已有 13 个已完成 epoch（0--12），epoch 12 validation Macro-F1=
+  0.8530158904，进程继续下一轮且尚无最终摘要；stderr 仅有 PyTorch
+  TypedStorage 弃用警告。当前 `best.pt` SHA-256=
+  `ecc4ccd176ef172c2ce9061ed242abce210d05d659627512b6b613a723c36654`。输出
   `outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260901`，
   恢复日志为 `outputs/cbvd4/paper_20260922/logs/kinetics_seed_20260901_resume_20260923.*.log`。
   接手时必须用完整命令行和输出目录重新识别进程，不依赖旧 PID。
@@ -75,7 +80,9 @@
   train/val。旧自动化 ID `cbvd4` 在 Codex app 中已不存在，未自动新建。
 - 2026-09-23：Kinetics seed 20260901 在完成 epoch 11 后曾无最终摘要退出；
   `last.pt` 与 binding 哈希一致，确认无重复进程后按冻结参数 `--resume`，
-  当前识别到 PID 6164。汇总实现提交 `38a4517`、计划更新 `ed91bbb`；下一
+  当前识别到 PID 6164。最后检查已完成 epoch 12，尚无最终摘要。汇总实现
+  `38a4517` 及审计加固 `30ed5f8`/`7cba9f5`/`e7723b3` 已通过 60 项聚焦测试，
+  计划更新 `ed91bbb`；下一
   动作是等待本臂正常结束，核验最终摘要后串行启动 CVB-transfer seed
   20260901，不得并行占用单 GPU，也不得读取正式 test。
 
