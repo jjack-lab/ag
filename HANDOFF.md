@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-09-22（Codex：CBVD4 冻结三臂实验收尾）
+- 最后更新：2026-09-23（Codex：CBVD4 多种子验证续训与汇总工具）
 
 ## 当前阶段目标
 
@@ -21,16 +21,22 @@
   `ba8ac6e`；development-only loader/CLI、六单元矩阵和聚合核心已提交
   （`bd5b06b`、`8779ab1`、`cd8c900`、`1589d5d`）。33 项聚焦测试
   通过，真实 preflight 与两种初始化 smoke 均通过。
+- validation-only 逐样本推理和六单元汇总工具已提交（`38a4517`），输出
+  `validation_predictions.csv`、`validation_metrics.csv`、`aggregate.json`
+  和 `report.md`，保留 checkpoint/validation manifest 哈希且不作晋级决定；
+  36 项聚焦测试通过，计划状态提交为 `ed91bbb`。
 - 完整评估：`docs/2026-08-24-new-dachuang-complete-project-assessment.md`；
   路线图（P0/P1/P2 与执行顺序）：worktree 内 `docs/2026-08-24-project-status-and-roadmap.md`。
 
 ## 进行中
 
-- `codex/cross-domain-behavior`：Kinetics seed 20260901 的 development-only
-  正式训练正在运行，输出
+- `codex/cross-domain-behavior`：Kinetics seed 20260901 已从绑定有效的 epoch
+  11 `last.pt` 原参数恢复；2026-09-23 检查时 PID 6164 正在运行 epoch 12，
+  history 仍有 12 个已完成 epoch（0--11），stderr 仅有 PyTorch
+  TypedStorage 弃用警告。输出
   `outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260901`，
-  初始 PID 7700，日志位于 `outputs/cbvd4/paper_20260922/logs/`。接手时必须
-  用完整命令行和输出目录重新识别进程，不依赖旧 PID。
+  恢复日志为 `outputs/cbvd4/paper_20260922/logs/kinetics_seed_20260901_resume_20260923.*.log`。
+  接手时必须用完整命令行和输出目录重新识别进程，不依赖旧 PID。
 - 多 seed 矩阵固定为两种初始化 × seeds 20260824/20260901/20260908；旧
   20260824 两臂只读复用，新增四次训练串行执行。所有新协议只有 train/val，
   `test_data_read=false`。
@@ -44,7 +50,7 @@
 - [ ] 完成当前 Kinetics seed 20260901；成功后按固定顺序串行运行
   CVB-transfer seed 20260901、Kinetics seed 20260908、CVB-transfer seed
   20260908。异常退出只允许在绑定有效且无重复进程时原参数 `--resume`。
-- [ ] 补齐 validation-only 逐样本推理/汇总 CLI，输出六单元均值、样本标准差、
+- [x] 补齐 validation-only 逐样本推理/汇总 CLI，输出六单元均值、样本标准差、
   配对 seed 差值和逐类 F1；不得读取当前 test。
 - [ ] 数据：采集或取得新的前瞻性独立牧场视频，按源视频冻结新的确认集，并记录许可、来源、哈希和暴露边界。
 - [ ] 论文统计：报告多 seed 均值/方差、逐类指标、校准、风险—覆盖率和按源视频 bootstrap；把当前结果定位为监督域适配与协议审计，不宣称完全独立外部验证。
@@ -67,6 +73,11 @@
 - 2026-09-22 13:27：多 seed 第一条新增训练已启动。实验分支 HEAD=
   `4869354`。当前训练在首轮尚未写出 history 时已确认进程存活；协议仅含
   train/val。旧自动化 ID `cbvd4` 在 Codex app 中已不存在，未自动新建。
+- 2026-09-23：Kinetics seed 20260901 在完成 epoch 11 后曾无最终摘要退出；
+  `last.pt` 与 binding 哈希一致，确认无重复进程后按冻结参数 `--resume`，
+  当前识别到 PID 6164。汇总实现提交 `38a4517`、计划更新 `ed91bbb`；下一
+  动作是等待本臂正常结束，核验最终摘要后串行启动 CVB-transfer seed
+  20260901，不得并行占用单 GPU，也不得读取正式 test。
 
 ## 还原上一段对话
 
