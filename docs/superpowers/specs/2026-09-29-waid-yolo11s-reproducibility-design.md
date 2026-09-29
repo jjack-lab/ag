@@ -59,10 +59,12 @@ CBVD4 跨域实验留给后续阶段。
 
 ```text
 F:\new大创
-├─ data\waid\raw\
+├─ data\external\waid\raw\
 │  └─ ...                         # 原始 WAID，大文件，不进入 Git
-├─ data\waid\waid4500_v1\
+├─ data\external\waid\derived\waid4500_v1\
 │  └─ images/ labels/ splits/     # 冻结训练集，不进入 Git
+├─ data\external\waid\cache\
+│  └─ yolo11s.pt                  # 初始预训练权重，不进入 Git
 ├─ outputs\training\waid4500_yolo11s\
 │  ├─ run\                       # results.csv、图表、best.pt、last.pt
 │  └─ logs\                      # 原始 stdout/stderr/supervisor 日志
@@ -101,7 +103,7 @@ F:\new大创
 ### 5.2 精确重建 WAID4500
 
 `rebuild_waid4500.py` 以版本化的 `dataset_manifest.csv` 为唯一选择依据，而不是重新随机
-抽样。它根据清单中的 `source_split` 和文件名，在本地 `data/waid/raw` 中定位图片和标签，
+抽样。它根据清单中的 `source_split` 和文件名，在本地 `data/external/waid/raw` 中定位图片和标签，
 并重建 train/valid/test 目录与 split 文件。
 
 重建程序必须检查：

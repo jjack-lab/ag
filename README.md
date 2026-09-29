@@ -112,6 +112,17 @@ models/detection/yolo11s-waid.pt
 
 可通过 `AGRINEBULA_DETECTOR_MODEL` 指定其他模型，但模型必须兼容当前 Ultralytics YOLO11 运行时。
 
+### 检测模型训练复现
+
+WAID4500 的冻结样本清单、训练配置、环境、关键文件哈希和结果摘要已纳入项目；第三方图片、权重副本和训练图表只保存在本地已忽略目录。完整步骤见 [WAID4500 YOLO11s 训练复现指南](docs/WAID4500_REPRODUCIBILITY.md)。
+
+```powershell
+& $env:AGRINEBULA_PYTHON scripts/reproducibility/train_waid_yolo11s.py --project-root 'F:\new大创' --check-only
+& $env:AGRINEBULA_PYTHON scripts/reproducibility/verify_waid_reproduction.py --project-root 'F:\new大创'
+```
+
+整合训练资产不会直接提高识别率；它固定了后续数据清洗、结构改进和调参实验的可比较基线。
+
 行为研究模型默认路径：
 
 ```text
