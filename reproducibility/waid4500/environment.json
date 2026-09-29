@@ -1,0 +1,25 @@
+{
+  "captured_on": "2026-09-29",
+  "reproduction_environment": {
+    "python": "3.8.20 (default, Oct  3 2024, 15:19:54) [MSC v.1929 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "torch": "2.0.0",
+    "ultralytics": "8.4.22",
+    "cuda_available": true,
+    "cuda": "11.8",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "source_training_protocol": {
+    "model": "yolo11s.pt",
+    "epochs": 120,
+    "patience": 120,
+    "batch": 4,
+    "imgsz": 960,
+    "workers": 0,
+    "seed": 42,
+    "deterministic": true,
+    "cos_lr": true,
+    "device": "0",
+    "resume_used": true
+  }
+}

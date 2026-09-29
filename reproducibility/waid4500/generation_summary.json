@@ -1,0 +1,20 @@
+{
+  "status": "complete",
+  "seed": 42,
+  "splits": {
+    "train": 4500,
+    "valid": 200,
+    "test": 20
+  },
+  "total_images": 4720,
+  "total_labels": 4720,
+  "classes": 6,
+  "class_names": [
+    "sheep",
+    "cattle",
+    "seal",
+    "camelus",
+    "kiang",
+    "zebra"
+  ]
+}

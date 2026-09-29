@@ -1,0 +1,11 @@
+{
+  "epochs_recorded": 120,
+  "selection_metric": "metrics/mAP50-95(B)",
+  "best": {
+    "epoch": 89,
+    "precision": 0.94186,
+    "recall": 0.91602,
+    "map50": 0.95385,
+    "map50_95": 0.584
+  }
+}
