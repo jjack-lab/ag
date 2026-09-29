@@ -552,3 +552,183 @@ def import_assets(
             "bytes": inventory["bytes"],
         }
     return {"status": "complete", "components": components}
+
+
+TRAINING_REQUIRED_FIELDS = (
+    "model",
+    "data_root",
+    "manifest",
+    "project",
+    "name",
+    "epochs",
+    "patience",
+    "batch",
+    "imgsz",
+    "workers",
+    "seed",
+    "deterministic",
+    "cos_lr",
+    "device",
+)
+
+
+def load_training_config(path: Path, project_root: Path) -> Dict[str, object]:
+    """Load a portable training config and bind its paths to one project root."""
+
+    root = Path(project_root).expanduser().resolve()
+    config_path = Path(path).expanduser().resolve()
+    try:
+        payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError) as exc:
+        raise ValueError("cannot read training config: {}".format(config_path)) from exc
+    if not isinstance(payload, dict):
+        raise ValueError("training config must be a mapping")
+    missing = [field for field in TRAINING_REQUIRED_FIELDS if field not in payload]
+    if missing:
+        raise ValueError("training config missing fields: {}".format(", ".join(missing)))
+
+    config = dict(payload)
+    for field in ("model", "data_root", "manifest", "project"):
+        value = Path(str(payload[field]))
+        resolved = (root / value).resolve() if not value.is_absolute() else value.resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError as exc:
+            raise ValueError("{} is outside project root".format(field)) from exc
+        config[field] = resolved
+
+    for field in ("epochs", "patience", "batch", "imgsz"):
+        value = payload[field]
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ValueError("{} must be a positive integer".format(field))
+    for field in ("workers", "seed"):
+        value = payload[field]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError("{} must be a non-negative integer".format(field))
+    for field in ("deterministic", "cos_lr"):
+        if not isinstance(payload[field], bool):
+            raise ValueError("{} must be boolean".format(field))
+    if not str(payload["name"]).strip():
+        raise ValueError("name must not be empty")
+    config["project_root"] = root
+    return config
+
+
+def write_runtime_data_yaml(dataset_root: Path, destination: Path) -> Path:
+    """Write an Ultralytics data file with the current absolute dataset root."""
+
+    dataset = Path(dataset_root).expanduser().resolve()
+    target = Path(destination).expanduser().resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "path": str(dataset),
+        "train": "images/train",
+        "val": "images/valid",
+        "test": "images/test",
+        "names": dict(CLASS_NAMES),
+    }
+    target.write_text(
+        yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+    return target
+
+
+def build_train_kwargs(
+    config: Mapping[str, object], smoke: bool, device: Optional[str]
+) -> Dict[str, object]:
+    selected_device = str(device) if device is not None else str(config["device"])
+    kwargs = {
+        "project": str(config["project"]),
+        "name": str(config["name"]),
+        "epochs": int(config["epochs"]),
+        "patience": int(config["patience"]),
+        "batch": int(config["batch"]),
+        "imgsz": int(config["imgsz"]),
+        "workers": int(config["workers"]),
+        "seed": int(config["seed"]),
+        "deterministic": bool(config["deterministic"]),
+        "cos_lr": bool(config["cos_lr"]),
+        "device": selected_device,
+        "pretrained": True,
+        "val": True,
+        "plots": True,
+        "exist_ok": False,
+    }
+    if smoke:
+        kwargs.update({"name": "smoke_e1", "epochs": 1, "fraction": 0.02})
+    return kwargs
+
+
+def check_training_runtime(config: Mapping[str, object]) -> Dict[str, object]:
+    """Inspect dependencies and verify every manifest sample is materialized."""
+
+    model = Path(config["model"])
+    dataset = Path(config["data_root"])
+    manifest = Path(config["manifest"])
+    if not model.is_file():
+        raise FileNotFoundError("pretrained model not found: {}".format(model))
+    if not dataset.is_dir():
+        raise FileNotFoundError("training dataset not found: {}".format(dataset))
+    rows = load_manifest(manifest)
+    for row in rows:
+        image = _safe_child(dataset, Path(row.output_image.as_posix()))
+        label = _safe_child(dataset, Path(row.output_label.as_posix()))
+        if not image.is_file() or not label.is_file():
+            raise ManifestError("training dataset is missing a manifest sample")
+        class_id, instances = parse_label(label.read_bytes())
+        if class_id != row.class_id or instances != row.instances:
+            raise ManifestError("training label differs from manifest metadata")
+
+    try:
+        import torch
+        import ultralytics
+    except ImportError as exc:
+        raise RuntimeError("PyTorch and Ultralytics are required for training") from exc
+    requested = str(config["device"])
+    selected = "0" if requested == "auto" and torch.cuda.is_available() else requested
+    if requested == "auto" and not torch.cuda.is_available():
+        selected = "cpu"
+    return {
+        "status": "ready",
+        "torch": str(torch.__version__),
+        "ultralytics": str(ultralytics.__version__),
+        "cuda_available": bool(torch.cuda.is_available()),
+        "selected_device": selected,
+        "splits": split_counts(rows),
+        "model": str(model),
+        "dataset": str(dataset),
+        "output": str(config["project"]),
+    }
+
+
+def run_training(
+    config: Mapping[str, object],
+    smoke: bool,
+    device: Optional[str],
+    resume: Optional[Path],
+):
+    """Run Ultralytics training using validated portable paths."""
+
+    resume_path = None
+    if resume is not None:
+        resume_path = Path(resume).expanduser().resolve()
+        if not resume_path.is_file():
+            raise FileNotFoundError("resume checkpoint not found: {}".format(resume_path))
+    elif not Path(config["model"]).is_file():
+        raise FileNotFoundError("pretrained model not found: {}".format(config["model"]))
+
+    runtime = check_training_runtime(config)
+    selected_device = str(device) if device is not None else str(runtime["selected_device"])
+    output_project = Path(config["project"])
+    runtime_yaml = write_runtime_data_yaml(
+        Path(config["data_root"]), output_project / "waid4500_runtime_data.yaml"
+    )
+    kwargs = build_train_kwargs(config, smoke=smoke, device=selected_device)
+    kwargs["data"] = str(runtime_yaml)
+    model_path = resume_path if resume_path is not None else Path(config["model"])
+    if resume_path is not None:
+        kwargs["resume"] = str(resume_path)
+
+    from ultralytics import YOLO
+
+    return YOLO(str(model_path)).train(**kwargs)

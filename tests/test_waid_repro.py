@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 import yaml
@@ -13,11 +14,14 @@ from cattle_health_app.detection.waid_repro import (
     ImportSources,
     MANIFEST_FIELDS,
     ManifestError,
-    load_manifest,
+    build_train_kwargs,
     import_assets,
+    load_manifest,
+    load_training_config,
     parse_label,
     rebuild_dataset,
     split_counts,
+    run_training,
     validate_dataset,
 )
 
@@ -473,5 +477,143 @@ class WaidAssetImportCliTest(unittest.TestCase):
         self.assertIn("[ERROR]", result.stderr)
 
 
+class WaidTrainingConfigTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.config_path = self.root / "training.yaml"
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def write_config(self, **overrides):
+        values = {
+            "model": "data/external/waid/cache/yolo11s.pt",
+            "data_root": "data/external/waid/derived/waid4500_v1",
+            "manifest": "reproducibility/waid4500/dataset_manifest.csv",
+            "project": "outputs/training/waid4500_yolo11s/reproduced",
+            "name": "full_e120_seed42",
+            "epochs": 120,
+            "patience": 120,
+            "batch": 4,
+            "imgsz": 960,
+            "workers": 0,
+            "seed": 42,
+            "deterministic": True,
+            "cos_lr": True,
+            "device": "auto",
+        }
+        values.update(overrides)
+        self.config_path.write_text(
+            yaml.safe_dump(values, sort_keys=False), encoding="utf-8"
+        )
+        return self.config_path
+
+    def test_committed_training_config_freezes_original_protocol(self):
+        project = Path(__file__).resolve().parents[1]
+        config = load_training_config(
+            project / "reproducibility/waid4500/training_config.yaml", project
+        )
+
+        self.assertEqual(120, config["epochs"])
+        self.assertEqual(4, config["batch"])
+        self.assertEqual(960, config["imgsz"])
+        self.assertEqual(42, config["seed"])
+        self.assertEqual("auto", config["device"])
+        self.assertEqual(project / "data/external/waid/cache/yolo11s.pt", config["model"])
+
+    def test_rejects_configured_path_outside_project(self):
+        config_path = self.write_config(model="../outside.pt")
+
+        with self.assertRaisesRegex(ValueError, "outside project root"):
+            load_training_config(config_path, self.root)
+
+    def test_builds_full_and_smoke_train_arguments(self):
+        config = load_training_config(self.write_config(), self.root)
+
+        full = build_train_kwargs(config, smoke=False, device="1")
+        smoke = build_train_kwargs(config, smoke=True, device="cpu")
+
+        self.assertEqual(120, full["epochs"])
+        self.assertEqual("full_e120_seed42", full["name"])
+        self.assertEqual("1", full["device"])
+        self.assertNotIn("fraction", full)
+        self.assertEqual(1, smoke["epochs"])
+        self.assertEqual(0.02, smoke["fraction"])
+        self.assertEqual("smoke_e1", smoke["name"])
+        self.assertEqual("cpu", smoke["device"])
+        self.assertFalse(smoke["exist_ok"])
+
+    def test_run_training_calls_ultralytics_with_portable_yaml(self):
+        config = load_training_config(self.write_config(), self.root)
+        config["model"].parent.mkdir(parents=True)
+        config["model"].write_bytes(b"model")
+        calls = []
+
+        class FakeModel:
+            def __init__(self, model):
+                calls.append(("init", model))
+
+            def train(self, **kwargs):
+                calls.append(("train", kwargs))
+                return SimpleNamespace(save_dir="result")
+
+        fake_ultralytics = SimpleNamespace(YOLO=FakeModel, __version__="test")
+        runtime_yaml = self.root / "runtime-data.yaml"
+        runtime_yaml.write_text("path: portable\n", encoding="utf-8")
+        with mock.patch.dict(sys.modules, {"ultralytics": fake_ultralytics}):
+            with mock.patch(
+                "cattle_health_app.detection.waid_repro.check_training_runtime",
+                return_value={"selected_device": "cpu"},
+            ):
+                with mock.patch(
+                    "cattle_health_app.detection.waid_repro.write_runtime_data_yaml",
+                    return_value=runtime_yaml,
+                ):
+                    result = run_training(config, smoke=True, device="cpu", resume=None)
+
+        self.assertEqual(("init", str(config["model"])), calls[0])
+        self.assertEqual(str(runtime_yaml), calls[1][1]["data"])
+        self.assertEqual("smoke_e1", calls[1][1]["name"])
+        self.assertEqual("result", result.save_dir)
+
+    def test_resume_requires_existing_checkpoint(self):
+        config = load_training_config(self.write_config(), self.root)
+        with self.assertRaises(FileNotFoundError):
+            run_training(config, smoke=False, device="cpu", resume=self.root / "missing.pt")
+
+
+class WaidTrainingCliTest(unittest.TestCase):
+    @classmethod
+    def script(cls):
+        return (
+            Path(__file__).resolve().parents[1]
+            / "scripts"
+            / "reproducibility"
+            / "train_waid_yolo11s.py"
+        )
+
+    def test_help_documents_training_modes(self):
+        result = subprocess.run(
+            [sys.executable, str(self.script()), "--help"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        for option in ("--project-root", "--config", "--check-only", "--smoke", "--device", "--resume"):
+            self.assertIn(option, result.stdout)
+
+    def test_missing_config_exits_one(self):
+        result = subprocess.run(
+            [sys.executable, str(self.script()), "--config", "missing.yaml", "--check-only"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(1, result.returncode)
+        self.assertIn("[ERROR]", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
+    build_train_kwargs,
+    load_training_config,

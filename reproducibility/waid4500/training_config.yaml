@@ -1,0 +1,14 @@
+model: data/external/waid/cache/yolo11s.pt
+data_root: data/external/waid/derived/waid4500_v1
+manifest: reproducibility/waid4500/dataset_manifest.csv
+project: outputs/training/waid4500_yolo11s/reproduced
+name: full_e120_seed42
+epochs: 120
+patience: 120
+batch: 4
+imgsz: 960
+workers: 0
+seed: 42
+deterministic: true
+cos_lr: true
+device: auto
