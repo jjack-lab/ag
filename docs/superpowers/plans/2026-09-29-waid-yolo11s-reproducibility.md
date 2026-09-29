@@ -129,7 +129,7 @@ git commit -m "feat: rebuild frozen WAID4500 split"
 
 - [ ] **Step 1: Write failing importer tests**
 
-Create miniature raw, `waid4500_v1`, `runs/.../weights/best.pt`, `training_logs`, and `yolo11s.pt` sources. Assert exact destination mapping, returned file counts/bytes, default existing-destination refusal, successful explicit replacement, and restoration of the original destination after injected copy failure.
+Create miniature raw, `waid4500_v1`, `runs/waid4500_v1_yolo11s_img960_e120/weights/best.pt`, `training_logs`, and `yolo11s.pt` sources. Assert exact destination mapping, returned file counts/bytes, default existing-destination refusal, successful explicit replacement, and restoration of the original destination after injected copy failure.
 
 - [ ] **Step 2: Verify RED**
 
