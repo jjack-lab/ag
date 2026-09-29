@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-09-29（接手方：补齐 Codex 中断的 WAID4500 复现收尾，修掉非 ASCII 路径下的检查点写入缺陷）
+- 最后更新：2026-09-29（接手方：补齐 Codex 中断的 WAID4500 复现收尾、修掉非 ASCII 路径下的检查点写入缺陷，并启动 CBVD4 CVB-transfer seed 20260901 训练）
 
 ## 当前阶段目标
 
@@ -63,17 +63,22 @@
 
 ## 进行中
 
-- `codex/waid-reproducibility`：HEAD 即本交接提交（其前一条为 `f18bd4d` 修复），
-  等于 `integration`（`ab26608`）+ 10 个提交，工作树干净、可快进合并；
-  是否合并由用户决定。
+- `codex/waid-reproducibility` 已快进合并到 `integration`（`1a8d033`，集成后完整
+  `pytest` 588 通过 / 4 跳过 / 2 项既有失败，verifier `status=passed`）。worktree 仍在
+  `C:\Users\Mrda\.codex\worktrees\waid-reproducibility\`（Codex 应用托管，未擅自删除），
+  分支也保留，需要时再 `git worktree remove` + `git branch -d`。
 - WAID 大资产只在本机且被忽略：`data/external/waid/{raw,derived,cache}`、
   `outputs/training/waid4500_yolo11s/{run,logs}`；训练会在冻结数据集目录内新增
   Ultralytics `*.cache`（已被忽略，重建对比时排除，勿手工删除或提交）。
-- Codex 为验证 F 盘真实资产临时复制到主仓库的 `F:\new大创\reproducibility/`
-  已删除（证据随分支入库），合并时不会再被未跟踪文件挡住。
-- 多 seed validation 矩阵：4 条新增臂只完成 Kinetics seed 20260901，剩
-  CVB-transfer seed 20260901、Kinetics seed 20260908、CVB-transfer seed 20260908。
-  2026-09-29 19:04 核对：没有 CBVD4 训练进程在跑（当时只有 WAID 冒烟训练进程）。
+- 多 seed validation 矩阵：已完成 Kinetics seed 20260901；**CVB-transfer seed
+  20260901 正在训练**（2026-09-29 20:02 启动，PID 6152，接手时必须用完整命令行和
+  输出目录重新识别进程，不要只信 PID；完整命令见「中断记录」）。输出
+  `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260901`，
+  日志 `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260901.{stdout,stderr}.log`
+  （均在 `.worktrees/cross-domain-behavior` 下）。`training_protocol.json` 已写出并通过
+  隔离检查：`test_data_read=false`、`evaluation_scope=train_val_only`、只含 train/val
+  清单哈希。仍剩 Kinetics seed 20260908、CVB-transfer seed 20260908，必须在本臂结束后
+  串行启动，不得并行占卡。
 - `codex/cross-domain-behavior` 仍有 3 个用户所有、未提交文档（roadmap、2026-09-12
   选择性数据可行性、2026-09-12 测试来源审计），接手方不得擅自覆盖或提交。
 - 主线有未跟踪文件：评估报告、`星牧智控-项目计划书.docx`、`申报-项目概述.txt`、`scripts/make_plan_docx.py`。
@@ -133,6 +138,24 @@
   路径缺陷（Codex 从未跑到这一步），已按 TDD 修复并提交 `f18bd4d`；随后冒烟退出码 0。
   未做：合并到 `integration`、剩余三条多 seed 臂。上一条 2026-09-23 记录的
   Kinetics seed 20260901 已于当日 20:57 正常结束（见「已完成」）。
+- 2026-09-29 20:02：WAID 收尾已提交并快进合并（`integration` HEAD=`1a8d033`），随后
+  启动多 seed 矩阵第 2 条新增臂 CVB-transfer seed 20260901，PID 6152，工作目录
+  `.worktrees/cross-domain-behavior`，完整命令行：
+
+  ```powershell
+  & 'F:\deepl\anaconda1\envs\pytorch\python.exe' -u -X utf8 -m scripts.train_cbvd4_behavior `
+    --mode train --development-only --project-root . `
+    --manifest-root data/external/cbvd5/manifests/cbvd4 `
+    --output-root outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260901 `
+    --initialization cvb_transfer_init --source-checkpoint models/behavior/cvb_x3d_v2_best.pt `
+    --device cuda --epochs 30 --batch-size 8 --accumulation-steps 2 --learning-rate 3e-4 `
+    --weight-decay 1e-4 --patience 6 --workers 0 --seed 20260901 --freeze-backbone-epochs 2
+  ```
+
+  启动时已核对：GPU 空闲（0 MiB/8188 MiB）、无其他 python 进程、两个起训权重与
+  train/val 清单及视频数据齐备、目标输出目录不存在；`training_protocol.json`
+  `test_data_read=false`。中断处理：确认无重复进程后，用上面完全相同命令加
+  `--resume`；不得删除失败运行或换种子。
 
 ## 还原上一段对话
 
