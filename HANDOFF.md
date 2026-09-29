@@ -2,13 +2,14 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-09-23（Codex：CBVD4 多种子验证续训与汇总工具）
+- 最后更新：2026-09-29（接手方：补齐 Codex 中断的 WAID4500 复现收尾，修掉非 ASCII 路径下的检查点写入缺陷）
 
 ## 当前阶段目标
 
 1. 保留已完成的 CBVD4 冻结三臂实验及负晋级结论，禁止依据当前 test 结果换候选或调参。
-2. 为论文准备新的前瞻性独立确认数据；仅在开发集开展多 seed 与站立反刍改进实验。
-3. 大创申报材料定稿并入库；主线 `integration` 保持测试绿色、随时可演示。
+2. 完成多 seed validation 矩阵（两种初始化 × seeds 20260824/20260901/20260908），只在开发集 train/val 上进行。
+3. WAID4500 目标检测基线完成可复现封装（清单、哈希、环境、训练入口、验证器），随后在冻结基线上开展预注册的精度改进实验。
+4. 大创申报材料定稿并入库；主线 `integration` 保持测试绿色、随时可演示。
 
 ## 已完成
 
@@ -28,37 +29,67 @@
   六单元先整体校验 checkpoint/矩阵绑定后才推理，正式 test 路径在任何读取前
   拒绝，新训练仅允许 train/val 哈希。最终 60 项聚焦测试通过，规格与质量
   复审均无剩余 Critical/Important；计划状态提交为 `ed91bbb`。
+- 多 seed 矩阵第 1 条新增臂 Kinetics seed 20260901 已完成：2026-09-23 20:57 写出
+  `validation_metrics.json`/`history.csv`/`best.pt`（epoch 0--18 共 19 轮），
+  validation Macro-F1=0.8530158904，`best.pt` SHA-256=
+  `ecc4ccd176ef172c2ce9061ed242abce210d05d659627512b6b613a723c36654`，
+  `test_metrics_read=false`；恢复日志
+  `outputs/cbvd4/paper_20260922/logs/kinetics_seed_20260901_resume_20260923.stdout.log`。
+- WAID4500 YOLO11s 可复现包已入库（分支 `codex/waid-reproducibility`，现共 10 个提交，
+  即 Codex 的 8 个加本次的 `f18bd4d` 修复与 `842b1bd` 交接）：
+  manifest 合约、原子重建、本地资产导入、可移植训练入口、证据验证器、
+  一键 PowerShell 工作流，以及中文指南 `docs/WAID4500_REPRODUCIBILITY.md`。
+  `reproducibility/waid4500/` 跟踪 4,720 条清单（train 4500 / valid 200 / test 20）、
+  类别统计、环境、运行摘要、训练配置与 `checksums.sha256`。
+- WAID 真实资产验证（`--project-root F:\new大创`）：check-only `status=ready`
+  （torch 2.0.0、ultralytics 8.4.22、device 0，`yolo11s.pt` SHA-256=
+  `85a76fe86dd8afe384648546b56a7a78580c7cb7b404fc595f97969322d502d5`）；
+  verifier `status=passed`，归档 `run/weights/best.pt` 与交付模型
+  `models/detection/yolo11s-waid.pt` 同为
+  `46d734cba7553f31e89e739156f50e9a675b176f798c70159838497531771a64`，
+  选中 epoch 89（P 0.94186 / R 0.91602 / mAP50 0.95385 / mAP50-95 0.584）。
+- WAID 真实 1 epoch 冒烟训练（2% 训练集 90 张 + 200 张验证）通过：输出
+  `outputs/training/waid4500_yolo11s/reproduced/smoke_e1`，
+  `best.pt`/`last.pt` 为 strip 后的 19,266,131 字节检查点，退出码 0。
+- 修复 `f18bd4d`：非 ASCII 路径下 `torch.save` 会让训练在 `final_eval` 抛
+  `RuntimeError: Parent directory ... does not exist`（详见「决策与坑」）。
+- 测试证据：`tests/test_waid_repro.py` 45 项通过；完整 `pytest` 588 通过 /
+  4 跳过 / 2 失败——两项失败在 `integration` 上同样复现
+  （`delivery_tests/test_external_behavior_cli.py` 把临时输出放在 `project_root`
+  外被安全校验拒绝），与本次改动无关；前端 `npm test` 16 项通过、
+  `npm run build` 成功（2178 modules）。
 - 完整评估：`docs/2026-08-24-new-dachuang-complete-project-assessment.md`；
   路线图（P0/P1/P2 与执行顺序）：worktree 内 `docs/2026-08-24-project-status-and-roadmap.md`。
 
 ## 进行中
 
-- `codex/cross-domain-behavior`：Kinetics seed 20260901 已从绑定有效的 epoch
-  11 `last.pt` 原参数恢复；2026-09-23 最后检查时 PID 6164 为唯一匹配进程，
-  history 已有 13 个已完成 epoch（0--12），epoch 12 validation Macro-F1=
-  0.8530158904，进程继续下一轮且尚无最终摘要；stderr 仅有 PyTorch
-  TypedStorage 弃用警告。当前 `best.pt` SHA-256=
-  `ecc4ccd176ef172c2ce9061ed242abce210d05d659627512b6b613a723c36654`。输出
-  `outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260901`，
-  恢复日志为 `outputs/cbvd4/paper_20260922/logs/kinetics_seed_20260901_resume_20260923.*.log`。
-  接手时必须用完整命令行和输出目录重新识别进程，不依赖旧 PID。
-- 多 seed 矩阵固定为两种初始化 × seeds 20260824/20260901/20260908；旧
-  20260824 两臂只读复用，新增四次训练串行执行。所有新协议只有 train/val，
-  `test_data_read=false`。
-- 实验 worktree 仍有 3 个用户所有、未提交文档（roadmap、2026-09-12
+- `codex/waid-reproducibility`：HEAD 即本交接提交（其前一条为 `f18bd4d` 修复），
+  等于 `integration`（`ab26608`）+ 10 个提交，工作树干净、可快进合并；
+  是否合并由用户决定。
+- WAID 大资产只在本机且被忽略：`data/external/waid/{raw,derived,cache}`、
+  `outputs/training/waid4500_yolo11s/{run,logs}`；训练会在冻结数据集目录内新增
+  Ultralytics `*.cache`（已被忽略，重建对比时排除，勿手工删除或提交）。
+- Codex 为验证 F 盘真实资产临时复制到主仓库的 `F:\new大创\reproducibility/`
+  已删除（证据随分支入库），合并时不会再被未跟踪文件挡住。
+- 多 seed validation 矩阵：4 条新增臂只完成 Kinetics seed 20260901，剩
+  CVB-transfer seed 20260901、Kinetics seed 20260908、CVB-transfer seed 20260908。
+  2026-09-29 19:04 核对：没有 CBVD4 训练进程在跑（当时只有 WAID 冒烟训练进程）。
+- `codex/cross-domain-behavior` 仍有 3 个用户所有、未提交文档（roadmap、2026-09-12
   选择性数据可行性、2026-09-12 测试来源审计），接手方不得擅自覆盖或提交。
 - 主线有未跟踪文件：评估报告、`星牧智控-项目计划书.docx`、`申报-项目概述.txt`、`scripts/make_plan_docx.py`。
 
 ## 下一步（P0，按序执行）
 
+- [ ] 合并 `codex/waid-reproducibility` 到 `integration`（可快进）：合并后主线才具备
+  `reproducibility/waid4500/` 证据文件，指南里的 verify/rebuild/train 命令才能直接运行。
+- [ ] 串行补齐剩余三条多 seed 臂（CVB-transfer 20260901 → Kinetics seed 20260908 →
+  CVB-transfer seed 20260908）；单 GPU 不得并行，异常退出只在绑定有效且无重复进程时
+  按原参数 `--resume`，全程不得读取正式 test。
 - [ ] 主线：把申报材料相关未跟踪文件整理提交（`~$*` Office 临时文件已忽略，勿提交）。
-- [ ] 完成当前 Kinetics seed 20260901；成功后按固定顺序串行运行
-  CVB-transfer seed 20260901、Kinetics seed 20260908、CVB-transfer seed
-  20260908。异常退出只允许在绑定有效且无重复进程时原参数 `--resume`。
-- [x] 补齐 validation-only 逐样本推理/汇总 CLI，输出六单元均值、样本标准差、
-  配对 seed 差值和逐类 F1；不得读取当前 test。
 - [ ] 数据：采集或取得新的前瞻性独立牧场视频，按源视频冻结新的确认集，并记录许可、来源、哈希和暴露边界。
 - [ ] 论文统计：报告多 seed 均值/方差、逐类指标、校准、风险—覆盖率和按源视频 bootstrap；把当前结果定位为监督域适配与协议审计，不宣称完全独立外部验证。
+- [ ] WAID：在冻结基线上预注册精度改进实验（本次资产整合与训练入口本身不提升精度，
+  不同 GPU/CUDA/Ultralytics 版本也不保证逐字节相同的权重）。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
 
 ## 决策与坑（不要再踩）
@@ -71,6 +102,17 @@
 - CBVD-5 零样本 Macro-F1 仅 0.0048，当前行为模型不能跨域直接部署，必须走 CBVD4 域适应路线。
 - 当前 CVB 模型在不均衡验证集上 Macro-F1 只有 0.2189，汇报效果禁止只看 Accuracy。
 - 仓库路径含中文，脚本必须显式按 UTF-8 处理路径与子进程输出（主线近期一组修复即为此，勿回退）。
+- Windows + torch 2.0.0 下 `torch.save` 不能接受非 ASCII 路径：PyTorch 的 C++ 检查点
+  写入器用 ANSI 代码页解析父目录，对 `F:\new大创\...` 一律抛
+  `RuntimeError: Parent directory ... does not exist`（纯 ASCII 路径正常）。
+  Ultralytics 自己的 `save_model` 用 `BytesIO` + `Path.write_bytes` 绕开了这个坑，
+  但 `final_eval` → `strip_optimizer` 直接调 `torch.save`，会让训练在跑完所有 epoch
+  之后的最后一步失败。WAID 训练现在用 `unicode_safe_torch_save()` 包住
+  `YOLO.train()`；动这条链路前先看 `tests/test_waid_repro.py::WaidUnicodeCheckpointTest`。
+- `mock.patch.dict(sys.modules, ...)` 会对整张模块表做快照并在退出时恢复，块内新导入的
+  模块（例如训练运行时的 `torch`）会被一并清掉，之后再次 `import torch` 会报
+  `'_has_torch_function' already has a docstring` / `_C is not defined`。测试里改用
+  `installed_ultralytics()`，只替换 `ultralytics` 这一个键。
 
 ## 中断记录
 
@@ -85,8 +127,18 @@
   计划更新 `ed91bbb`；下一
   动作是等待本臂正常结束，核验最终摘要后串行启动 CVB-transfer seed
   20260901，不得并行占用单 GPU，也不得读取正式 test。
+- 2026-09-29：WAID4500 收尾。Codex 停在 `f510859`（Task 9 未执行，卡在等审批时额度耗尽）。
+  本次在同一 worktree 补齐 Task 9：聚焦/全量 Python 测试、真实 check-only、真实
+  verifier、真实 1 epoch 冒烟训练、前端测试与构建。冒烟首次运行暴露上述非 ASCII
+  路径缺陷（Codex 从未跑到这一步），已按 TDD 修复并提交 `f18bd4d`；随后冒烟退出码 0。
+  未做：合并到 `integration`、剩余三条多 seed 臂。上一条 2026-09-23 记录的
+  Kinetics seed 20260901 已于当日 20:57 正常结束（见「已完成」）。
 
 ## 还原上一段对话
 
 最近 Codex 会话日志在 `C:\Users\Mrda\.codex\sessions\`（按日期分目录，`rollout-*.jsonl`）。
-接手方读最新文件的末尾若干条记录，即可还原中断时对方正在做什么、想什么。
+本次接手读的是 `2026\09\29\rollout-2026-09-29T17-54-22-*.jsonl` 等文件：Codex 已完成
+Task 1--8 并提交到 `f510859`，开始 Task 9 后先跑通聚焦 40 项与全量测试（583 通过 /
+2 失败）、前端测试与构建，随后临时把分支里的 `reproducibility/` 复制到 `F:\new大创`
+以便对真实资产运行 check-only 与 verifier —— 就在这条命令的审批请求处额度耗尽，
+Task 9 Step 2 起（真实 check-only、冒烟、verifier、HANDOFF 提交）全部未执行。
