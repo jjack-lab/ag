@@ -4,14 +4,17 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import yaml
 
 from cattle_health_app.detection.waid_repro import (
     CLASS_NAMES,
+    ImportSources,
     MANIFEST_FIELDS,
     ManifestError,
     load_manifest,
+    import_assets,
     parse_label,
     rebuild_dataset,
     split_counts,
@@ -330,6 +333,142 @@ class WaidRebuildCliTest(unittest.TestCase):
             text=True,
         )
 
+        self.assertEqual(1, result.returncode)
+        self.assertIn("[ERROR]", result.stderr)
+
+
+class WaidAssetImportTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.project = self.root / "project"
+        self.project.mkdir()
+        self.source = self.root / "source"
+
+        self.raw = self.source / "raw"
+        self.write(self.raw / "images/train/a.jpg", b"raw-image")
+        self.write(self.raw / "labels/train/a.txt", b"1 0.5 0.5 0.2 0.2\n")
+
+        self.frozen = self.source / "waid4500_v1"
+        self.write(self.frozen / "data.yaml", b"path: old\n")
+        self.write(
+            self.frozen / "reports/generation_summary.json",
+            b'{"splits":{"train":4500,"valid":200,"test":20}}',
+        )
+
+        self.pretrained = self.source / "yolo11s.pt"
+        self.write(self.pretrained, b"pretrained")
+
+        self.run = self.source / "run"
+        self.write(self.run / "weights/best.pt", b"best")
+        self.write(self.run / "results.csv", b"epoch,metric\n1,0.5\n")
+
+        self.logs = self.source / "logs"
+        self.write(self.logs / "training.stdout.log", b"training")
+
+        self.sources = ImportSources(
+            raw=self.raw,
+            frozen_dataset=self.frozen,
+            pretrained=self.pretrained,
+            run=self.run,
+            logs=self.logs,
+        )
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    @staticmethod
+    def write(path, content):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+
+    def test_imports_assets_to_fixed_local_destinations(self):
+        report = import_assets(self.sources, self.project)
+
+        self.assertEqual(
+            b"raw-image",
+            (self.project / "data/external/waid/raw/images/train/a.jpg").read_bytes(),
+        )
+        self.assertEqual(
+            b"pretrained",
+            (self.project / "data/external/waid/cache/yolo11s.pt").read_bytes(),
+        )
+        self.assertEqual(
+            b"best",
+            (
+                self.project
+                / "outputs/training/waid4500_yolo11s/run/weights/best.pt"
+            ).read_bytes(),
+        )
+        self.assertEqual(2, report["components"]["raw"]["files"])
+        self.assertEqual(len(b"raw-image") + len(b"1 0.5 0.5 0.2 0.2\n"), report["components"]["raw"]["bytes"])
+
+    def test_refuses_existing_destination_without_replace(self):
+        import_assets(self.sources, self.project)
+
+        with self.assertRaises(FileExistsError):
+            import_assets(self.sources, self.project)
+
+    def test_replace_updates_existing_destination(self):
+        import_assets(self.sources, self.project)
+        self.write(self.raw / "images/train/a.jpg", b"updated")
+
+        import_assets(self.sources, self.project, replace=True)
+
+        self.assertEqual(
+            b"updated",
+            (self.project / "data/external/waid/raw/images/train/a.jpg").read_bytes(),
+        )
+
+    def test_copy_failure_preserves_existing_destination(self):
+        import_assets(self.sources, self.project)
+        destination = self.project / "data/external/waid/raw/images/train/a.jpg"
+
+        with mock.patch(
+            "cattle_health_app.detection.waid_repro.shutil.copytree",
+            side_effect=OSError("copy failed"),
+        ):
+            with self.assertRaises(OSError):
+                import_assets(self.sources, self.project, replace=True)
+
+        self.assertEqual(b"raw-image", destination.read_bytes())
+
+
+class WaidAssetImportCliTest(unittest.TestCase):
+    @classmethod
+    def script(cls):
+        return (
+            Path(__file__).resolve().parents[1]
+            / "scripts"
+            / "reproducibility"
+            / "import_waid_assets.py"
+        )
+
+    def test_help_documents_sources_and_replace(self):
+        result = subprocess.run(
+            [sys.executable, str(self.script()), "--help"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        for option in ("--source-raw", "--source-training-root", "--project-root", "--replace"):
+            self.assertIn(option, result.stdout)
+
+    def test_missing_sources_exit_one(self):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(self.script()),
+                "--source-raw",
+                "missing-raw",
+                "--source-training-root",
+                "missing-training",
+                "--project-root",
+                str(Path.cwd()),
+            ],
+            capture_output=True,
+            text=True,
+        )
         self.assertEqual(1, result.returncode)
         self.assertIn("[ERROR]", result.stderr)
 

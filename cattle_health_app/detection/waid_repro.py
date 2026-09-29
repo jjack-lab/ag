@@ -7,6 +7,7 @@ import filecmp
 import json
 import shutil
 import tempfile
+import uuid
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -55,6 +56,15 @@ class ManifestRow:
     class_name: str
     instances: int
     group_id: str
+
+
+@dataclass(frozen=True)
+class ImportSources:
+    raw: Path
+    frozen_dataset: Path
+    pretrained: Path
+    run: Path
+    logs: Path
 
 
 def _parse_relative_output(value: str, kind: str, split: str) -> PurePosixPath:
@@ -417,3 +427,128 @@ def validate_dataset(
         "classes": len(CLASS_NAMES),
         "class_names": [CLASS_NAMES[index] for index in sorted(CLASS_NAMES)],
     }
+
+
+def _inventory(path: Path) -> Dict[str, int]:
+    if path.is_file():
+        return {"files": 1, "bytes": path.stat().st_size}
+    files = [candidate for candidate in path.rglob("*") if candidate.is_file()]
+    return {
+        "files": len(files),
+        "bytes": sum(candidate.stat().st_size for candidate in files),
+    }
+
+
+def _require_import_sources(sources: ImportSources) -> None:
+    required = (
+        (sources.raw / "images", "raw images"),
+        (sources.raw / "labels", "raw labels"),
+        (sources.frozen_dataset / "data.yaml", "frozen data.yaml"),
+        (
+            sources.frozen_dataset / "reports" / "generation_summary.json",
+            "frozen generation summary",
+        ),
+        (sources.pretrained, "pretrained checkpoint"),
+        (sources.run / "weights" / "best.pt", "archived best checkpoint"),
+        (sources.run / "results.csv", "archived results"),
+        (sources.logs, "training logs"),
+    )
+    for path, description in required:
+        if not path.exists():
+            raise FileNotFoundError("{} not found: {}".format(description, path))
+
+
+def _copy_asset(source: Path, destination: Path, replace: bool) -> Dict[str, int]:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    stage_root = Path(
+        tempfile.mkdtemp(prefix=".{}-import-".format(destination.name), dir=destination.parent)
+    )
+    staged = stage_root / destination.name
+    backup = destination.parent / ".{}-backup-{}".format(
+        destination.name, uuid.uuid4().hex
+    )
+    try:
+        if source.is_dir():
+            shutil.copytree(str(source), str(staged))
+        else:
+            shutil.copy2(str(source), str(staged))
+        source_inventory = _inventory(source)
+        staged_inventory = _inventory(staged)
+        if staged_inventory != source_inventory:
+            raise IOError("staged asset inventory does not match source")
+
+        moved_existing = False
+        if destination.exists():
+            if not replace:
+                raise FileExistsError("destination already exists: {}".format(destination))
+            destination.rename(backup)
+            moved_existing = True
+        try:
+            staged.rename(destination)
+        except BaseException:
+            if moved_existing and not destination.exists() and backup.exists():
+                backup.rename(destination)
+            raise
+        if moved_existing and backup.exists():
+            if backup.is_dir():
+                shutil.rmtree(str(backup))
+            else:
+                backup.unlink()
+        return source_inventory
+    finally:
+        if stage_root.exists():
+            shutil.rmtree(str(stage_root))
+
+
+def import_assets(
+    sources: ImportSources, project_root: Path, replace: bool = False
+) -> Dict[str, object]:
+    """Copy external WAID assets into ignored, fixed local destinations."""
+
+    normalized = ImportSources(
+        raw=Path(sources.raw).expanduser().resolve(),
+        frozen_dataset=Path(sources.frozen_dataset).expanduser().resolve(),
+        pretrained=Path(sources.pretrained).expanduser().resolve(),
+        run=Path(sources.run).expanduser().resolve(),
+        logs=Path(sources.logs).expanduser().resolve(),
+    )
+    _require_import_sources(normalized)
+    root = Path(project_root).expanduser().resolve()
+    if not root.is_dir():
+        raise FileNotFoundError("project root not found: {}".format(root))
+
+    destinations = {
+        "raw": _safe_child(root, Path("data/external/waid/raw")),
+        "frozen_dataset": _safe_child(
+            root, Path("data/external/waid/derived/waid4500_v1")
+        ),
+        "pretrained": _safe_child(root, Path("data/external/waid/cache/yolo11s.pt")),
+        "run": _safe_child(root, Path("outputs/training/waid4500_yolo11s/run")),
+        "logs": _safe_child(root, Path("outputs/training/waid4500_yolo11s/logs")),
+    }
+    source_map = {
+        "raw": normalized.raw,
+        "frozen_dataset": normalized.frozen_dataset,
+        "pretrained": normalized.pretrained,
+        "run": normalized.run,
+        "logs": normalized.logs,
+    }
+    if not replace:
+        existing = [str(path) for path in destinations.values() if path.exists()]
+        if existing:
+            raise FileExistsError("destination already exists: {}".format(existing[0]))
+
+    components = {}
+    for name in ("raw", "frozen_dataset", "pretrained", "run", "logs"):
+        source = source_map[name]
+        destination = destinations[name]
+        if source == destination or source in destination.parents or destination in source.parents:
+            raise ValueError("source and destination must not overlap: {}".format(name))
+        inventory = _copy_asset(source, destination, replace)
+        components[name] = {
+            "source": str(source),
+            "destination": str(destination),
+            "files": inventory["files"],
+            "bytes": inventory["bytes"],
+        }
+    return {"status": "complete", "components": components}
