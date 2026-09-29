@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import csv
 import filecmp
+import hashlib
 import json
+import platform
+import re
 import shutil
+import sys
 import tempfile
 import uuid
 from dataclasses import dataclass
@@ -38,6 +42,8 @@ MANIFEST_FIELDS = (
 )
 SPLITS = ("train", "valid", "test")
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+PRODUCTION_MODEL_SHA256 = "46d734cba7553f31e89e739156f50e9a675b176f798c70159838497531771a64"
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 class ManifestError(ValueError):
@@ -695,6 +701,7 @@ def check_training_runtime(config: Mapping[str, object]) -> Dict[str, object]:
         "cuda_available": bool(torch.cuda.is_available()),
         "selected_device": selected,
         "splits": split_counts(rows),
+        "model_sha256": sha256_file(model),
         "model": str(model),
         "dataset": str(dataset),
         "output": str(config["project"]),
@@ -732,3 +739,214 @@ def run_training(
     from ultralytics import YOLO
 
     return YOLO(str(model_path)).train(**kwargs)
+
+
+def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        while True:
+            chunk = handle.read(chunk_size)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _checksum_relative_path(value: str) -> PurePosixPath:
+    if not value or "\\" in value or ":" in value:
+        raise ValueError("checksum path is not canonical")
+    path = PurePosixPath(value)
+    if path.is_absolute() or path.as_posix() != value:
+        raise ValueError("checksum path must be relative POSIX")
+    if any(part in ("", ".", "..") for part in path.parts):
+        raise ValueError("checksum path escapes project root")
+    return path
+
+
+def load_checksums(path: Path) -> Dict[str, str]:
+    checksums = {}
+    try:
+        lines = Path(path).read_text(encoding="utf-8-sig").splitlines()
+    except (OSError, UnicodeError) as exc:
+        raise ValueError("cannot read checksums: {}".format(path)) from exc
+    for line_number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        parts = line.split("  ", 1)
+        if len(parts) != 2 or not SHA256_PATTERN.fullmatch(parts[0]):
+            raise ValueError("invalid checksum line {}".format(line_number))
+        relative = _checksum_relative_path(parts[1]).as_posix()
+        if relative in checksums:
+            raise ValueError("duplicate checksum path: {}".format(relative))
+        checksums[relative] = parts[0]
+    if not checksums:
+        raise ValueError("checksum file must not be empty")
+    return checksums
+
+
+def write_checksums(project_root: Path, paths: Iterable[Path], destination: Path) -> Path:
+    root = Path(project_root).expanduser().resolve()
+    entries = []
+    for path in paths:
+        artifact = Path(path).expanduser().resolve()
+        try:
+            relative = artifact.relative_to(root).as_posix()
+        except ValueError as exc:
+            raise ValueError("checksum artifact is outside project root") from exc
+        if not artifact.is_file():
+            raise FileNotFoundError("checksum artifact not found: {}".format(artifact))
+        entries.append((relative, sha256_file(artifact)))
+    if not entries:
+        raise ValueError("at least one checksum artifact is required")
+    target = Path(destination)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        "".join("{}  {}\n".format(digest, relative) for relative, digest in sorted(entries)),
+        encoding="utf-8",
+    )
+    return target
+
+
+def verify_checksums(project_root: Path, checksums_path: Path) -> List[Dict[str, object]]:
+    root = Path(project_root).expanduser().resolve()
+    results = []
+    for relative, expected in load_checksums(checksums_path).items():
+        artifact = _safe_child(root, Path(relative))
+        actual = sha256_file(artifact) if artifact.is_file() else None
+        results.append(
+            {
+                "path": relative,
+                "expected": expected,
+                "actual": actual,
+                "status": "passed" if actual == expected else "failed",
+            }
+        )
+    return results
+
+
+def summarize_results(results_csv: Path) -> Dict[str, object]:
+    required = (
+        "epoch",
+        "metrics/precision(B)",
+        "metrics/recall(B)",
+        "metrics/mAP50(B)",
+        "metrics/mAP50-95(B)",
+    )
+    try:
+        with Path(results_csv).open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            if not set(required).issubset(set(reader.fieldnames or ())):
+                raise ValueError("results.csv is missing required metric columns")
+            rows = list(reader)
+    except OSError as exc:
+        raise ValueError("cannot read results.csv") from exc
+    if not rows:
+        raise ValueError("results.csv must contain at least one epoch")
+    try:
+        best = max(rows, key=lambda row: float(row["metrics/mAP50-95(B)"]))
+        return {
+            "epochs_recorded": len(rows),
+            "selection_metric": "metrics/mAP50-95(B)",
+            "best": {
+                "epoch": int(float(best["epoch"])),
+                "precision": float(best["metrics/precision(B)"]),
+                "recall": float(best["metrics/recall(B)"]),
+                "map50": float(best["metrics/mAP50(B)"]),
+                "map50_95": float(best["metrics/mAP50-95(B)"]),
+            },
+        }
+    except (TypeError, ValueError) as exc:
+        raise ValueError("results.csv contains invalid numeric metrics") from exc
+
+
+def capture_environment() -> Dict[str, object]:
+    try:
+        import torch
+
+        torch_version = str(torch.__version__)
+        cuda_available = bool(torch.cuda.is_available())
+        cuda_version = str(torch.version.cuda) if torch.version.cuda is not None else None
+        gpu = torch.cuda.get_device_name(0) if cuda_available else None
+    except ImportError:
+        torch_version = None
+        cuda_available = False
+        cuda_version = None
+        gpu = None
+    try:
+        import ultralytics
+
+        ultralytics_version = str(ultralytics.__version__)
+    except ImportError:
+        ultralytics_version = None
+    return {
+        "python": sys.version,
+        "platform": platform.platform(),
+        "torch": torch_version,
+        "ultralytics": ultralytics_version,
+        "cuda_available": cuda_available,
+        "cuda": cuda_version,
+        "gpu": gpu,
+    }
+
+
+def verify_reproduction(
+    project_root: Path, manifest_path: Path, checksums_path: Path
+) -> Dict[str, object]:
+    root = Path(project_root).expanduser().resolve()
+    report = {}
+
+    try:
+        rows = load_manifest(manifest_path)
+        checksum_results = verify_checksums(root, checksums_path)
+        asset_status = (
+            "passed" if all(item["status"] == "passed" for item in checksum_results) else "failed"
+        )
+        report["assets"] = {
+            "status": asset_status,
+            "splits": split_counts(rows),
+            "checksums": checksum_results,
+        }
+    except Exception as exc:
+        report["assets"] = {"status": "failed", "error": str(exc)}
+
+    try:
+        archived = root / "outputs/training/waid4500_yolo11s/run/weights/best.pt"
+        delivery = root / "models/detection/yolo11s-waid.pt"
+        archived_hash = sha256_file(archived)
+        delivery_hash = sha256_file(delivery)
+        lineage_status = (
+            "passed"
+            if archived_hash == delivery_hash == PRODUCTION_MODEL_SHA256
+            else "failed"
+        )
+        report["lineage"] = {
+            "status": lineage_status,
+            "expected": PRODUCTION_MODEL_SHA256,
+            "archived_best": archived_hash,
+            "delivery_model": delivery_hash,
+        }
+    except Exception as exc:
+        report["lineage"] = {"status": "failed", "error": str(exc)}
+
+    environment = capture_environment()
+    runtime_status = (
+        "passed"
+        if environment["torch"] is not None and environment["ultralytics"] is not None
+        else "failed"
+    )
+    report["runtime"] = {"status": runtime_status, **environment}
+
+    try:
+        summary = summarize_results(
+            root / "outputs/training/waid4500_yolo11s/run/results.csv"
+        )
+        report["results"] = {"status": "passed", **summary}
+    except Exception as exc:
+        report["results"] = {"status": "failed", "error": str(exc)}
+
+    report["status"] = (
+        "passed"
+        if all(report[section]["status"] == "passed" for section in ("assets", "lineage", "runtime", "results"))
+        else "failed"
+    )
+    return report

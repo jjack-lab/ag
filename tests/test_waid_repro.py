@@ -15,14 +15,20 @@ from cattle_health_app.detection.waid_repro import (
     MANIFEST_FIELDS,
     ManifestError,
     build_train_kwargs,
+    capture_environment,
     import_assets,
     load_manifest,
+    load_checksums,
     load_training_config,
     parse_label,
     rebuild_dataset,
     split_counts,
     run_training,
+    sha256_file,
+    summarize_results,
     validate_dataset,
+    verify_checksums,
+    write_checksums,
 )
 
 
@@ -611,6 +617,109 @@ class WaidTrainingCliTest(unittest.TestCase):
         )
         self.assertEqual(1, result.returncode)
         self.assertIn("[ERROR]", result.stderr)
+
+
+class WaidEvidenceTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def test_sha256_and_standard_checksum_round_trip(self):
+        artifact = self.root / "artifact.bin"
+        artifact.write_bytes(b"abc")
+        checksum_path = self.root / "checksums.sha256"
+
+        write_checksums(self.root, [artifact], checksum_path)
+        checksums = load_checksums(checksum_path)
+        verification = verify_checksums(self.root, checksum_path)
+
+        self.assertEqual(
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            sha256_file(artifact),
+        )
+        self.assertEqual({"artifact.bin": sha256_file(artifact)}, checksums)
+        self.assertEqual("passed", verification[0]["status"])
+
+    def test_checksum_verification_reports_tampering(self):
+        artifact = self.root / "artifact.bin"
+        artifact.write_bytes(b"before")
+        checksum_path = self.root / "checksums.sha256"
+        write_checksums(self.root, [artifact], checksum_path)
+        artifact.write_bytes(b"after")
+
+        verification = verify_checksums(self.root, checksum_path)
+
+        self.assertEqual("failed", verification[0]["status"])
+        self.assertNotEqual(verification[0]["expected"], verification[0]["actual"])
+
+    def test_rejects_unsafe_or_noncanonical_checksum_lines(self):
+        checksum_path = self.root / "checksums.sha256"
+        invalid_lines = (
+            "ABCDEF" + "0" * 58 + "  artifact.bin\n",
+            "0" * 64 + " ../outside.bin\n",
+            "0" * 64 + "  C:/outside.bin\n",
+            "not-a-checksum\n",
+        )
+        for line in invalid_lines:
+            with self.subTest(line=line):
+                checksum_path.write_text(line, encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    load_checksums(checksum_path)
+
+    def test_summarize_results_selects_best_map_row(self):
+        results = self.root / "results.csv"
+        results.write_text(
+            "epoch,metrics/precision(B),metrics/recall(B),metrics/mAP50(B),metrics/mAP50-95(B)\n"
+            "1,0.7,0.6,0.7,0.4\n"
+            "2,0.9,0.8,0.9,0.6\n"
+            "3,0.8,0.7,0.8,0.5\n",
+            encoding="utf-8",
+        )
+
+        summary = summarize_results(results)
+
+        self.assertEqual(3, summary["epochs_recorded"])
+        self.assertEqual(2, summary["best"]["epoch"])
+        self.assertEqual(0.6, summary["best"]["map50_95"])
+
+    def test_capture_environment_has_reproduction_fields(self):
+        environment = capture_environment()
+        for field in ("python", "platform", "torch", "ultralytics", "cuda_available"):
+            self.assertIn(field, environment)
+
+
+class WaidVerifierCliTest(unittest.TestCase):
+    @classmethod
+    def script(cls):
+        return (
+            Path(__file__).resolve().parents[1]
+            / "scripts"
+            / "reproducibility"
+            / "verify_waid_reproduction.py"
+        )
+
+    def test_help_documents_verifier_contract(self):
+        result = subprocess.run(
+            [sys.executable, str(self.script()), "--help"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        for option in ("--project-root", "--manifest", "--checksums", "--output-json"):
+            self.assertIn(option, result.stdout)
+
+    def test_missing_evidence_exits_one(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            result = subprocess.run(
+                [sys.executable, str(self.script()), "--project-root", temporary],
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(1, result.returncode)
+        self.assertIn('"status": "failed"', result.stdout)
 
 
 if __name__ == "__main__":
