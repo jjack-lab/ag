@@ -5,13 +5,16 @@ from __future__ import annotations
 import csv
 import filecmp
 import hashlib
+import io
 import json
+import os
 import platform
 import re
 import shutil
 import sys
 import tempfile
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -708,6 +711,50 @@ def check_training_runtime(config: Mapping[str, object]) -> Dict[str, object]:
     }
 
 
+def unicode_safe_save(save, obj, destination, *args, **kwargs):
+    """Serialize with ``save`` without handing PyTorch a non-ASCII file path.
+
+    PyTorch's checkpoint writer resolves the destination's parent directory
+    through the Windows ANSI code page, so ``torch.save`` fails with
+    "Parent directory ... does not exist" whenever this project lives under a
+    non-ASCII path such as ``F:\\new大创``. Ultralytics already avoids that for
+    its own checkpoints by serializing into an in-memory buffer and calling
+    ``Path.write_bytes``; this helper applies the same technique to any writer
+    that accepts a destination path or file-like object.
+    """
+
+    is_path = isinstance(destination, (str, os.PathLike))
+    if not is_path or str(destination).isascii():
+        return save(obj, destination, *args, **kwargs)
+
+    buffer = io.BytesIO()
+    result = save(obj, buffer, *args, **kwargs)
+    Path(destination).write_bytes(buffer.getvalue())
+    return result
+
+
+@contextmanager
+def unicode_safe_torch_save():
+    """Route ``torch.save`` through a buffer while the block is active.
+
+    Install this after importing Ultralytics, because Ultralytics replaces
+    ``torch.save`` with its own retrying wrapper at import time.
+    """
+
+    import torch
+
+    original = torch.save
+
+    def save(obj, destination, *args, **kwargs):
+        return unicode_safe_save(original, obj, destination, *args, **kwargs)
+
+    torch.save = save
+    try:
+        yield
+    finally:
+        torch.save = original
+
+
 def run_training(
     config: Mapping[str, object],
     smoke: bool,
@@ -738,7 +785,8 @@ def run_training(
 
     from ultralytics import YOLO
 
-    return YOLO(str(model_path)).train(**kwargs)
+    with unicode_safe_torch_save():
+        return YOLO(str(model_path)).train(**kwargs)
 
 
 def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:

@@ -1,4 +1,6 @@
+import contextlib
 import csv
+import io
 import subprocess
 import sys
 import tempfile
@@ -26,10 +28,35 @@ from cattle_health_app.detection.waid_repro import (
     run_training,
     sha256_file,
     summarize_results,
+    unicode_safe_save,
+    unicode_safe_torch_save,
     validate_dataset,
     verify_checksums,
     write_checksums,
 )
+
+
+@contextlib.contextmanager
+def installed_ultralytics(module):
+    """Install a fake ``ultralytics`` module for the duration of a block.
+
+    ``mock.patch.dict(sys.modules, ...)`` snapshots the whole module table and
+    restores it on exit, which ejects every module imported inside the block.
+    The training runtime imports ``torch`` there, so the previous form left the
+    interpreter with a half-initialized ``torch`` that could not be imported
+    again. Patch only the single key instead.
+    """
+
+    missing = object()
+    original = sys.modules.get("ultralytics", missing)
+    sys.modules["ultralytics"] = module
+    try:
+        yield module
+    finally:
+        if original is missing:
+            sys.modules.pop("ultralytics", None)
+        else:
+            sys.modules["ultralytics"] = original
 
 
 class WaidManifestTest(unittest.TestCase):
@@ -569,7 +596,7 @@ class WaidTrainingConfigTest(unittest.TestCase):
         fake_ultralytics = SimpleNamespace(YOLO=FakeModel, __version__="test")
         runtime_yaml = self.root / "runtime-data.yaml"
         runtime_yaml.write_text("path: portable\n", encoding="utf-8")
-        with mock.patch.dict(sys.modules, {"ultralytics": fake_ultralytics}):
+        with installed_ultralytics(fake_ultralytics):
             with mock.patch(
                 "cattle_health_app.detection.waid_repro.check_training_runtime",
                 return_value={"selected_device": "cpu"},
@@ -589,6 +616,160 @@ class WaidTrainingConfigTest(unittest.TestCase):
         config = load_training_config(self.write_config(), self.root)
         with self.assertRaises(FileNotFoundError):
             run_training(config, smoke=False, device="cpu", resume=self.root / "missing.pt")
+
+
+class WaidUnicodeCheckpointTest(unittest.TestCase):
+    """PyTorch's C++ writer rejects non-ASCII paths on Windows; training must not hit it."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    @staticmethod
+    def refusing_save(obj, target, *args, **kwargs):
+        """Stand-in for torch.save: buffers are fine, non-ASCII paths raise."""
+
+        payload = b"serialized-checkpoint"
+        if isinstance(target, io.BytesIO):
+            target.write(payload)
+            return
+        if not str(target).isascii():
+            raise RuntimeError(
+                "Parent directory {} does not exist.".format(Path(target).parent)
+            )
+        Path(target).write_bytes(payload)
+
+    def test_non_ascii_destination_is_serialized_through_a_buffer(self):
+        destination = self.root / "中文输出" / "weights" / "last.pt"
+        destination.parent.mkdir(parents=True)
+        seen = []
+
+        def recording_save(obj, target, *args, **kwargs):
+            seen.append(target)
+            self.refusing_save(obj, target, *args, **kwargs)
+
+        result = unicode_safe_save(recording_save, {"epoch": -1}, destination)
+
+        self.assertIsNone(result)
+        self.assertEqual(1, len(seen))
+        self.assertIsInstance(seen[0], io.BytesIO)
+        self.assertEqual(b"serialized-checkpoint", destination.read_bytes())
+
+    def test_ascii_destination_keeps_the_direct_write(self):
+        destination = self.root / "ascii" / "weights" / "last.pt"
+        destination.parent.mkdir(parents=True)
+        seen = []
+
+        def recording_save(obj, target, *args, **kwargs):
+            seen.append(target)
+            self.refusing_save(obj, target, *args, **kwargs)
+
+        unicode_safe_save(recording_save, {"epoch": -1}, destination)
+
+        self.assertEqual([destination], seen)
+        self.assertEqual(b"serialized-checkpoint", destination.read_bytes())
+
+    def test_non_ascii_path_checkpoint_round_trips_with_real_torch(self):
+        import torch
+
+        destination = self.root / "中文输出" / "weights" / "last.pt"
+        destination.parent.mkdir(parents=True)
+
+        with unicode_safe_torch_save():
+            torch.save({"epoch": 1, "probe": True}, destination)
+
+        self.assertTrue(destination.is_file())
+        self.assertEqual({"epoch": 1, "probe": True}, torch.load(destination))
+
+    def test_run_training_patches_torch_save_only_while_training(self):
+        import torch
+
+        config = load_training_config(self.write_config_for_training(), self.root)
+        config["model"].parent.mkdir(parents=True, exist_ok=True)
+        config["model"].write_bytes(b"model")
+        observed = []
+        original = torch.save
+
+        class FakeModel:
+            def __init__(self, model):
+                pass
+
+            def train(self, **kwargs):
+                observed.append(torch.save is not original)
+                return SimpleNamespace(save_dir="result")
+
+        fake_ultralytics = SimpleNamespace(YOLO=FakeModel, __version__="test")
+        runtime_yaml = self.root / "runtime-data.yaml"
+        runtime_yaml.write_text("path: portable\n", encoding="utf-8")
+        with installed_ultralytics(fake_ultralytics):
+            with mock.patch(
+                "cattle_health_app.detection.waid_repro.check_training_runtime",
+                return_value={"selected_device": "cpu"},
+            ):
+                with mock.patch(
+                    "cattle_health_app.detection.waid_repro.write_runtime_data_yaml",
+                    return_value=runtime_yaml,
+                ):
+                    run_training(config, smoke=True, device="cpu", resume=None)
+
+        self.assertEqual([True], observed)
+        self.assertIs(original, torch.save)
+
+    def test_run_training_restores_torch_save_after_training_failure(self):
+        import torch
+
+        config = load_training_config(self.write_config_for_training(), self.root)
+        config["model"].parent.mkdir(parents=True, exist_ok=True)
+        config["model"].write_bytes(b"model")
+        original = torch.save
+
+        class ExplodingModel:
+            def __init__(self, model):
+                pass
+
+            def train(self, **kwargs):
+                raise RuntimeError("training failed")
+
+        fake_ultralytics = SimpleNamespace(YOLO=ExplodingModel, __version__="test")
+        runtime_yaml = self.root / "runtime-data.yaml"
+        runtime_yaml.write_text("path: portable\n", encoding="utf-8")
+        with installed_ultralytics(fake_ultralytics):
+            with mock.patch(
+                "cattle_health_app.detection.waid_repro.check_training_runtime",
+                return_value={"selected_device": "cpu"},
+            ):
+                with mock.patch(
+                    "cattle_health_app.detection.waid_repro.write_runtime_data_yaml",
+                    return_value=runtime_yaml,
+                ):
+                    with self.assertRaisesRegex(RuntimeError, "training failed"):
+                        run_training(config, smoke=True, device="cpu", resume=None)
+
+        self.assertIs(original, torch.save)
+
+    def write_config_for_training(self):
+        values = {
+            "model": "data/external/waid/cache/yolo11s.pt",
+            "data_root": "data/external/waid/derived/waid4500_v1",
+            "manifest": "reproducibility/waid4500/dataset_manifest.csv",
+            "project": "outputs/training/waid4500_yolo11s/reproduced",
+            "name": "full_e120_seed42",
+            "epochs": 120,
+            "patience": 120,
+            "batch": 4,
+            "imgsz": 960,
+            "workers": 0,
+            "seed": 42,
+            "deterministic": True,
+            "cos_lr": True,
+            "device": "auto",
+        }
+        path = self.root / "training.yaml"
+        path.write_text(yaml.safe_dump(values, sort_keys=False), encoding="utf-8")
+        return path
 
 
 class WaidTrainingCliTest(unittest.TestCase):
