@@ -341,6 +341,8 @@ class WaidRebuildCliTest(unittest.TestCase):
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
 
         self.assertEqual(1, result.returncode)
@@ -722,7 +724,43 @@ class WaidVerifierCliTest(unittest.TestCase):
         self.assertIn('"status": "failed"', result.stdout)
 
 
+class WaidPowerShellWorkflowTest(unittest.TestCase):
+    @classmethod
+    def script(cls):
+        return (
+            Path(__file__).resolve().parents[1]
+            / "scripts"
+            / "reproducibility"
+            / "run_waid_reproduction.ps1"
+        )
+
+    def test_script_uses_portable_parameter_contract(self):
+        text = self.script().read_text(encoding="utf-8-sig")
+
+        for parameter in ("$Mode", "$Python", "$ProjectRoot", "$Device", "$Resume"):
+            self.assertIn(parameter, text)
+        self.assertIn("$PSScriptRoot", text)
+        self.assertIn("@arguments", text)
+        self.assertNotIn("E:\\", text)
+        for mode in ("verify", "rebuild", "smoke", "train", "resume"):
+            self.assertIn("'{}'".format(mode), text)
+
+    def test_powershell_help_does_not_run_workflow(self):
+        result = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                "Get-Help -Full '{}'".format(str(self.script()).replace("'", "''")),
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("Mode", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
-    build_train_kwargs,
-    load_training_config,
