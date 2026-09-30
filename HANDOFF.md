@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-09-29（接手方：补齐 Codex 中断的 WAID4500 复现收尾、修掉非 ASCII 路径下的检查点写入缺陷，并启动 CBVD4 CVB-transfer seed 20260901 训练）
+- 最后更新：2026-09-30（接手方：WAID4500 收尾已合并主线；CVB-transfer seed 20260901 于 2026-09-29 被环境静默终止后，已从 epoch 2 断点以脱离式进程 `--resume` 恢复）
 
 ## 当前阶段目标
 
@@ -71,22 +71,31 @@
   `outputs/training/waid4500_yolo11s/{run,logs}`；训练会在冻结数据集目录内新增
   Ultralytics `*.cache`（已被忽略，重建对比时排除，勿手工删除或提交）。
 - 多 seed validation 矩阵：已完成 Kinetics seed 20260901；**CVB-transfer seed
-  20260901 正在训练**（2026-09-29 20:02 启动，PID 6152，接手时必须用完整命令行和
-  输出目录重新识别进程，不要只信 PID；完整命令见「中断记录」）。输出
-  `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260901`，
-  日志 `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260901.{stdout,stderr}.log`
-  （均在 `.worktrees/cross-domain-behavior` 下）。`training_protocol.json` 已写出并通过
+  20260901 正在训练**。首次启动于 2026-09-29 20:02（PID 6152），跑完 epoch 0--2
+  （val_macro_f1 依次 0.4965 / 0.5451 / 0.7693）后于 22:44 被环境静默终止：应用日志与
+  系统日志均无 python.exe 崩溃或内存耗尽记录，stderr 也无回溯，属外部终止（后台任务被
+  回收），非代码缺陷。2026-09-30 11:49 已按冻结参数加 `--resume` 恢复，**改为脱离会话的
+  独立进程**（PID 29912）以免再被回收；恢复后 GPU 占用升到 4356 MiB，确认已从 epoch 2
+  的 `last.pt` 继续（`resume_binding.json` 校验通过）。接手时必须用完整命令行和输出
+  目录重新识别进程，不要只信 PID；完整命令见「中断记录」。输出
+  `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260901`
+  （`history.csv` 每 epoch 一行；`stdout.log` 只在跑完时写出最终 JSON 摘要，因此中途为空
+  是正常的），首次启动日志 `cvb_transfer_seed_20260901.{stdout,stderr}.log`、恢复日志
+  `cvb_transfer_seed_20260901_resume_20260929.{stdout,stderr}.log`、PID 文件
+  `cvb_transfer_seed_20260901.pid`（均在 `.worktrees/cross-domain-behavior` 的
+  `outputs/cbvd4/paper_20260922/logs/` 下）。`training_protocol.json` 已写出并通过
   隔离检查：`test_data_read=false`、`evaluation_scope=train_val_only`、只含 train/val
   清单哈希。仍剩 Kinetics seed 20260908、CVB-transfer seed 20260908，必须在本臂结束后
-  串行启动，不得并行占卡。
+  串行启动，不得并行占卡。按每个 epoch 约 40 分钟估算，本臂 30 轮尚需较长时间。
 - `codex/cross-domain-behavior` 仍有 3 个用户所有、未提交文档（roadmap、2026-09-12
   选择性数据可行性、2026-09-12 测试来源审计），接手方不得擅自覆盖或提交。
 - 主线有未跟踪文件：评估报告、`星牧智控-项目计划书.docx`、`申报-项目概述.txt`、`scripts/make_plan_docx.py`。
 
 ## 下一步（P0，按序执行）
 
-- [ ] 合并 `codex/waid-reproducibility` 到 `integration`（可快进）：合并后主线才具备
-  `reproducibility/waid4500/` 证据文件，指南里的 verify/rebuild/train 命令才能直接运行。
+- [x] 合并 `codex/waid-reproducibility` 到 `integration`（2026-09-29 快进完成，
+  `1a8d033`；合并后完整 `pytest` 588 通过 / 4 跳过 / 2 项既有失败，verifier
+  `status=passed`，指南里的 verify/rebuild/train 命令现可在主线直接运行）。
 - [ ] 串行补齐剩余三条多 seed 臂（CVB-transfer 20260901 → Kinetics seed 20260908 →
   CVB-transfer seed 20260908）；单 GPU 不得并行，异常退出只在绑定有效且无重复进程时
   按原参数 `--resume`，全程不得读取正式 test。
@@ -156,6 +165,22 @@
   train/val 清单及视频数据齐备、目标输出目录不存在；`training_protocol.json`
   `test_data_read=false`。中断处理：确认无重复进程后，用上面完全相同命令加
   `--resume`；不得删除失败运行或换种子。
+- 2026-09-29 22:44：上述进程在写完 epoch 2 后**静默消失**（`history.csv` 止于 epoch 2，
+  `stdout.log` 一直为 0 字节，`stderr.log` 停在上一次启动时刻）。排查证据：应用程序日志与
+  系统日志在该时间窗内没有任何 python.exe 错误、AppCrash 或内存耗尽记录，系统日志只有
+  显卡 RTD3 电源状态事件 → 判定为外部终止（把训练当普通后台任务跑，被会话/系统回收），
+  不是训练代码缺陷。这也解释了上一臂 2026-09-23「完成 epoch 11 后无最终摘要退出」的同类
+  现象。
+- 2026-09-30 11:49：从断点恢复 CVB-transfer seed 20260901。命令与上面完全相同，只追加
+  `--resume`；改为 **`Start-Process` 脱离式独立进程**（不再用会话内的后台任务），PID 29912，
+  并把 PID 写入 `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260901.pid`。
+  恢复日志 `cvb_transfer_seed_20260901_resume_20260929.{stdout,stderr}.log`（不覆盖原日志）。
+  恢复后自检：进程在命令返回后仍存活、GPU 占用由 1147 MiB 升到 4356 MiB（确已进入 CUDA
+  训练）、`stderr` 仅有 TypedStorage 弃用警告（`resume_binding.json` 校验通过，无绑定错误）。
+  注意：跑完前 `stdout.log` 为空是正常的，最终 JSON 摘要只在结束时写出；进度看 `history.csv`。
+  恢复当天另有**另一个 Codex 会话**在按 `docs/WAID4500_REPRODUCIBILITY.md` 跑
+  check-only → verifier → pytest（只读，与本训练不冲突）；但该会话若接着跑文档 §6 的
+  WAID 冒烟/完整训练，会与本臂争抢 8 GB 显存，本臂结束前不要启动。
 
 ## 还原上一段对话
 
