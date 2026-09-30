@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-09-30（CVB-transfer seed 20260901 于 18:37 早停正常收尾，val Macro-F1=0.8325412642；WAID4500 独立复核另记 6 项可复现性加固缺口，待用户定夺）
+- 最后更新：2026-09-30（CVB-transfer seed 20260901 于 18:37 早停正常收尾，val Macro-F1=0.8325412642；19:28 已启动第 3 条臂 Kinetics seed 20260908；WAID4500 独立复核另记 6 项加固缺口待用户定夺）
 
 ## 当前阶段目标
 
@@ -88,9 +88,17 @@
   `outputs/training/waid4500_yolo11s/{run,logs}`；训练会在冻结数据集目录内新增
   Ultralytics `*.cache`（已被忽略，重建对比时排除，勿手工删除或提交）。
 - 多 seed validation 矩阵：新一代 4 条臂已完成 2 条——Kinetics seed 20260901
-  （0.8530158904）与 CVB-transfer seed 20260901（0.8325412642，详见「已完成」）。
-  **当前没有训练进程在跑**；剩 Kinetics seed 20260908、CVB-transfer seed 20260908 未启动，
-  必须串行、一次一条、不得并行占卡，只读 train/val。
+  （0.8530158904）与 CVB-transfer seed 20260901（0.8325412642，详见「已完成」）；
+  **第 3 条 Kinetics seed 20260908 正在训练**（2026-09-30 19:28:36 启动，PID 5256，
+  kinetics 臂形态：给 `--kinetics-checkpoint models/pretrained/X3D_XS.pyth`、不给
+  `--source-checkpoint`、`--seed 20260908`）。启动自检：协议 `test_data_read=false`、
+  `evaluation_scope=train_val_only`、`kinetics_checkpoint_sha256=6dafc961…`、
+  `source_checkpoint_sha256=null`、清单哈希与冻结矩阵一致；日志
+  `outputs/cbvd4/paper_20260922/logs/kinetics_seed_20260908.{stdout,stderr}.log`、
+  PID 文件同名 `.pid`，输出
+  `outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260908`。
+  识别进程要靠完整命令行 + 输出目录，不能只信 PID；被回收就原命令加 `--resume`。
+  跑完只剩 CVB-transfer seed 20260908，必须串行、一次一条、不得并行占卡，只读 train/val。
 - 运行方式经验（务必遵守）：本环境会静默回收无人托管的进程——2026-09-29 的会话后台任务在
   跑完 epoch 2 后被回收；2026-09-30 用 `Start-Process` 脱离式进程重试也在约 3 分钟后被回收；
   最终仍用**会话托管的后台任务**恢复成功并正常跑完。所以长训练只能走会话托管后台任务，
@@ -219,6 +227,23 @@
   seed 20260908（同命令换 `--output-root …/kinetics_init/seed_20260908`、
   `--initialization kinetics_init`、`--kinetics-checkpoint models/pretrained/X3D_XS.pyth`、
   `--seed 20260908`，去掉 `--source-checkpoint`），必须串行、不得并行占卡。
+- 2026-09-30 19:28:36：启动第 3 条臂 Kinetics seed 20260908（PID 5256），工作目录
+  `.worktrees/cross-domain-behavior`，完整命令行：
+
+  ```powershell
+  & 'F:\deepl\anaconda1\envs\pytorch\python.exe' -u -X utf8 -m scripts.train_cbvd4_behavior `
+    --mode train --development-only --project-root . `
+    --manifest-root data/external/cbvd5/manifests/cbvd4 `
+    --output-root outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260908 `
+    --initialization kinetics_init --kinetics-checkpoint models/pretrained/X3D_XS.pyth `
+    --device cuda --epochs 30 --batch-size 8 --accumulation-steps 2 --learning-rate 3e-4 `
+    --weight-decay 1e-4 --patience 6 --workers 0 --seed 20260908 --freeze-backbone-epochs 2
+  ```
+
+  后台任务形态（本环境唯一能长跑的形态），日志
+  `outputs/cbvd4/paper_20260922/logs/kinetics_seed_20260908.{stdout,stderr}.log`，PID 文件同名
+  `.pid`。启动自检：无重复进程、协议 `test_data_read=false`、清单哈希与冻结矩阵一致。
+  中断处理：确认无重复进程后原命令加 `--resume`；不得删除失败运行或换种子。
 
 ## 还原上一段对话
 
