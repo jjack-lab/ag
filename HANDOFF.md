@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-09-30（接手方：WAID4500 收尾已合并主线；CVB-transfer seed 20260901 于 2026-09-29 被环境静默终止后，已从 epoch 2 断点以脱离式进程 `--resume` 恢复）
+- 最后更新：2026-09-30（接手方：WAID4500 独立复核确认 6 项可复现性加固缺口；CVB-transfer seed 20260901 的并行训练状态保持不变）
 
 ## 当前阶段目标
 
@@ -63,6 +63,12 @@
 
 ## 进行中
 
+- WAID 独立复核结论为 WARN（Critical=0、Important=6）：聚焦测试、真实 check-only、
+  当前哈希/血缘 verifier 和既有 smoke 产物均通过，但“完整可移植复现”的声明仍需加固。
+  已确认：verifier 未完整验证 4,720 个样本及固定划分；缺少逐样本内容哈希；导入的
+  `data.yaml` 仍指向旧 E 盘；Ultralytics 续训会恢复检查点内旧 `save_dir`；PowerShell
+  `rebuild` 默认目标已存在；五类资产导入不是整批事务。本轮未修改生产代码，等待用户
+  确认采用完整加固还是缩小声明范围。CVB 长训练仍在运行，本轮没有启动 WAID GPU 训练。
 - `codex/waid-reproducibility` 已快进合并到 `integration`（`1a8d033`，集成后完整
   `pytest` 588 通过 / 4 跳过 / 2 项既有失败，verifier `status=passed`）。worktree 仍在
   `C:\Users\Mrda\.codex\worktrees\waid-reproducibility\`（Codex 应用托管，未擅自删除），
@@ -103,6 +109,9 @@
 - [x] 合并 `codex/waid-reproducibility` 到 `integration`（2026-09-29 快进完成，
   `1a8d033`；合并后完整 `pytest` 588 通过 / 4 跳过 / 2 项既有失败，verifier
   `status=passed`，指南里的 verify/rebuild/train 命令现可在主线直接运行）。
+- [ ] 用户确认后按测试驱动完成 WAID 复现加固：全数据/固定划分验证、逐样本内容哈希、
+  portable `data.yaml`、安全续训、独立 rebuild 输出和整批导入事务；完成前不再把当前
+  verifier 的 `passed` 表述为“完整复现证据全部通过”。
 - [ ] 串行补齐剩余三条多 seed 臂（CVB-transfer 20260901 → Kinetics seed 20260908 →
   CVB-transfer seed 20260908）；单 GPU 不得并行，异常退出只在绑定有效且无重复进程时
   按原参数 `--resume`，全程不得读取正式 test。
@@ -137,6 +146,11 @@
 
 ## 中断记录
 
+- 2026-09-30：WAID 复核重新运行真实 check-only、verifier 和聚焦测试：
+  `status=ready`、当前 verifier `status=passed`、45 项聚焦测试通过；前端 16 项通过且
+  构建成功；全量 Python 588 通过 / 4 跳过 / 2 项既有失败。代码审查发现 0 个
+  Critical、6 个 Important，并用真实路径和 Ultralytics 8.4.22 源码逐项复现或确认。
+  当前停在设计选择前，尚未修改生产实现；下一步需用户确认“完整加固”或“缩小复现声明”。
 - 2026-09-22：CBVD4 冻结实验与正式报告已收尾。实验分支 HEAD=`6add827`；无训练进程需要恢复。下一执行点是“开发集多 seed/站立反刍改进方案 + 新前瞻性确认数据”，不是重跑当前 test。实验 worktree 仅剩 3 个用户所有的未跟踪文档，保持原样。
 - 2026-09-22 13:27：多 seed 第一条新增训练已启动。实验分支 HEAD=
   `4869354`。当前训练在首轮尚未写出 history 时已确认进程存活；协议仅含
