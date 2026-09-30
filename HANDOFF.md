@@ -73,20 +73,27 @@
 - 多 seed validation 矩阵：已完成 Kinetics seed 20260901；**CVB-transfer seed
   20260901 正在训练**。首次启动于 2026-09-29 20:02（PID 6152），跑完 epoch 0--2
   （val_macro_f1 依次 0.4965 / 0.5451 / 0.7693）后于 22:44 被环境静默终止：应用日志与
-  系统日志均无 python.exe 崩溃或内存耗尽记录，stderr 也无回溯，属外部终止（后台任务被
-  回收），非代码缺陷。2026-09-30 11:49 已按冻结参数加 `--resume` 恢复，**改为脱离会话的
-  独立进程**（PID 29912）以免再被回收；恢复后 GPU 占用升到 4356 MiB，确认已从 epoch 2
-  的 `last.pt` 继续（`resume_binding.json` 校验通过）。接手时必须用完整命令行和输出
-  目录重新识别进程，不要只信 PID；完整命令见「中断记录」。输出
-  `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260901`
+  系统日志均无 python.exe 崩溃或内存耗尽记录，stderr 也无回溯，属外部终止，非代码缺陷。
+  2026-09-30 两次恢复才稳定：11:49 先用 `Start-Process` 脱离式进程（PID 29912）试跑，
+  存活约 3 分钟后同样被静默回收；11:52:54 改用**会话托管的后台任务**（PID 3368）恢复成功，
+  GPU 占用 4356 MiB、利用率 100%，确认已从 epoch 2 的 `last.pt` 继续
+  （`resume_binding.json` 校验通过）。**结论：本环境只让会话托管的后台任务长跑，手动脱离
+  的子进程会被当作游离进程回收——不要再走脱离式启动那条路。**
+  接手时必须用完整命令行和输出目录重新识别进程，不要只信 PID；完整命令见「中断记录」。
+  输出 `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260901`
   （`history.csv` 每 epoch 一行；`stdout.log` 只在跑完时写出最终 JSON 摘要，因此中途为空
-  是正常的），首次启动日志 `cvb_transfer_seed_20260901.{stdout,stderr}.log`、恢复日志
-  `cvb_transfer_seed_20260901_resume_20260929.{stdout,stderr}.log`、PID 文件
-  `cvb_transfer_seed_20260901.pid`（均在 `.worktrees/cross-domain-behavior` 的
-  `outputs/cbvd4/paper_20260922/logs/` 下）。`training_protocol.json` 已写出并通过
-  隔离检查：`test_data_read=false`、`evaluation_scope=train_val_only`、只含 train/val
-  清单哈希。仍剩 Kinetics seed 20260908、CVB-transfer seed 20260908，必须在本臂结束后
-  串行启动，不得并行占卡。按每个 epoch 约 40 分钟估算，本臂 30 轮尚需较长时间。
+  是正常的）。日志在 `.worktrees/cross-domain-behavior` 的 `outputs/cbvd4/paper_20260922/logs/`：
+  首次 `cvb_transfer_seed_20260901.{stdout,stderr}.log`、被回收的两次尝试
+  `..._resume_20260929.*`、当前 `cvb_transfer_seed_20260901_resume_20260930.{stdout,stderr}.log`，
+  PID 文件 `cvb_transfer_seed_20260901.pid`（已更新为 3368）。
+  `training_protocol.json` 已写出并通过隔离检查：`test_data_read=false`、
+  `evaluation_scope=train_val_only`、只含 train/val 清单哈希。仍剩 Kinetics seed
+  20260908、CVB-transfer seed 20260908，必须在本臂结束后串行启动，不得并行占卡。
+  按每 epoch 约 40 分钟估算，本臂 30 轮尚需约 18 小时；若进程再被回收，按同一命令加
+  `--resume` 重启即可（每 epoch 落一次 checkpoint，不会丢已完成轮次）。
+  另：2026-09-30 当天有**另一个 Codex 会话**在按 `docs/WAID4500_REPRODUCIBILITY.md` 跑
+  check-only → verifier → pytest（只读，不占显存，与训练不冲突）；但它若继续跑文档 §6 的
+  WAID 冒烟/完整训练，会与本臂争抢 8 GB 显存，本臂结束前不要启动。
 - `codex/cross-domain-behavior` 仍有 3 个用户所有、未提交文档（roadmap、2026-09-12
   选择性数据可行性、2026-09-12 测试来源审计），接手方不得擅自覆盖或提交。
 - 主线有未跟踪文件：评估报告、`星牧智控-项目计划书.docx`、`申报-项目概述.txt`、`scripts/make_plan_docx.py`。
@@ -171,16 +178,21 @@
   显卡 RTD3 电源状态事件 → 判定为外部终止（把训练当普通后台任务跑，被会话/系统回收），
   不是训练代码缺陷。这也解释了上一臂 2026-09-23「完成 epoch 11 后无最终摘要退出」的同类
   现象。
-- 2026-09-30 11:49：从断点恢复 CVB-transfer seed 20260901。命令与上面完全相同，只追加
-  `--resume`；改为 **`Start-Process` 脱离式独立进程**（不再用会话内的后台任务），PID 29912，
-  并把 PID 写入 `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260901.pid`。
-  恢复日志 `cvb_transfer_seed_20260901_resume_20260929.{stdout,stderr}.log`（不覆盖原日志）。
-  恢复后自检：进程在命令返回后仍存活、GPU 占用由 1147 MiB 升到 4356 MiB（确已进入 CUDA
-  训练）、`stderr` 仅有 TypedStorage 弃用警告（`resume_binding.json` 校验通过，无绑定错误）。
+- 2026-09-30 11:49：第一次尝试从断点恢复 CVB-transfer seed 20260901。命令与上面完全相同，
+  只追加 `--resume`；改用 **`Start-Process` 脱离式独立进程**（PID 29912），日志
+  `cvb_transfer_seed_20260901_resume_20260929.{stdout,stderr}.log`。自检时（+3 分钟）GPU
+  已升到 4356 MiB、`resume_binding.json` 校验通过、无绑定错误；但命令返回后不久该进程
+  又被静默回收（`stdout` 0 字节、`stderr` 只有 TypedStorage 警告、无回溯），断点文件未被
+  破坏。**教训：本环境会把手动脱离的子进程当游离进程回收，脱离式启动不可用。**
+- 2026-09-30 11:52:54：第二次恢复，改用**会话托管的后台任务**（本会话唯一能长跑的形态），
+  PID 3368，命令同前（含 `--resume`），日志
+  `cvb_transfer_seed_20260901_resume_20260930.{stdout,stderr}.log`，PID 文件已更新为 3368。
+  自检：GPU 4356 MiB、利用率 100%（确在训练 epoch 3）、命令行含 `--resume`、无重复进程。
   注意：跑完前 `stdout.log` 为空是正常的，最终 JSON 摘要只在结束时写出；进度看 `history.csv`。
-  恢复当天另有**另一个 Codex 会话**在按 `docs/WAID4500_REPRODUCIBILITY.md` 跑
-  check-only → verifier → pytest（只读，与本训练不冲突）；但该会话若接着跑文档 §6 的
-  WAID 冒烟/完整训练，会与本臂争抢 8 GB 显存，本臂结束前不要启动。
+  若该后台任务再被回收，按同一命令加 `--resume` 重启即可，已完成 epoch 不丢。
+  当天另有**另一个 Codex 会话**在按 `docs/WAID4500_REPRODUCIBILITY.md` 跑 check-only →
+  verifier → pytest（只读，不占显存）；它若继续跑文档 §6 的 WAID 冒烟/完整训练，会与本臂
+  争抢 8 GB 显存，本臂结束前不要启动。
 
 ## 还原上一段对话
 
