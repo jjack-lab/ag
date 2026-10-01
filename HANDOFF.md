@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-01（第 3 条臂 Kinetics seed 20260908 已两度被会话层回收并两度续训，现 PID 7000 跑 epoch 13；进度 13 轮、最佳 epoch 7=0.8436，再有一轮不刷新即早停；用户确认「不重跑、不加计划任务，断了叫我续」）
+- 最后更新：2026-10-01（Kinetics seed 20260908 三次被回收、两次续训后于 22:34 早停正常收尾，14 轮、best=0.8436268208；Kinetics 臂三 seed 齐全，六格只剩 CVB-transfer seed 20260908）
 
 ## 当前阶段目标
 
@@ -46,6 +46,16 @@
   `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260901_resume_20260930.stdout.log`。
   参照：两条 20260824 旧臂为 Kinetics 0.8398443 / CVB-transfer 0.8407228，即本 seed 下
   Kinetics 升、CVB-transfer 降——只是稳定性观察，**六格齐全并跑完汇总前不作任何选择**。
+- 多 seed 矩阵第 3 条新增臂 Kinetics seed 20260908 已完成：2026-10-01 22:34:22 正常收尾
+  （`resume2_exit=0`，**epoch 13 早停**，patience=6；epoch 13 的 0.8424501 差一点点没刷新
+  epoch 7 的最佳），共 14 轮。validation Macro-F1=0.8436268208、accuracy=0.9126016260，
+  最佳 `best.pt` SHA-256=`5802f043d5a177b7cd1a3c90106254a22e176817d8918f86fdf1e8af1de4318d`
+  （与 `validation_metrics.json` 记录一致，已独立复算），`test_metrics_read=false`，
+  清单哈希与冻结矩阵一致。逐类 F1：grazing 0.9139 / drinking 0.8467 /
+  ruminating-standing 0.6178 / ruminating-lying 0.9961。日志
+  `outputs/cbvd4/paper_20260922/logs/kinetics_seed_20260908_resume2_20261001.stdout.log`。
+  至此 Kinetics 臂三个 seed 齐全：0.8398443 / 0.8530159 / 0.8436268（均值 0.8455，
+  样本标准差 0.0068）；CVB-transfer 臂还差 seed 20260908。
 - WAID4500 YOLO11s 可复现包已入库（分支 `codex/waid-reproducibility`，现共 10 个提交，
   即 Codex 的 8 个加本次的 `f18bd4d` 修复与 `842b1bd` 交接）：
   manifest 合约、原子重建、本地资产导入、可移植训练入口、证据验证器、
@@ -89,24 +99,19 @@
   Ultralytics `*.cache`（已被忽略，重建对比时排除，勿手工删除或提交）。
 - 多 seed validation 矩阵：新一代 4 条臂已完成 2 条——Kinetics seed 20260901
   （0.8530158904）与 CVB-transfer seed 20260901（0.8325412642，详见「已完成」）；
-  **第 3 条 Kinetics seed 20260908 正在训练（已两度续训）**：2026-09-30 19:28:36 首启
-  PID 5256（跑完 epoch 0--2 后 22:43 被杀）→ 2026-10-01 13:20:24 续训 PID 3396（推进到
-  epoch 12，21:01 再被杀）→ 2026-10-01 21:47:08 二次续训 PID 7000（GPU 4370 MiB，绑定
-  校验通过）。进度 13 轮（epoch 0--12），**当前最佳 epoch 7 = 0.8436268208**（`best.pt`
-  时间戳 17:12 与之吻合），自 epoch 7 起已连续 5 轮未刷新——**patience=6，再有一轮不刷新
-  即早停收尾**。kinetics 臂形态：给 `--kinetics-checkpoint models/pretrained/X3D_XS.pyth`、
-  不给 `--source-checkpoint`、`--seed 20260908`。启动/恢复自检：协议
-  `test_data_read=false`、`evaluation_scope=train_val_only`、
-  `kinetics_checkpoint_sha256=6dafc961…`、`source_checkpoint_sha256=null`、清单哈希与
-  冻结矩阵一致。日志（在 `.worktrees/cross-domain-behavior` 的
-  `outputs/cbvd4/paper_20260922/logs/`）：首启 `kinetics_seed_20260908.{stdout,stderr}.log`、
-  两次续训 `kinetics_seed_20260908_resume_20261001.*` 与
-  `kinetics_seed_20260908_resume2_20261001.*`，PID 文件同名 `.pid`；输出
+  **第 3 条 Kinetics seed 20260908 已完成**（2026-10-01 22:34:22 早停收尾，14 轮，最佳
+  epoch 7=0.8436268208，详见「已完成」）。该臂被会话层回收三次、续训两次，均在
+  `.worktrees/cross-domain-behavior/outputs/cbvd4/paper_20260922/logs/` 留有日志：
+  首启 `kinetics_seed_20260908.{stdout,stderr}.log`、两次续训
+  `kinetics_seed_20260908_resume_20261001.*` 与 `kinetics_seed_20260908_resume2_20261001.*`
+  （最终摘要 8736 字节在后一个），PID 文件同名 `.pid`；输出
   `outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260908`。
-  识别进程靠完整命令行 + 输出目录，不能只信 PID；被回收就原命令加 `--resume`（`resume`
-  顺序无关，日志名递增以免覆盖）。**用户已确认的操作模式（2026-10-01）：不重跑、不加
-  计划任务/守护脚本；被回收后由用户叫起、我按同命令加 `--resume` 续上。**
-  跑完只剩 CVB-transfer seed 20260908，必须串行、一次一条、不得并行占卡，只读 train/val。
+  **当前没有训练进程在跑、GPU 空闲**；六格只差最后一条
+  **CVB-transfer seed 20260908**：同 CVB-transfer seed 20260901 的命令，只把
+  `--output-root` 换成 `…/cvb_transfer_init/seed_20260908`、`--seed` 换成 20260908。
+  必须串行、一次一条、不得并行占卡，只读 train/val。四条新臂跑完后还要执行计划 Task 7
+  的汇总（`run_cbvd4_multiseed_validation --mode summarize` → `validation_metrics.csv`、
+  `aggregate.json`、`report.md`）才算把矩阵结清。
 - 运行方式经验（务必遵守）：本环境会静默回收无人托管的进程——2026-09-29 的会话后台任务在
   跑完 epoch 2 后被回收；2026-09-30 用 `Start-Process` 脱离式进程重试也在约 3 分钟后被回收；
   最终仍用**会话托管的后台任务**恢复成功并正常跑完。所以长训练只能走会话托管后台任务，
@@ -274,6 +279,13 @@
   日志），PID 文件更新为 7000。自检：GPU 4370 MiB、绑定校验通过、无重复进程。
   **下一步只等 epoch 13**：若它不刷新 0.8436268208，patience=6 触发早停，本臂即收尾并写出
   最终 JSON 摘要（届时核对 `best_val_macro_f1`/`test_metrics_read=false` 与 `best.pt` 哈希）。
+- 2026-10-01 22:34：Kinetics seed 20260908 **正常收尾**（`resume2_exit=0`，`stdout.log`
+  8736 字节最终摘要）：epoch 13 得 0.8424501，未刷新 epoch 7 的 0.8436268208，patience=6
+  触发早停，共 14 轮。核对：`epochs_completed=14`、`best_val_macro_f1=0.8436268208269122`、
+  `best.pt` 实际 SHA-256 与 `validation_metrics.json` 记录同为
+  `5802f043d5a177b7cd1a3c90106254a22e176817d8918f86fdf1e8af1de4318d`、
+  `test_metrics_read=false`、清单哈希与冻结矩阵一致。Kinetics 臂三 seed 齐全
+  （0.8398443 / 0.8530159 / 0.8436268）。**六格只剩 CVB-transfer seed 20260908。**
 
 ## 还原上一段对话
 
