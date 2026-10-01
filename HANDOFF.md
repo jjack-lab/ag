@@ -111,7 +111,8 @@
   `--output-root` 换成 `…/cvb_transfer_init/seed_20260908`、`--seed` 换成 20260908。
   必须串行、一次一条、不得并行占卡，只读 train/val。四条新臂跑完后还要执行计划 Task 7
   的汇总（`run_cbvd4_multiseed_validation --mode summarize` → `validation_metrics.csv`、
-  `aggregate.json`、`report.md`）才算把矩阵结清。
+  `aggregate.json`、`report.md`）才算把矩阵结清。**用户 2026-10-01 明确决定暂缓启动这一格**
+  （等用户发话再跑），当前空闲状态是刻意的，不是漏跑。
 - 运行方式经验（务必遵守）：本环境会静默回收无人托管的进程——2026-09-29 的会话后台任务在
   跑完 epoch 2 后被回收；2026-09-30 用 `Start-Process` 脱离式进程重试也在约 3 分钟后被回收；
   最终仍用**会话托管的后台任务**恢复成功并正常跑完。所以长训练只能走会话托管后台任务，
