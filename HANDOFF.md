@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-01（第 3 条臂 Kinetics seed 20260908 昨夜 22:43 被会话层回收，已在 13:20 从 epoch 2 续训；用户确认「不重跑、不加计划任务，断了叫我续」；WAID4500 独立复核的 6 项加固缺口仍待用户定夺）
+- 最后更新：2026-10-01（第 3 条臂 Kinetics seed 20260908 已两度被会话层回收并两度续训，现 PID 7000 跑 epoch 13；进度 13 轮、最佳 epoch 7=0.8436，再有一轮不刷新即早停；用户确认「不重跑、不加计划任务，断了叫我续」）
 
 ## 当前阶段目标
 
@@ -89,21 +89,24 @@
   Ultralytics `*.cache`（已被忽略，重建对比时排除，勿手工删除或提交）。
 - 多 seed validation 矩阵：新一代 4 条臂已完成 2 条——Kinetics seed 20260901
   （0.8530158904）与 CVB-transfer seed 20260901（0.8325412642，详见「已完成」）；
-  **第 3 条 Kinetics seed 20260908 正在训练**（2026-09-30 19:28:36 首启 PID 5256，跑完
-  epoch 0--2 后于 22:43 被外部静默终止；2026-10-01 13:20:24 按原命令加 `--resume` 恢复，
-  PID 3396，GPU 4347 MiB，绑定校验通过）。kinetics 臂形态：给
-  `--kinetics-checkpoint models/pretrained/X3D_XS.pyth`、不给 `--source-checkpoint`、
-  `--seed 20260908`。启动/恢复自检：协议 `test_data_read=false`、
-  `evaluation_scope=train_val_only`、`kinetics_checkpoint_sha256=6dafc961…`、
-  `source_checkpoint_sha256=null`、清单哈希与冻结矩阵一致。日志（在
-  `.worktrees/cross-domain-behavior` 的 `outputs/cbvd4/paper_20260922/logs/`）：
-  首启 `kinetics_seed_20260908.{stdout,stderr}.log`、当前恢复
-  `kinetics_seed_20260908_resume_20261001.{stdout,stderr}.log`，PID 文件同名 `.pid`；
-  输出 `outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260908`。
-  识别进程靠完整命令行 + 输出目录，不能只信 PID；被回收就原命令加 `--resume`。
-  **用户已确认的操作模式（2026-10-01）：不重跑、不加计划任务/守护脚本，每晚被回收后由
-  用户叫起、按同命令加 `--resume` 续上。** 跑完只剩 CVB-transfer seed 20260908，
-  必须串行、一次一条、不得并行占卡，只读 train/val。
+  **第 3 条 Kinetics seed 20260908 正在训练（已两度续训）**：2026-09-30 19:28:36 首启
+  PID 5256（跑完 epoch 0--2 后 22:43 被杀）→ 2026-10-01 13:20:24 续训 PID 3396（推进到
+  epoch 12，21:01 再被杀）→ 2026-10-01 21:47:08 二次续训 PID 7000（GPU 4370 MiB，绑定
+  校验通过）。进度 13 轮（epoch 0--12），**当前最佳 epoch 7 = 0.8436268208**（`best.pt`
+  时间戳 17:12 与之吻合），自 epoch 7 起已连续 5 轮未刷新——**patience=6，再有一轮不刷新
+  即早停收尾**。kinetics 臂形态：给 `--kinetics-checkpoint models/pretrained/X3D_XS.pyth`、
+  不给 `--source-checkpoint`、`--seed 20260908`。启动/恢复自检：协议
+  `test_data_read=false`、`evaluation_scope=train_val_only`、
+  `kinetics_checkpoint_sha256=6dafc961…`、`source_checkpoint_sha256=null`、清单哈希与
+  冻结矩阵一致。日志（在 `.worktrees/cross-domain-behavior` 的
+  `outputs/cbvd4/paper_20260922/logs/`）：首启 `kinetics_seed_20260908.{stdout,stderr}.log`、
+  两次续训 `kinetics_seed_20260908_resume_20261001.*` 与
+  `kinetics_seed_20260908_resume2_20261001.*`，PID 文件同名 `.pid`；输出
+  `outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260908`。
+  识别进程靠完整命令行 + 输出目录，不能只信 PID；被回收就原命令加 `--resume`（`resume`
+  顺序无关，日志名递增以免覆盖）。**用户已确认的操作模式（2026-10-01）：不重跑、不加
+  计划任务/守护脚本；被回收后由用户叫起、我按同命令加 `--resume` 续上。**
+  跑完只剩 CVB-transfer seed 20260908，必须串行、一次一条、不得并行占卡，只读 train/val。
 - 运行方式经验（务必遵守）：本环境会静默回收无人托管的进程——2026-09-29 的会话后台任务在
   跑完 epoch 2 后被回收；2026-09-30 用 `Start-Process` 脱离式进程重试也在约 3 分钟后被回收；
   最终仍用**会话托管的后台任务**恢复成功并正常跑完。所以长训练只能走会话托管后台任务，
@@ -261,7 +264,16 @@
   与 `resume_binding.json` 比对通过（该函数不一致即抛错）。日志
   `kinetics_seed_20260908_resume_20261001.{stdout,stderr}.log`，PID 文件已更新为 3396。
   用户 2026-10-01 明确决定：**不重跑**（重跑要删既有运行、偏离冻结矩阵，且解决不了夜杀），
-  **也不加计划任务/守护脚本**；每晚被回收后由用户叫起、按同命令加 `--resume` 续跑。
+  **也不加计划任务/守护脚本**；被回收后由用户叫起、按同命令加 `--resume` 续跑。
+- 2026-10-01 21:01：Kinetics seed 20260908 在写完 epoch 12 后**第三次被静默回收**（进程消失、
+  `stdout.log` 0 字节、GPU 归零、无回溯）。注意**回收时机并不固定在 22:43**（前两次在
+  22:43--22:44，这次在 21:01 之后），所以不能按点预测，只能靠 `history.csv` 与进程/GPU 判断。
+  此时进度 13 轮（epoch 0--12），最佳 epoch 7=0.8436268208，自 epoch 7 起连续 5 轮未刷新。
+- 2026-10-01 21:47:08：第二次续训（PID 7000），命令同前加 `--resume`，日志改为
+  `kinetics_seed_20260908_resume2_20261001.{stdout,stderr}.log`（递增命名，避免覆盖前一次
+  日志），PID 文件更新为 7000。自检：GPU 4370 MiB、绑定校验通过、无重复进程。
+  **下一步只等 epoch 13**：若它不刷新 0.8436268208，patience=6 触发早停，本臂即收尾并写出
+  最终 JSON 摘要（届时核对 `best_val_macro_f1`/`test_metrics_read=false` 与 `best.pt` 哈希）。
 
 ## 还原上一段对话
 
