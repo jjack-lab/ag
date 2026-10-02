@@ -457,46 +457,38 @@ def _require_import_sources(sources: ImportSources) -> None:
             raise FileNotFoundError("{} not found: {}".format(description, path))
 
 
-def _copy_asset(source: Path, destination: Path, replace: bool) -> Dict[str, int]:
+def _remove_path(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(str(path))
+    elif path.exists():
+        path.unlink()
+
+
+def _stage_asset(source: Path, destination: Path) -> Tuple[Path, Path, Dict[str, int]]:
+    """Copy one asset next to its destination and verify the staged payload.
+
+    Returns the staging root (owned by the caller), the staged payload, and the
+    verified source inventory. Nothing is published here, so a batch can stage
+    every component before touching the project.
+    """
+
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage_root = Path(
         tempfile.mkdtemp(prefix=".{}-import-".format(destination.name), dir=destination.parent)
     )
     staged = stage_root / destination.name
-    backup = destination.parent / ".{}-backup-{}".format(
-        destination.name, uuid.uuid4().hex
-    )
     try:
         if source.is_dir():
             shutil.copytree(str(source), str(staged))
         else:
             shutil.copy2(str(source), str(staged))
-        source_inventory = _inventory(source)
-        staged_inventory = _inventory(staged)
-        if staged_inventory != source_inventory:
+        inventory = _inventory(source)
+        if _inventory(staged) != inventory:
             raise IOError("staged asset inventory does not match source")
-
-        moved_existing = False
-        if destination.exists():
-            if not replace:
-                raise FileExistsError("destination already exists: {}".format(destination))
-            destination.rename(backup)
-            moved_existing = True
-        try:
-            staged.rename(destination)
-        except BaseException:
-            if moved_existing and not destination.exists() and backup.exists():
-                backup.rename(destination)
-            raise
-        if moved_existing and backup.exists():
-            if backup.is_dir():
-                shutil.rmtree(str(backup))
-            else:
-                backup.unlink()
-        return source_inventory
-    finally:
-        if stage_root.exists():
-            shutil.rmtree(str(stage_root))
+    except BaseException:
+        shutil.rmtree(str(stage_root), ignore_errors=True)
+        raise
+    return stage_root, staged, inventory
 
 
 def import_assets(
@@ -537,24 +529,69 @@ def import_assets(
         if existing:
             raise FileExistsError("destination already exists: {}".format(existing[0]))
 
-    components = {}
-    for name in ("raw", "frozen_dataset", "pretrained", "run", "logs"):
+    order = ("raw", "frozen_dataset", "pretrained", "run", "logs")
+    for name in order:
         source = source_map[name]
         destination = destinations[name]
         if source == destination or source in destination.parents or destination in source.parents:
             raise ValueError("source and destination must not overlap: {}".format(name))
-        inventory = _copy_asset(source, destination, replace)
-        if name == "frozen_dataset":
-            # The imported data.yaml keeps the source machine's absolute root
-            # (in this project an old E: drive path), which cannot work here.
-            write_runtime_data_yaml(destination, destination / "data.yaml")
-            inventory = _inventory(destination)
-        components[name] = {
-            "source": str(source),
-            "destination": str(destination),
-            "files": inventory["files"],
-            "bytes": inventory["bytes"],
-        }
+
+    staged: List[Tuple[str, Path, Path, Dict[str, int]]] = []
+    published: List[Tuple[Path, Optional[Path]]] = []
+    components: Dict[str, object] = {}
+    try:
+        # Stage every component first: a late failure then publishes nothing.
+        for name in order:
+            stage_root, staged_path, inventory = _stage_asset(
+                source_map[name], destinations[name]
+            )
+            staged.append((name, staged_path, stage_root, inventory))
+
+        for name, staged_path, _stage_root, inventory in staged:
+            destination = destinations[name]
+            backup = None
+            if destination.exists():
+                if not replace:
+                    raise FileExistsError(
+                        "destination already exists: {}".format(destination)
+                    )
+                backup = destination.parent / ".{}-backup-{}".format(
+                    destination.name, uuid.uuid4().hex
+                )
+                destination.rename(backup)
+            try:
+                staged_path.rename(destination)
+            except BaseException:
+                if backup is not None and not destination.exists() and backup.exists():
+                    backup.rename(destination)
+                raise
+            published.append((destination, backup))
+            if name == "frozen_dataset":
+                # The imported data.yaml keeps the source machine's absolute
+                # root (in this project an old E: drive path), which cannot
+                # work here.
+                write_runtime_data_yaml(destination, destination / "data.yaml")
+                inventory = _inventory(destination)
+            components[name] = {
+                "source": str(source_map[name]),
+                "destination": str(destination),
+                "files": inventory["files"],
+                "bytes": inventory["bytes"],
+            }
+    except BaseException:
+        # The five assets are one batch: undo whatever was already published.
+        for destination, backup in reversed(published):
+            _remove_path(destination)
+            if backup is not None and backup.exists():
+                backup.rename(destination)
+        raise
+    else:
+        for _destination, backup in published:
+            if backup is not None and backup.exists():
+                _remove_path(backup)
+    finally:
+        for _name, _staged_path, stage_root, _inventory_value in staged:
+            shutil.rmtree(str(stage_root), ignore_errors=True)
     return {"status": "complete", "components": components}
 
 

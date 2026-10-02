@@ -1,6 +1,7 @@
 import contextlib
 import csv
 import io
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -470,6 +471,31 @@ class WaidAssetImportTest(unittest.TestCase):
         self.assertEqual(
             b"updated",
             (self.project / "data/external/waid/raw/images/train/a.jpg").read_bytes(),
+        )
+
+    def test_batch_import_publishes_nothing_when_a_later_component_fails(self):
+        real_copytree = shutil.copytree
+
+        def flaky_copytree(source, destination, *args, **kwargs):
+            if Path(source).name == "run":
+                raise OSError("copy failed")
+            return real_copytree(source, destination, *args, **kwargs)
+
+        with mock.patch(
+            "cattle_health_app.detection.waid_repro.shutil.copytree",
+            side_effect=flaky_copytree,
+        ):
+            with self.assertRaises(OSError):
+                import_assets(self.sources, self.project)
+
+        # The five assets are one batch: a late failure must not leave the
+        # components that were copied first sitting in the project.
+        self.assertFalse((self.project / "data/external/waid/raw").exists())
+        self.assertFalse(
+            (self.project / "data/external/waid/cache/yolo11s.pt").exists()
+        )
+        self.assertFalse(
+            (self.project / "outputs/training/waid4500_yolo11s/run").exists()
         )
 
     def test_copy_failure_preserves_existing_destination(self):
