@@ -625,6 +625,27 @@ class WaidTrainingConfigTest(unittest.TestCase):
         self.assertEqual("smoke_e1", calls[1][1]["name"])
         self.assertEqual("result", result.save_dir)
 
+    def test_resume_rejects_checkpoint_recorded_outside_the_output_root(self):
+        import torch
+
+        config = load_training_config(self.write_config(), self.root)
+        checkpoint = self.root / "foreign-last.pt"
+        torch.save(
+            {
+                "epoch": 3,
+                "train_args": {
+                    "project": r"E:\大创\WAID_YOLO11\runs",
+                    "name": "waid4500_v1_yolo11s_img960_e120",
+                },
+            },
+            checkpoint,
+        )
+
+        # Ultralytics restores the checkpoint's arguments on resume, so a
+        # checkpoint recorded elsewhere would silently ignore --project-root.
+        with self.assertRaisesRegex(ValueError, "output root"):
+            run_training(config, smoke=False, device="cpu", resume=checkpoint)
+
     def test_resume_requires_existing_checkpoint(self):
         config = load_training_config(self.write_config(), self.root)
         with self.assertRaises(FileNotFoundError):

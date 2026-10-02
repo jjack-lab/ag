@@ -754,6 +754,44 @@ def unicode_safe_torch_save():
         torch.save = original
 
 
+def recorded_output_root(checkpoint: Path) -> Optional[Path]:
+    """Read the output root recorded inside an Ultralytics checkpoint."""
+
+    import torch
+
+    payload = torch.load(str(checkpoint), map_location="cpu")
+    recorded = payload.get("train_args") or payload.get("args") or {}
+    project = recorded.get("project")
+    if project is None:
+        return None
+    return Path(str(project)).expanduser()
+
+
+def require_portable_resume(checkpoint: Path, project_root: Path) -> None:
+    """Fail closed when a checkpoint would write outside the portable output root.
+
+    Ultralytics replaces every training argument with the checkpoint's own on
+    resume (``BaseTrainer.check_resume``), so the destination comes from the
+    checkpoint rather than from ``--project-root``. This project's archived run
+    records an ``E:`` drive root, so resuming it would quietly train there
+    instead of inside the portable output directory.
+    """
+
+    recorded = recorded_output_root(checkpoint)
+    if recorded is None:
+        raise ValueError(
+            "resume checkpoint records no output root: {}".format(checkpoint)
+        )
+    try:
+        recorded.resolve().relative_to(Path(project_root).expanduser().resolve())
+    except ValueError as exc:
+        raise ValueError(
+            "resume checkpoint output root is outside the portable project: {}".format(
+                recorded
+            )
+        ) from exc
+
+
 def run_training(
     config: Mapping[str, object],
     smoke: bool,
@@ -767,6 +805,7 @@ def run_training(
         resume_path = Path(resume).expanduser().resolve()
         if not resume_path.is_file():
             raise FileNotFoundError("resume checkpoint not found: {}".format(resume_path))
+        require_portable_resume(resume_path, Path(config["project"]))
     elif not Path(config["model"]).is_file():
         raise FileNotFoundError("pretrained model not found: {}".format(config["model"]))
 
