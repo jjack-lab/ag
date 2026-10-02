@@ -1,6 +1,7 @@
 import contextlib
 import csv
 import io
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -21,6 +22,7 @@ from cattle_health_app.detection.waid_repro import (
     import_assets,
     load_manifest,
     load_checksums,
+    load_sample_hashes,
     load_training_config,
     parse_label,
     rebuild_dataset,
@@ -32,7 +34,11 @@ from cattle_health_app.detection.waid_repro import (
     unicode_safe_torch_save,
     validate_dataset,
     verify_checksums,
+    verify_dataset_samples,
+    verify_reproduction,
+    verify_sample_hashes,
     write_checksums,
+    write_sample_hashes,
 )
 
 
@@ -442,6 +448,19 @@ class WaidAssetImportTest(unittest.TestCase):
         self.assertEqual(2, report["components"]["raw"]["files"])
         self.assertEqual(len(b"raw-image") + len(b"1 0.5 0.5 0.2 0.2\n"), report["components"]["raw"]["bytes"])
 
+    def test_import_rewrites_frozen_dataset_data_yaml_for_the_destination(self):
+        import_assets(self.sources, self.project)
+
+        destination = self.project / "data/external/waid/derived/waid4500_v1"
+        data_yaml = yaml.safe_load((destination / "data.yaml").read_text(encoding="utf-8"))
+
+        # The imported copy must not keep the source machine's absolute root.
+        self.assertEqual(str(destination.resolve()), data_yaml["path"])
+        self.assertEqual("images/train", data_yaml["train"])
+        self.assertEqual("images/valid", data_yaml["val"])
+        self.assertEqual("images/test", data_yaml["test"])
+        self.assertEqual(dict(CLASS_NAMES), data_yaml["names"])
+
     def test_refuses_existing_destination_without_replace(self):
         import_assets(self.sources, self.project)
 
@@ -457,6 +476,31 @@ class WaidAssetImportTest(unittest.TestCase):
         self.assertEqual(
             b"updated",
             (self.project / "data/external/waid/raw/images/train/a.jpg").read_bytes(),
+        )
+
+    def test_batch_import_publishes_nothing_when_a_later_component_fails(self):
+        real_copytree = shutil.copytree
+
+        def flaky_copytree(source, destination, *args, **kwargs):
+            if Path(source).name == "run":
+                raise OSError("copy failed")
+            return real_copytree(source, destination, *args, **kwargs)
+
+        with mock.patch(
+            "cattle_health_app.detection.waid_repro.shutil.copytree",
+            side_effect=flaky_copytree,
+        ):
+            with self.assertRaises(OSError):
+                import_assets(self.sources, self.project)
+
+        # The five assets are one batch: a late failure must not leave the
+        # components that were copied first sitting in the project.
+        self.assertFalse((self.project / "data/external/waid/raw").exists())
+        self.assertFalse(
+            (self.project / "data/external/waid/cache/yolo11s.pt").exists()
+        )
+        self.assertFalse(
+            (self.project / "outputs/training/waid4500_yolo11s/run").exists()
         )
 
     def test_copy_failure_preserves_existing_destination(self):
@@ -611,6 +655,27 @@ class WaidTrainingConfigTest(unittest.TestCase):
         self.assertEqual(str(runtime_yaml), calls[1][1]["data"])
         self.assertEqual("smoke_e1", calls[1][1]["name"])
         self.assertEqual("result", result.save_dir)
+
+    def test_resume_rejects_checkpoint_recorded_outside_the_output_root(self):
+        import torch
+
+        config = load_training_config(self.write_config(), self.root)
+        checkpoint = self.root / "foreign-last.pt"
+        torch.save(
+            {
+                "epoch": 3,
+                "train_args": {
+                    "project": r"E:\大创\WAID_YOLO11\runs",
+                    "name": "waid4500_v1_yolo11s_img960_e120",
+                },
+            },
+            checkpoint,
+        )
+
+        # Ultralytics restores the checkpoint's arguments on resume, so a
+        # checkpoint recorded elsewhere would silently ignore --project-root.
+        with self.assertRaisesRegex(ValueError, "output root"):
+            run_training(config, smoke=False, device="cpu", resume=checkpoint)
 
     def test_resume_requires_existing_checkpoint(self):
         config = load_training_config(self.write_config(), self.root)
@@ -891,7 +956,14 @@ class WaidVerifierCliTest(unittest.TestCase):
             text=True,
         )
         self.assertEqual(0, result.returncode, result.stderr)
-        for option in ("--project-root", "--manifest", "--checksums", "--output-json"):
+        for option in (
+            "--project-root",
+            "--manifest",
+            "--checksums",
+            "--dataset",
+            "--sample-hashes",
+            "--output-json",
+        ):
             self.assertIn(option, result.stdout)
 
     def test_missing_evidence_exits_one(self):
@@ -903,6 +975,184 @@ class WaidVerifierCliTest(unittest.TestCase):
             )
         self.assertEqual(1, result.returncode)
         self.assertIn('"status": "failed"', result.stdout)
+
+
+class WaidSampleHashCliTest(unittest.TestCase):
+    @classmethod
+    def script(cls):
+        return (
+            Path(__file__).resolve().parents[1]
+            / "scripts"
+            / "reproducibility"
+            / "write_waid_sample_hashes.py"
+        )
+
+    def test_help_documents_the_hash_writer_contract(self):
+        result = subprocess.run(
+            [sys.executable, str(self.script()), "--help"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        for option in ("--project-root", "--dataset", "--manifest", "--output"):
+            self.assertIn(option, result.stdout)
+
+    def test_missing_dataset_exits_one(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            result = subprocess.run(
+                [sys.executable, str(self.script()), "--project-root", temporary],
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(1, result.returncode)
+        self.assertIn("[ERROR]", result.stderr)
+
+
+class WaidSampleAuditTest(unittest.TestCase):
+    """Every frozen sample, its split membership, and its content must be auditable."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.dataset = self.root / "waid4500_v1"
+        self.manifest = self.root / "manifest.csv"
+        rows = [
+            self.write_sample(
+                "train", "a.jpg", b"image-a", "1 0.5 0.5 0.2 0.2\n", 1, "cattle", 1, "group-a"
+            ),
+            self.write_sample(
+                "test", "b.jpg", b"image-b", "0 0.5 0.5 0.2 0.2\n", 0, "sheep", 1, "group-b"
+            ),
+        ]
+        self.write_manifest(rows)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def write_sample(
+        self, split, name, image_bytes, label_text, class_id, class_name, instances, group_id
+    ):
+        image = self.dataset / "images" / split / name
+        label = self.dataset / "labels" / split / (Path(name).stem + ".txt")
+        image.parent.mkdir(parents=True, exist_ok=True)
+        label.parent.mkdir(parents=True, exist_ok=True)
+        image.write_bytes(image_bytes)
+        label.write_text(label_text, encoding="utf-8")
+        return {
+            "split": split,
+            "output_image": "images/{}/{}".format(split, name),
+            "output_label": "labels/{}/{}".format(split, label.name),
+            "source_image": r"E:\WAID\images\{}\{}".format(split, name),
+            "source_label": r"E:\WAID\labels\{}\{}".format(split, label.name),
+            "source_split": split,
+            "class_id": str(class_id),
+            "class_name": class_name,
+            "instances": str(instances),
+            "group_id": group_id,
+        }
+
+    def write_manifest(self, rows):
+        with self.manifest.open("w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=MANIFEST_FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
+        (self.dataset / "splits").mkdir(parents=True, exist_ok=True)
+        for split in ("train", "valid", "test"):
+            listed = "".join(
+                "{}\n".format(row["output_image"]) for row in rows if row["split"] == split
+            )
+            (self.dataset / "splits" / "{}.txt".format(split)).write_text(
+                listed, encoding="utf-8"
+            )
+
+    def test_verifies_every_sample_and_the_frozen_split(self):
+        report = verify_dataset_samples(self.dataset, load_manifest(self.manifest))
+
+        self.assertEqual("passed", report["status"])
+        self.assertEqual(2, report["checked"])
+        self.assertEqual([], report["missing"])
+        self.assertEqual([], report["mismatched"])
+        self.assertEqual(1, report["splits"]["train"]["listed"])
+        self.assertEqual("passed", report["splits"]["train"]["status"])
+        self.assertEqual("passed", report["splits"]["valid"]["status"])
+
+    def test_reports_a_missing_sample(self):
+        (self.dataset / "labels/train/a.txt").unlink()
+
+        report = verify_dataset_samples(self.dataset, load_manifest(self.manifest))
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual(["images/train/a.jpg"], report["missing"])
+
+    def test_reports_label_metadata_that_differs_from_the_manifest(self):
+        (self.dataset / "labels/train/a.txt").write_text(
+            "1 0.5 0.5 0.2 0.2\n1 0.4 0.4 0.1 0.1\n", encoding="utf-8"
+        )
+
+        report = verify_dataset_samples(self.dataset, load_manifest(self.manifest))
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual(
+            ["images/train/a.jpg"], [item["image"] for item in report["mismatched"]]
+        )
+
+    def test_reports_split_membership_that_differs_from_the_manifest(self):
+        (self.dataset / "splits/train.txt").write_text(
+            "images/train/other.jpg\n", encoding="utf-8"
+        )
+
+        report = verify_dataset_samples(self.dataset, load_manifest(self.manifest))
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual("failed", report["splits"]["train"]["status"])
+
+    def test_sample_content_hashes_detect_a_tampered_image(self):
+        destination = write_sample_hashes(
+            self.dataset, self.manifest, self.root / "samples.sha256"
+        )
+        tracked = load_sample_hashes(destination)
+        self.assertEqual(2, len(tracked))
+
+        passed = verify_sample_hashes(
+            self.dataset, load_manifest(self.manifest), tracked
+        )
+        self.assertEqual("passed", passed["status"])
+        self.assertEqual(2, passed["checked"])
+
+        (self.dataset / "images/train/a.jpg").write_bytes(b"tampered")
+
+        failed = verify_sample_hashes(
+            self.dataset, load_manifest(self.manifest), tracked
+        )
+        self.assertEqual("failed", failed["status"])
+        self.assertEqual(
+            ["images/train/a.jpg"], [item["image"] for item in failed["mismatched"]]
+        )
+
+    def test_sample_content_hashes_report_an_untracked_sample(self):
+        destination = write_sample_hashes(
+            self.dataset, self.manifest, self.root / "samples.sha256"
+        )
+        tracked = load_sample_hashes(destination)
+        tracked.pop("images/test/b.jpg")
+
+        report = verify_sample_hashes(
+            self.dataset, load_manifest(self.manifest), tracked
+        )
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual(["images/test/b.jpg"], report["missing"])
+
+    def test_rejects_a_sample_hash_file_with_non_canonical_entries(self):
+        destination = self.root / "samples.sha256"
+        destination.write_text(
+            "output_image,image_sha256,label_sha256,content_sha256\n"
+            "@/tmp/escape.jpg,{0},{0},{0}\n".format("a" * 64),
+            encoding="utf-8",
+        )
+
+        with self.assertRaises(ValueError):
+            load_sample_hashes(destination)
 
 
 class WaidPowerShellWorkflowTest(unittest.TestCase):
@@ -925,6 +1175,14 @@ class WaidPowerShellWorkflowTest(unittest.TestCase):
         self.assertNotIn("E:\\", text)
         for mode in ("verify", "rebuild", "smoke", "train", "resume"):
             self.assertIn("'{}'".format(mode), text)
+
+    def test_rebuild_mode_defaults_to_a_fresh_output_directory(self):
+        text = self.script().read_text(encoding="utf-8-sig")
+
+        # The frozen dataset always exists and rebuild refuses an existing output,
+        # so the documented one-command rebuild must target a separate directory.
+        self.assertNotIn("derived\\waid4500_v1'", text)
+        self.assertIn("derived\\waid4500_rebuilt'", text)
 
     def test_powershell_help_does_not_run_workflow(self):
         result = subprocess.run(

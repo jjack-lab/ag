@@ -21,6 +21,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--checksums", type=Path)
+    parser.add_argument("--dataset", type=Path)
+    parser.add_argument("--sample-hashes", type=Path)
     parser.add_argument("--output-json", type=Path)
     return parser
 
@@ -30,7 +32,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     root = args.project_root.expanduser().resolve()
     manifest = args.manifest or root / "reproducibility/waid4500/dataset_manifest.csv"
     checksums = args.checksums or root / "reproducibility/waid4500/checksums.sha256"
-    report = verify_reproduction(root, manifest, checksums)
+    sample_hashes = args.sample_hashes or (
+        root / "reproducibility/waid4500/dataset_samples.sha256"
+    )
+    report = verify_reproduction(
+        root,
+        manifest,
+        checksums,
+        dataset_root=args.dataset,
+        sample_hashes_path=sample_hashes,
+    )
     rendered = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     if args.output_json is not None:
         output = args.output_json.expanduser().resolve()

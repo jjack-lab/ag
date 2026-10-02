@@ -41,6 +41,8 @@ $env:AGRINEBULA_PYTHON = 'F:\deepl\anaconda1\envs\pytorch\python.exe'
 
 目标存在时默认拒绝覆盖。只有明确要重新替换本地副本时才增加 `--replace`。
 
+导入是**整批事务**：五类资产先全部复制到暂存目录并逐一校验，再统一发布；任一环节失败会回滚已发布的部分并恢复被替换的旧资产，不会留下半新半旧的项目状态。导入完成后，冻结数据集的 `data.yaml` 会被重写为本机的可移植路径（源机绝对路径如 `E:\大创\...` 不会被带过来）。
+
 ## 3. 验证完整复现证据
 
 ```powershell
@@ -49,7 +51,25 @@ $env:AGRINEBULA_PYTHON = 'F:\deepl\anaconda1\envs\pytorch\python.exe'
   --output-json 'F:\new大创\outputs\training\waid4500_yolo11s\verification.json'
 ```
 
-顶层 `status` 为 `passed` 时，表示以下四层均通过：4,500/200/20 样本资产、关键 SHA-256、归档权重与交付模型来源、训练环境和最佳指标摘要。
+顶层 `status` 为 `passed` 时，表示以下六层**全部**通过：
+
+1. 4,500/200/20 的划分资产与关键 SHA-256；
+2. 逐样本结构校验：清单全部 4,720 条样本的图片/标签存在、标签内容与清单元数据（类别、目标数）一致；
+3. 冻结划分校验：`splits/{train,valid,test}.txt` 的成员集合与清单划分完全一致（4,500/200/20）；
+4. 逐样本内容哈希：`reproducibility/waid4500/dataset_samples.sha256` 中 4,720 条图片+标签内容摘要逐条重算一致；
+5. 归档权重与交付模型来源（`best.pt` 与 `models/detection/yolo11s-waid.pt` 同哈希）；
+6. 训练环境与最佳指标摘要。
+
+当前实测（2026-10-02，真实资产 `--project-root F:\new大创`）：`status=passed`，样本 4,720/4,720、划分 4,500/200/20、内容哈希 4,720/4,720，全部一致。
+
+需要重新记录内容哈希（例如换了数据机或重导入后）：
+
+```powershell
+& $env:AGRINEBULA_PYTHON scripts/reproducibility/write_waid_sample_hashes.py `
+  --project-root 'F:\new大创'
+```
+
+该命令按清单顺序写出 `reproducibility/waid4500/dataset_samples.sha256`（列为 `output_image,image_sha256,label_sha256,content_sha256`），把结果提交进 Git 即可成为可复核证据。
 
 ## 4. 从原始 WAID 重建冻结划分
 
@@ -103,6 +123,8 @@ $env:AGRINEBULA_PYTHON = 'F:\deepl\anaconda1\envs\pytorch\python.exe'
   --resume 'F:\new大创\outputs\training\waid4500_yolo11s\reproduced\full_e120_seed42\weights\last.pt' `
   --device 0
 ```
+
+续训前会校验检查点里记录的输出根：Ultralytics 在续训时用检查点自身的参数覆盖全部参数（`BaseTrainer.check_resume`），因此输出位置来自检查点而不是 `--project-root`。归档运行的检查点记录的是旧的 `E:\大创\WAID_YOLO11\runs`，直接续训会写到那里；现在这种情况会被拒绝并报 `resume checkpoint output root is outside the portable project`。**只能续训由本工作流产生、且输出根位于 `outputs/training/waid4500_yolo11s/reproduced` 之下的检查点。**
 
 统一入口：
 

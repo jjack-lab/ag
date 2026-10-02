@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-01（Kinetics seed 20260908 三次被回收、两次续训后于 22:34 早停正常收尾，14 轮、best=0.8436268208；Kinetics 臂三 seed 齐全，六格只剩 CVB-transfer seed 20260908）
+- 最后更新：2026-10-02（WAID 复现加固已合并回 `integration`：独立复核的 6 项 Important 全部修完——可移植 data.yaml、PS rebuild 默认输出、续训越界 fail-closed、整批导入事务、全量样本+固定划分校验、逐样本内容哈希；真实资产端到端 `status=passed`。另：多 seed 六格只剩 CVB-transfer seed 20260908，用户已表示暂缓）
 
 ## 当前阶段目标
 
@@ -84,14 +84,27 @@
 
 ## 进行中
 
-- WAID 复现加固**已在分支 `codex/waid-repro-hardening` 上完成复核的全部 6 项**
-  （worktree `.worktrees/waid-repro-hardening`，基于 `integration` 416b90e；HEAD
-  `8086d0a`）：`2ea7dc6`（导入 `data.yaml` 可移植 + PS `rebuild` 默认改独立目录）、
-  `733cbbb`（续训越界写盘 fail-closed）、`7080174`（五类资产整批导入事务）、`f6e6df7`
-  （verifier 全量 4,720 样本与固定划分校验 + 逐样本内容哈希 `dataset_samples.sha256`）。
-  真实资产端到端 `status=passed`（样本 4,720/4,720、划分 4,500/200/20、内容哈希
-  4,720/4,720）；分支全量测试 601 passed / 4 skipped / 2 项既有失败。**请勿在
-  `integration` 上重复实现同一批改动；分支待用户审阅/合并。** 细节见分支的 `HANDOFF.md`。
+- WAID 复现加固**已完成并合并回 `integration`**（分支 `codex/waid-repro-hardening`，
+  worktree `.worktrees/waid-repro-hardening`，基于 `integration` 416b90e；用户 2026-10-02
+  审阅后合并）：
+  `2ea7dc6` 导入的冻结数据集 `data.yaml` 不再保留源机绝对根（原先写死
+  `E:\大创\WAID_YOLO11\waid4500_v1`），并与 PowerShell `rebuild` 默认输出改为独立目录
+  `derived\waid4500_rebuilt`（原先默认指向冻结目录本身，该模式必然失败）；
+  `733cbbb` 续训前校验检查点内记录的输出根，越界即 fail-closed（Ultralytics
+  `trainer.check_resume` 会用检查点参数覆盖全部参数，归档检查点记录的是
+  `E:\大创\WAID_YOLO11\runs`，否则会静默写到旧 E 盘）——已用真实检查点验证：归档
+  checkpoint 被拒、`reproduced` checkpoint 被接受；
+  `7080174` 五类资产改为**整批事务**：先全部暂存校验、再一起发布，任一环节失败则回滚
+  已发布组件并恢复被替换的旧资产；
+  `f6e6df7` 证据强度补齐：`verify_reproduction()` 现在逐条校验全部 4,720 个样本
+  （存在性 + 标签内容与清单元数据一致）、冻结划分成员集合（`splits/*.txt` 对
+  4,500/200/20），并重算 `reproducibility/waid4500/dataset_samples.sha256` 里 4,720 条
+  逐样本内容摘要（新增生成器 `scripts/reproducibility/write_waid_sample_hashes.py`）。
+  **真实端到端实测**（`--project-root F:\new大创`）：`status=passed`，样本 4,720/4,720、
+  划分 4,500/200/20、内容哈希 4,720/4,720，六层全通过。
+  测试：聚焦 58 passed；worktree 全量 **601 passed / 4 skipped / 2 项既有失败**（与
+  `integration` 相同）。至此复核的 6 项 Important 全部处理完毕，可声明"完整复现证据
+  全部通过"——但声明措辞仍需用户确认后再写进 README/指南之外的对外材料。
 - WAID 独立复核结论为 WARN（Critical=0、Important=6）：聚焦测试、真实 check-only、
   当前哈希/血缘 verifier 和既有 smoke 产物均通过，但“完整可移植复现”的声明仍需加固。
   已确认：verifier 未完整验证 4,720 个样本及固定划分；缺少逐样本内容哈希；导入的
@@ -295,6 +308,43 @@
   `5802f043d5a177b7cd1a3c90106254a22e176817d8918f86fdf1e8af1de4318d`、
   `test_metrics_read=false`、清单哈希与冻结矩阵一致。Kinetics 臂三 seed 齐全
   （0.8398443 / 0.8530159 / 0.8436268）。**六格只剩 CVB-transfer seed 20260908。**
+
+- 2026-10-02：WAID 复现加固第 1 批（3 项，TDD，每项先看 RED）：
+  1) 导入可移植性：`import_assets()` 复制冻结数据集后用 `write_runtime_data_yaml()`
+     重写 `data.yaml`（并重算该组件清单，保持 file/bytes 统计真实）；`rebuild_dataset()`
+     改用同一函数消除重复实现。
+  2) PowerShell `rebuild` 默认输出由 `data\external\waid\derived\waid4500_v1`（冻结目录，
+     必然已存在 → `rebuild_dataset` 拒绝）改为 `derived\waid4500_rebuilt`，与指南 §4 一致。
+  3) 续训越界防护：新增 `recorded_output_root()` / `require_portable_resume()`，在
+     `run_training()` 里于任何重活之前校验检查点记录的输出根必须落在配置的
+     `project` 之内。证据：归档检查点 `train_args.project=E:\大创\WAID_YOLO11\runs`；
+     Ultralytics `engine/trainer.py:845-851` 续训时 `self.args = get_cfg(ckpt_args)`。
+     实测：归档 checkpoint REFUSED、`reproduced/smoke_e1` ACCEPTED。
+  提交 `2ea7dc6`、`733cbbb`；聚焦 48 passed、worktree 全量 591 passed / 4 skipped /
+  2 项既有失败。**下一步**：五类资产整批导入事务；verifier 全量样本/固定划分校验与逐样本
+  内容哈希（后两项需用户确认声明口径）。
+
+- 2026-10-02：WAID 复现加固第 2 批（**整批导入事务**，用户指定先做这一项，不动声明口径）：
+  `import_assets()` 改为两阶段——先把五类资产全部复制到各自的兄弟暂存目录并逐一校验
+  （新增 `_stage_asset()`，替代原先边拷边发布的 `_copy_asset()`），再统一发布；发布阶段任一
+  失败即整体回滚：移除已发布组件、把被替换的旧资产从备份恢复，全部成功后才删除备份。
+  RED 测试 `test_batch_import_publishes_nothing_when_a_later_component_fails` 先失败
+  （原先中途失败会在项目里残留 `data/external/waid/raw`）。提交 `7080174`；聚焦 49 passed、
+  全量 592 passed / 4 skipped / 2 项既有失败。**剩余 2 项**（verifier 全量 4,720 样本与固定
+  划分校验、逐样本内容哈希）直接决定能否声明"完整复现证据全部通过"，等用户定调。
+
+- 2026-10-02：WAID 复现加固第 3 批（**证据强度两项**，用户选定"两项都做"）：
+  `verify_dataset_samples()` 逐条校验全部 4,720 个样本（图片/标签存在、`parse_label` 与
+  清单元数据一致）并把 `splits/{train,valid,test}.txt` 的成员集合与清单划分比对；
+  `sample_content_hashes()` / `write_sample_hashes()` / `load_sample_hashes()` /
+  `verify_sample_hashes()` 记录并重算逐样本内容摘要（图片+标签），新增生成器
+  `scripts/reproducibility/write_waid_sample_hashes.py`，跟踪文件
+  `reproducibility/waid4500/dataset_samples.sha256`（4,720 行 / 1.2 MB）；verifier CLI 增加
+  `--dataset` / `--sample-hashes`，整体 `status` 现聚合六层。RED 测试先失败（缺失 API，
+  另有一次测试抓到"哈希文件接受任意相对路径"的真实弱点，已收紧为必须
+  `images/<split>/` 前缀）。真实端到端：`status=passed`、样本 4,720/4,720、
+  4,500/200/20、内容哈希 4,720/4,720。提交 `f6e6df7`；聚焦 58 passed、全量 601 passed /
+  4 skipped / 2 项既有失败。**复核 6 项已全部处理，分支已由用户确认合并回 `integration`。**
 
 ## 还原上一段对话
 
