@@ -155,13 +155,19 @@
 - [x] 合并 `codex/waid-reproducibility` 到 `integration`（2026-09-29 快进完成，
   `1a8d033`；合并后完整 `pytest` 588 通过 / 4 跳过 / 2 项既有失败，verifier
   `status=passed`，指南里的 verify/rebuild/train 命令现可在主线直接运行）。
-- [ ] 用户确认后按测试驱动完成 WAID 复现加固：全数据/固定划分验证、逐样本内容哈希、
-  portable `data.yaml`、安全续训、独立 rebuild 输出和整批导入事务；完成前不再把当前
-  verifier 的 `passed` 表述为“完整复现证据全部通过”。
-- [ ] 串行补齐剩余两条多 seed 臂（Kinetics seed 20260908 → CVB-transfer seed 20260908）；
-  单 GPU 不得并行，异常退出只在绑定有效且无重复进程时按原参数 `--resume`，全程不得读取
-  正式 test。（CVB-transfer seed 20260901 已于 2026-09-30 完成；剩余两条的完整命令见
-  「中断记录」2026-09-30 18:37 条目与计划 Task 6 Step 3--4。）
+- [x] WAID 复现加固已完成并合并（2026-10-02，合并提交 `992f64a`）：全量 4,720 样本与固定
+  划分校验、逐样本内容哈希、portable `data.yaml`、续训越界 fail-closed、独立 rebuild 输出、
+  整批导入事务。真实资产端到端 verifier `status=passed`（六层），此后可以声明"完整复现证据
+  全部通过"。
+- [ ] 多 seed 矩阵**只剩最后一格 CVB-transfer seed 20260908**，且**尚未启动**（用户
+  2026-10-01 起暂缓）：命令见「中断记录」2026-09-30 18:37 条目，把 `--output-root` 换成
+  `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260908`、
+  `--seed 20260908`，用 `--initialization cvb_transfer_init --source-checkpoint
+  models/behavior/cvb_x3d_v2_best.pt`（去掉 `--kinetics-checkpoint`）。单 GPU 不得并行，
+  异常退出只在绑定有效且无重复进程时按原参数 `--resume`，全程不得读取正式 test。
+- [ ] 四条新臂齐后执行计划 Task 7 汇总：`run_cbvd4_multiseed_validation --mode summarize`
+  → `validation_metrics.csv`、`aggregate.json`、`report.md`（三者当前都还不存在，缺了它
+  矩阵不算结清）。
 - [ ] 主线：把申报材料相关未跟踪文件整理提交（`~$*` Office 临时文件已忽略，勿提交）。
 - [ ] 数据：采集或取得新的前瞻性独立牧场视频，按源视频冻结新的确认集，并记录许可、来源、哈希和暴露边界。
 - [ ] 论文统计：报告多 seed 均值/方差、逐类指标、校准、风险—覆盖率和按源视频 bootstrap；把当前结果定位为监督域适配与协议审计，不宣称完全独立外部验证。
