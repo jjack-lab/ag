@@ -84,6 +84,12 @@
 
 ## 进行中
 
+- WAID 复现加固**正在分支 `codex/waid-repro-hardening` 上进行**（worktree
+  `.worktrees/waid-repro-hardening`，基于 `integration` 416b90e）：已按测试驱动修掉 3 项并
+  提交 `2ea7dc6`（导入的 `data.yaml` 可移植 + PS `rebuild` 默认改独立目录）、`733cbbb`
+  （续训越界写盘 fail-closed）、`b46ba8e`（台账）。**请勿在 `integration` 上重复实现同一批
+  改动**；剩余三项（五类资产整批导入事务、verifier 全量 4,720 样本与固定划分校验、逐样本
+  内容哈希）待用户定调后在分支内继续。分支细节见其 `HANDOFF.md`。
 - WAID 独立复核结论为 WARN（Critical=0、Important=6）：聚焦测试、真实 check-only、
   当前哈希/血缘 verifier 和既有 smoke 产物均通过，但“完整可移植复现”的声明仍需加固。
   已确认：verifier 未完整验证 4,720 个样本及固定划分；缺少逐样本内容哈希；导入的
