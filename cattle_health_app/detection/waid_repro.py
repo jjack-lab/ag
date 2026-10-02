@@ -947,6 +947,201 @@ def verify_checksums(project_root: Path, checksums_path: Path) -> List[Dict[str,
     return results
 
 
+SAMPLE_HASH_FIELDS = ("output_image", "image_sha256", "label_sha256", "content_sha256")
+
+
+def _sample_digest(image_digest: str, label_digest: str) -> str:
+    payload = "{}:{}".format(image_digest, label_digest).encode("ascii")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def verify_dataset_samples(
+    dataset_root: Path, rows: Iterable[ManifestRow], splits_root: Optional[Path] = None
+) -> Dict[str, object]:
+    """Verify every manifest sample and its frozen split membership."""
+
+    dataset = Path(dataset_root).expanduser().resolve()
+    split_root = (
+        Path(splits_root).expanduser().resolve() if splits_root is not None else dataset
+    )
+    expected: Dict[str, List[str]] = {split: [] for split in SPLITS}
+    missing: List[str] = []
+    mismatched: List[Dict[str, str]] = []
+    checked = 0
+    for row in list(rows):
+        relative = row.output_image.as_posix()
+        image = _safe_child(dataset, Path(relative))
+        label = _safe_child(dataset, Path(row.output_label.as_posix()))
+        if not image.is_file() or not label.is_file():
+            missing.append(relative)
+            continue
+        try:
+            class_id, instances = parse_label(label.read_bytes())
+        except ManifestError as exc:
+            mismatched.append({"image": relative, "reason": str(exc)})
+            continue
+        if class_id != row.class_id or instances != row.instances:
+            mismatched.append(
+                {"image": relative, "reason": "label metadata differs from manifest"}
+            )
+            continue
+        expected[row.split].append(relative)
+        checked += 1
+
+    splits: Dict[str, object] = {}
+    for split in SPLITS:
+        split_file = split_root / "splits" / "{}.txt".format(split)
+        try:
+            listed = [
+                line.strip()
+                for line in split_file.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+        except OSError as exc:
+            splits[split] = {
+                "status": "failed",
+                "listed": None,
+                "expected": len(expected[split]),
+                "error": str(exc),
+            }
+            continue
+        splits[split] = {
+            "listed": len(listed),
+            "expected": len(expected[split]),
+            "status": (
+                "passed"
+                if sorted(listed) == sorted(expected[split])
+                else "failed"
+            ),
+        }
+
+    status = (
+        "passed"
+        if not missing
+        and not mismatched
+        and all(item["status"] == "passed" for item in splits.values())
+        else "failed"
+    )
+    return {
+        "status": status,
+        "checked": checked,
+        "missing": missing,
+        "mismatched": mismatched,
+        "splits": splits,
+    }
+
+
+def sample_content_hashes(
+    dataset_root: Path, rows: Iterable[ManifestRow]
+) -> List[Dict[str, str]]:
+    """Hash the image and label bytes of every manifest sample."""
+
+    dataset = Path(dataset_root).expanduser().resolve()
+    entries = []
+    for row in list(rows):
+        relative = row.output_image.as_posix()
+        image = _safe_child(dataset, Path(relative))
+        label = _safe_child(dataset, Path(row.output_label.as_posix()))
+        if not image.is_file() or not label.is_file():
+            raise ManifestError("dataset sample is missing: {}".format(relative))
+        image_digest = sha256_file(image)
+        label_digest = sha256_file(label)
+        entries.append(
+            {
+                "output_image": relative,
+                "image_sha256": image_digest,
+                "label_sha256": label_digest,
+                "content_sha256": _sample_digest(image_digest, label_digest),
+            }
+        )
+    return entries
+
+
+def write_sample_hashes(
+    dataset_root: Path, manifest_path: Path, destination: Path
+) -> Path:
+    """Record per-sample content digests for every frozen sample."""
+
+    entries = sample_content_hashes(dataset_root, load_manifest(manifest_path))
+    target = Path(destination).expanduser().resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=SAMPLE_HASH_FIELDS)
+        writer.writeheader()
+        writer.writerows(entries)
+    return target
+
+
+def load_sample_hashes(path: Path) -> Dict[str, str]:
+    """Read tracked per-sample content digests keyed by output image path."""
+
+    tracked: Dict[str, str] = {}
+    try:
+        with Path(path).open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            if tuple(reader.fieldnames or ()) != SAMPLE_HASH_FIELDS:
+                raise ValueError("sample hash columns are not canonical")
+            for number, entry in enumerate(reader, start=2):
+                path = _checksum_relative_path(entry["output_image"] or "")
+                parts = path.parts
+                if len(parts) < 3 or parts[0] != "images" or parts[1] not in SPLITS:
+                    raise ValueError(
+                        "sample hash entry is not a frozen image path on line {}".format(
+                            number
+                        )
+                    )
+                relative = path.as_posix()
+                digest = entry["content_sha256"] or ""
+                if not SHA256_PATTERN.fullmatch(digest):
+                    raise ValueError("invalid sample digest on line {}".format(number))
+                if relative in tracked:
+                    raise ValueError("duplicate sample entry: {}".format(relative))
+                tracked[relative] = digest
+    except (OSError, UnicodeError) as exc:
+        raise ValueError("cannot read sample hashes: {}".format(path)) from exc
+    return tracked
+
+
+def verify_sample_hashes(
+    dataset_root: Path, rows: Iterable[ManifestRow], tracked: Mapping[str, str]
+) -> Dict[str, object]:
+    """Recompute every sample digest and compare it with the tracked evidence."""
+
+    dataset = Path(dataset_root).expanduser().resolve()
+    rows = list(rows)
+    missing: List[str] = []
+    mismatched: List[Dict[str, str]] = []
+    checked = 0
+    for row in rows:
+        relative = row.output_image.as_posix()
+        expected = tracked.get(relative)
+        if expected is None:
+            missing.append(relative)
+            continue
+        image = _safe_child(dataset, Path(relative))
+        label = _safe_child(dataset, Path(row.output_label.as_posix()))
+        if not image.is_file() or not label.is_file():
+            missing.append(relative)
+            continue
+        actual = _sample_digest(sha256_file(image), sha256_file(label))
+        checked += 1
+        if actual != expected:
+            mismatched.append(
+                {"image": relative, "expected": expected, "actual": actual}
+            )
+    extra = sorted(set(tracked) - {row.output_image.as_posix() for row in rows})
+    status = (
+        "passed" if not missing and not mismatched and not extra else "failed"
+    )
+    return {
+        "status": status,
+        "checked": checked,
+        "missing": missing,
+        "mismatched": mismatched,
+        "extra": extra,
+    }
+
+
 def summarize_results(results_csv: Path) -> Dict[str, object]:
     required = (
         "epoch",
@@ -1013,9 +1208,23 @@ def capture_environment() -> Dict[str, object]:
 
 
 def verify_reproduction(
-    project_root: Path, manifest_path: Path, checksums_path: Path
+    project_root: Path,
+    manifest_path: Path,
+    checksums_path: Path,
+    dataset_root: Optional[Path] = None,
+    sample_hashes_path: Optional[Path] = None,
 ) -> Dict[str, object]:
     root = Path(project_root).expanduser().resolve()
+    dataset = (
+        Path(dataset_root).expanduser().resolve()
+        if dataset_root is not None
+        else root / "data/external/waid/derived/waid4500_v1"
+    )
+    tracked_path = (
+        Path(sample_hashes_path).expanduser().resolve()
+        if sample_hashes_path is not None
+        else root / "reproducibility/waid4500/dataset_samples.sha256"
+    )
     report = {}
 
     try:
@@ -1067,9 +1276,31 @@ def verify_reproduction(
     except Exception as exc:
         report["results"] = {"status": "failed", "error": str(exc)}
 
+    try:
+        report["samples"] = verify_dataset_samples(dataset, load_manifest(manifest_path))
+    except Exception as exc:
+        report["samples"] = {"status": "failed", "error": str(exc)}
+
+    try:
+        report["content_hashes"] = verify_sample_hashes(
+            dataset, load_manifest(manifest_path), load_sample_hashes(tracked_path)
+        )
+    except Exception as exc:
+        report["content_hashes"] = {"status": "failed", "error": str(exc)}
+
     report["status"] = (
         "passed"
-        if all(report[section]["status"] == "passed" for section in ("assets", "lineage", "runtime", "results"))
+        if all(
+            report[section]["status"] == "passed"
+            for section in (
+                "assets",
+                "samples",
+                "content_hashes",
+                "lineage",
+                "runtime",
+                "results",
+            )
+        )
         else "failed"
     )
     return report

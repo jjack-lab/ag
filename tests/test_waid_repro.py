@@ -22,6 +22,7 @@ from cattle_health_app.detection.waid_repro import (
     import_assets,
     load_manifest,
     load_checksums,
+    load_sample_hashes,
     load_training_config,
     parse_label,
     rebuild_dataset,
@@ -33,7 +34,11 @@ from cattle_health_app.detection.waid_repro import (
     unicode_safe_torch_save,
     validate_dataset,
     verify_checksums,
+    verify_dataset_samples,
+    verify_reproduction,
+    verify_sample_hashes,
     write_checksums,
+    write_sample_hashes,
 )
 
 
@@ -951,7 +956,14 @@ class WaidVerifierCliTest(unittest.TestCase):
             text=True,
         )
         self.assertEqual(0, result.returncode, result.stderr)
-        for option in ("--project-root", "--manifest", "--checksums", "--output-json"):
+        for option in (
+            "--project-root",
+            "--manifest",
+            "--checksums",
+            "--dataset",
+            "--sample-hashes",
+            "--output-json",
+        ):
             self.assertIn(option, result.stdout)
 
     def test_missing_evidence_exits_one(self):
@@ -963,6 +975,184 @@ class WaidVerifierCliTest(unittest.TestCase):
             )
         self.assertEqual(1, result.returncode)
         self.assertIn('"status": "failed"', result.stdout)
+
+
+class WaidSampleHashCliTest(unittest.TestCase):
+    @classmethod
+    def script(cls):
+        return (
+            Path(__file__).resolve().parents[1]
+            / "scripts"
+            / "reproducibility"
+            / "write_waid_sample_hashes.py"
+        )
+
+    def test_help_documents_the_hash_writer_contract(self):
+        result = subprocess.run(
+            [sys.executable, str(self.script()), "--help"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        for option in ("--project-root", "--dataset", "--manifest", "--output"):
+            self.assertIn(option, result.stdout)
+
+    def test_missing_dataset_exits_one(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            result = subprocess.run(
+                [sys.executable, str(self.script()), "--project-root", temporary],
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(1, result.returncode)
+        self.assertIn("[ERROR]", result.stderr)
+
+
+class WaidSampleAuditTest(unittest.TestCase):
+    """Every frozen sample, its split membership, and its content must be auditable."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.dataset = self.root / "waid4500_v1"
+        self.manifest = self.root / "manifest.csv"
+        rows = [
+            self.write_sample(
+                "train", "a.jpg", b"image-a", "1 0.5 0.5 0.2 0.2\n", 1, "cattle", 1, "group-a"
+            ),
+            self.write_sample(
+                "test", "b.jpg", b"image-b", "0 0.5 0.5 0.2 0.2\n", 0, "sheep", 1, "group-b"
+            ),
+        ]
+        self.write_manifest(rows)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def write_sample(
+        self, split, name, image_bytes, label_text, class_id, class_name, instances, group_id
+    ):
+        image = self.dataset / "images" / split / name
+        label = self.dataset / "labels" / split / (Path(name).stem + ".txt")
+        image.parent.mkdir(parents=True, exist_ok=True)
+        label.parent.mkdir(parents=True, exist_ok=True)
+        image.write_bytes(image_bytes)
+        label.write_text(label_text, encoding="utf-8")
+        return {
+            "split": split,
+            "output_image": "images/{}/{}".format(split, name),
+            "output_label": "labels/{}/{}".format(split, label.name),
+            "source_image": r"E:\WAID\images\{}\{}".format(split, name),
+            "source_label": r"E:\WAID\labels\{}\{}".format(split, label.name),
+            "source_split": split,
+            "class_id": str(class_id),
+            "class_name": class_name,
+            "instances": str(instances),
+            "group_id": group_id,
+        }
+
+    def write_manifest(self, rows):
+        with self.manifest.open("w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=MANIFEST_FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
+        (self.dataset / "splits").mkdir(parents=True, exist_ok=True)
+        for split in ("train", "valid", "test"):
+            listed = "".join(
+                "{}\n".format(row["output_image"]) for row in rows if row["split"] == split
+            )
+            (self.dataset / "splits" / "{}.txt".format(split)).write_text(
+                listed, encoding="utf-8"
+            )
+
+    def test_verifies_every_sample_and_the_frozen_split(self):
+        report = verify_dataset_samples(self.dataset, load_manifest(self.manifest))
+
+        self.assertEqual("passed", report["status"])
+        self.assertEqual(2, report["checked"])
+        self.assertEqual([], report["missing"])
+        self.assertEqual([], report["mismatched"])
+        self.assertEqual(1, report["splits"]["train"]["listed"])
+        self.assertEqual("passed", report["splits"]["train"]["status"])
+        self.assertEqual("passed", report["splits"]["valid"]["status"])
+
+    def test_reports_a_missing_sample(self):
+        (self.dataset / "labels/train/a.txt").unlink()
+
+        report = verify_dataset_samples(self.dataset, load_manifest(self.manifest))
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual(["images/train/a.jpg"], report["missing"])
+
+    def test_reports_label_metadata_that_differs_from_the_manifest(self):
+        (self.dataset / "labels/train/a.txt").write_text(
+            "1 0.5 0.5 0.2 0.2\n1 0.4 0.4 0.1 0.1\n", encoding="utf-8"
+        )
+
+        report = verify_dataset_samples(self.dataset, load_manifest(self.manifest))
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual(
+            ["images/train/a.jpg"], [item["image"] for item in report["mismatched"]]
+        )
+
+    def test_reports_split_membership_that_differs_from_the_manifest(self):
+        (self.dataset / "splits/train.txt").write_text(
+            "images/train/other.jpg\n", encoding="utf-8"
+        )
+
+        report = verify_dataset_samples(self.dataset, load_manifest(self.manifest))
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual("failed", report["splits"]["train"]["status"])
+
+    def test_sample_content_hashes_detect_a_tampered_image(self):
+        destination = write_sample_hashes(
+            self.dataset, self.manifest, self.root / "samples.sha256"
+        )
+        tracked = load_sample_hashes(destination)
+        self.assertEqual(2, len(tracked))
+
+        passed = verify_sample_hashes(
+            self.dataset, load_manifest(self.manifest), tracked
+        )
+        self.assertEqual("passed", passed["status"])
+        self.assertEqual(2, passed["checked"])
+
+        (self.dataset / "images/train/a.jpg").write_bytes(b"tampered")
+
+        failed = verify_sample_hashes(
+            self.dataset, load_manifest(self.manifest), tracked
+        )
+        self.assertEqual("failed", failed["status"])
+        self.assertEqual(
+            ["images/train/a.jpg"], [item["image"] for item in failed["mismatched"]]
+        )
+
+    def test_sample_content_hashes_report_an_untracked_sample(self):
+        destination = write_sample_hashes(
+            self.dataset, self.manifest, self.root / "samples.sha256"
+        )
+        tracked = load_sample_hashes(destination)
+        tracked.pop("images/test/b.jpg")
+
+        report = verify_sample_hashes(
+            self.dataset, load_manifest(self.manifest), tracked
+        )
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual(["images/test/b.jpg"], report["missing"])
+
+    def test_rejects_a_sample_hash_file_with_non_canonical_entries(self):
+        destination = self.root / "samples.sha256"
+        destination.write_text(
+            "output_image,image_sha256,label_sha256,content_sha256\n"
+            "@/tmp/escape.jpg,{0},{0},{0}\n".format("a" * 64),
+            encoding="utf-8",
+        )
+
+        with self.assertRaises(ValueError):
+            load_sample_hashes(destination)
 
 
 class WaidPowerShellWorkflowTest(unittest.TestCase):
