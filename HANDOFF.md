@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-02（WAID 复现加固进行中：分支 `codex/waid-repro-hardening` 已修 3 项——可移植 `data.yaml`、PS `rebuild` 默认目录、续训越界写盘 fail-closed；另：Kinetics seed 20260908 已完成，多 seed 六格只剩 CVB-transfer seed 20260908）
+- 最后更新：2026-10-02（WAID 复现加固：分支 `codex/waid-repro-hardening` 已按测试驱动修 4 项——可移植 `data.yaml`、PS `rebuild` 默认输出、续训越界 fail-closed、五类资产整批事务；剩余 2 项（verifier 全量样本/固定划分、逐样本内容哈希）待定声明口径。另：多 seed 六格只剩 CVB-transfer seed 20260908，用户已表示暂缓）
 
 ## 当前阶段目标
 
@@ -85,17 +85,21 @@
 ## 进行中
 
 - WAID 复现加固**进行中**（分支 `codex/waid-repro-hardening`，worktree
-  `.worktrees/waid-repro-hardening`，基于 `integration` 416b90e）。已按测试驱动修掉 3 项：
+  `.worktrees/waid-repro-hardening`，基于 `integration` 416b90e）。已按测试驱动修掉 4 项
+  （复核 6 项中与"声明强度"无关的全部）：
   `2ea7dc6` 导入的冻结数据集 `data.yaml` 不再保留源机绝对根（原先写死
   `E:\大创\WAID_YOLO11\waid4500_v1`），并与 PowerShell `rebuild` 默认输出改为独立目录
   `derived\waid4500_rebuilt`（原先默认指向冻结目录本身，该模式必然失败）；
   `733cbbb` 续训前校验检查点内记录的输出根，越界即 fail-closed（Ultralytics
   `trainer.check_resume` 会用检查点参数覆盖全部参数，归档检查点记录的是
   `E:\大创\WAID_YOLO11\runs`，否则会静默写到旧 E 盘）。已用真实检查点验证：归档
-  checkpoint 被拒、`reproduced` checkpoint 被接受。worktree 全量测试 591 passed /
-  4 skipped / 2 项既有失败（与 `integration` 相同）。**未做**：五类资产整批导入事务；
-  verifier 全量 4,720 样本与固定划分校验；逐样本内容哈希——这三项与"完整复现"声明强度
-  相关，等用户定调。
+  checkpoint 被拒、`reproduced` checkpoint 被接受；
+  `7080174` 五类资产改为**整批事务**：先全部暂存校验、再一起发布，任一环节失败则回滚
+  已发布组件并恢复被替换的旧资产（原先是逐个发布，中途失败会留下半新半旧）。
+  worktree 聚焦 49 passed、全量 **592 passed / 4 skipped / 2 项既有失败**（与
+  `integration` 相同）。**未做**（用户 2026-10-02 决定先只做事务这一项）：verifier
+  全量 4,720 样本与固定划分校验、逐样本内容哈希——这两项直接决定能否声明"完整复现证据
+  全部通过"，待用户定调声明口径后再做。
 - WAID 独立复核结论为 WARN（Critical=0、Important=6）：聚焦测试、真实 check-only、
   当前哈希/血缘 verifier 和既有 smoke 产物均通过，但“完整可移植复现”的声明仍需加固。
   已确认：verifier 未完整验证 4,720 个样本及固定划分；缺少逐样本内容哈希；导入的
@@ -314,6 +318,15 @@
   提交 `2ea7dc6`、`733cbbb`；聚焦 48 passed、worktree 全量 591 passed / 4 skipped /
   2 项既有失败。**下一步**：五类资产整批导入事务；verifier 全量样本/固定划分校验与逐样本
   内容哈希（后两项需用户确认声明口径）。
+
+- 2026-10-02：WAID 复现加固第 2 批（**整批导入事务**，用户指定先做这一项，不动声明口径）：
+  `import_assets()` 改为两阶段——先把五类资产全部复制到各自的兄弟暂存目录并逐一校验
+  （新增 `_stage_asset()`，替代原先边拷边发布的 `_copy_asset()`），再统一发布；发布阶段任一
+  失败即整体回滚：移除已发布组件、把被替换的旧资产从备份恢复，全部成功后才删除备份。
+  RED 测试 `test_batch_import_publishes_nothing_when_a_later_component_fails` 先失败
+  （原先中途失败会在项目里残留 `data/external/waid/raw`）。提交 `7080174`；聚焦 49 passed、
+  全量 592 passed / 4 skipped / 2 项既有失败。**剩余 2 项**（verifier 全量 4,720 样本与固定
+  划分校验、逐样本内容哈希）直接决定能否声明"完整复现证据全部通过"，等用户定调。
 
 ## 还原上一段对话
 
