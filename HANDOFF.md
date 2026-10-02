@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-02（WAID 复现加固已合并回 `integration`：独立复核的 6 项 Important 全部修完——可移植 data.yaml、PS rebuild 默认输出、续训越界 fail-closed、整批导入事务、全量样本+固定划分校验、逐样本内容哈希；真实资产端到端 `status=passed`。另：多 seed 六格只剩 CVB-transfer seed 20260908，用户已表示暂缓）
+- 最后更新：2026-10-02（WAID 复现加固已合并回 `integration`（`992f64a`，6 项 Important 全修、真实端到端 `status=passed`）；多 seed 矩阵最后一格 CVB-transfer seed 20260908 已于 14:44 启动）
 
 ## 当前阶段目标
 
@@ -118,22 +118,21 @@
 - WAID 大资产只在本机且被忽略：`data/external/waid/{raw,derived,cache}`、
   `outputs/training/waid4500_yolo11s/{run,logs}`；训练会在冻结数据集目录内新增
   Ultralytics `*.cache`（已被忽略，重建对比时排除，勿手工删除或提交）。
-- 多 seed validation 矩阵：新一代 4 条臂已完成 2 条——Kinetics seed 20260901
-  （0.8530158904）与 CVB-transfer seed 20260901（0.8325412642，详见「已完成」）；
-  **第 3 条 Kinetics seed 20260908 已完成**（2026-10-01 22:34:22 早停收尾，14 轮，最佳
-  epoch 7=0.8436268208，详见「已完成」）。该臂被会话层回收三次、续训两次，均在
-  `.worktrees/cross-domain-behavior/outputs/cbvd4/paper_20260922/logs/` 留有日志：
-  首启 `kinetics_seed_20260908.{stdout,stderr}.log`、两次续训
-  `kinetics_seed_20260908_resume_20261001.*` 与 `kinetics_seed_20260908_resume2_20261001.*`
-  （最终摘要 8736 字节在后一个），PID 文件同名 `.pid`；输出
-  `outputs/cbvd4/paper_20260922/multiseed_validation/kinetics_init/seed_20260908`。
-  **当前没有训练进程在跑、GPU 空闲**；六格只差最后一条
-  **CVB-transfer seed 20260908**：同 CVB-transfer seed 20260901 的命令，只把
-  `--output-root` 换成 `…/cvb_transfer_init/seed_20260908`、`--seed` 换成 20260908。
+- 多 seed validation 矩阵：新一代 4 条臂已完成 3 条——Kinetics seed 20260901
+  （0.8530158904）、CVB-transfer seed 20260901（0.8325412642）与 Kinetics seed 20260908
+  （0.8436268208，14 轮、最佳 epoch 7）；详见「已完成」。**最后一格 CVB-transfer
+  seed 20260908 已于 2026-10-02 14:44:46 启动**（PID 28468，用户 10-02 决定开跑，此前自
+  10-01 起暂缓）。形态与隔离自检：`--source-checkpoint models/behavior/cvb_x3d_v2_best.pt`
+  （哈希 `731c6ed3…`，与 seed_20260901 臂同一来源）、无 `--kinetics-checkpoint`、
+  `--seed 20260908`；协议 `test_data_read=false`、`evaluation_scope=train_val_only`、
+  清单哈希与冻结矩阵一致。日志 `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908.{stdout,stderr}.log`、
+  PID 文件同名 `.pid`（均在 `.worktrees/cross-domain-behavior` 下），输出
+  `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260908`。
+  识别进程靠完整命令行 + 输出目录，不能只信 PID；被回收就原命令加 `--resume`。
+  跑完前 `stdout.log` 为空正常（最终 JSON 摘要只在结束时写出），进度看 `history.csv`。
   必须串行、一次一条、不得并行占卡，只读 train/val。四条新臂跑完后还要执行计划 Task 7
   的汇总（`run_cbvd4_multiseed_validation --mode summarize` → `validation_metrics.csv`、
-  `aggregate.json`、`report.md`）才算把矩阵结清。**用户 2026-10-01 明确决定暂缓启动这一格**
-  （等用户发话再跑），当前空闲状态是刻意的，不是漏跑。
+  `aggregate.json`、`report.md`）才算把矩阵结清。
 - 运行方式经验（务必遵守）：本环境会静默回收无人托管的进程——2026-09-29 的会话后台任务在
   跑完 epoch 2 后被回收；2026-09-30 用 `Start-Process` 脱离式进程重试也在约 3 分钟后被回收；
   最终仍用**会话托管的后台任务**恢复成功并正常跑完。所以长训练只能走会话托管后台任务，
@@ -159,11 +158,9 @@
   划分校验、逐样本内容哈希、portable `data.yaml`、续训越界 fail-closed、独立 rebuild 输出、
   整批导入事务。真实资产端到端 verifier `status=passed`（六层），此后可以声明"完整复现证据
   全部通过"。
-- [ ] 多 seed 矩阵**只剩最后一格 CVB-transfer seed 20260908**，且**尚未启动**（用户
-  2026-10-01 起暂缓）：命令见「中断记录」2026-09-30 18:37 条目，把 `--output-root` 换成
-  `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260908`、
-  `--seed 20260908`，用 `--initialization cvb_transfer_init --source-checkpoint
-  models/behavior/cvb_x3d_v2_best.pt`（去掉 `--kinetics-checkpoint`）。单 GPU 不得并行，
+- [ ] 多 seed 矩阵**最后一格 CVB-transfer seed 20260908 正在训练**（2026-10-02 14:44:46
+  启动，PID 28468；用户 10-02 决定开跑，此前 10-01 起暂缓）：命令见「中断记录」2026-10-02
+  条目；单 GPU 不得并行，
   异常退出只在绑定有效且无重复进程时按原参数 `--resume`，全程不得读取正式 test。
 - [ ] 四条新臂齐后执行计划 Task 7 汇总：`run_cbvd4_multiseed_validation --mode summarize`
   → `validation_metrics.csv`、`aggregate.json`、`report.md`（三者当前都还不存在，缺了它
@@ -351,6 +348,26 @@
   `images/<split>/` 前缀）。真实端到端：`status=passed`、样本 4,720/4,720、
   4,500/200/20、内容哈希 4,720/4,720。提交 `f6e6df7`；聚焦 58 passed、全量 601 passed /
   4 skipped / 2 项既有失败。**复核 6 项已全部处理，分支已由用户确认合并回 `integration`。**
+
+- 2026-10-02 14:44:46：启动多 seed 矩阵最后一格 CVB-transfer seed 20260908（PID 28468），
+  工作目录 `.worktrees/cross-domain-behavior`，完整命令行：
+
+  ```powershell
+  & 'F:\deepl\anaconda1\envs\pytorch\python.exe' -u -X utf8 -m scripts.train_cbvd4_behavior `
+    --mode train --development-only --project-root . `
+    --manifest-root data/external/cbvd5/manifests/cbvd4 `
+    --output-root outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260908 `
+    --initialization cvb_transfer_init --source-checkpoint models/behavior/cvb_x3d_v2_best.pt `
+    --device cuda --epochs 30 --batch-size 8 --accumulation-steps 2 --learning-rate 3e-4 `
+    --weight-decay 1e-4 --patience 6 --workers 0 --seed 20260908 --freeze-backbone-epochs 2
+  ```
+
+  后台任务形态（本环境唯一能长跑的形态），日志
+  `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908.{stdout,stderr}.log`，PID 文件
+  同名 `.pid`。启动自检：无重复进程、GPU 空闲、协议 `test_data_read=false`、
+  `evaluation_scope=train_val_only`、`source_checkpoint_sha256=731c6ed3…`（与 seed_20260901
+  臂同源）、`kinetics_checkpoint_sha256=null`、清单哈希与冻结矩阵一致。中断处理：确认无
+  重复进程后原命令加 `--resume`；不得删除失败运行或换种子。
 
 ## 还原上一段对话
 
