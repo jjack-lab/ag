@@ -321,17 +321,7 @@ def rebuild_dataset(
                 encoding="utf-8",
             )
 
-        data_yaml = {
-            "path": str(output),
-            "train": "images/train",
-            "val": "images/valid",
-            "test": "images/test",
-            "names": dict(CLASS_NAMES),
-        }
-        (staging / "data.yaml").write_text(
-            yaml.safe_dump(data_yaml, allow_unicode=True, sort_keys=False),
-            encoding="utf-8",
-        )
+        write_runtime_data_yaml(output, staging / "data.yaml")
         shutil.copy2(Path(manifest_path), staging / "reports" / "dataset_manifest.csv")
         summary = {
             "status": "complete",
@@ -554,6 +544,11 @@ def import_assets(
         if source == destination or source in destination.parents or destination in source.parents:
             raise ValueError("source and destination must not overlap: {}".format(name))
         inventory = _copy_asset(source, destination, replace)
+        if name == "frozen_dataset":
+            # The imported data.yaml keeps the source machine's absolute root
+            # (in this project an old E: drive path), which cannot work here.
+            write_runtime_data_yaml(destination, destination / "data.yaml")
+            inventory = _inventory(destination)
         components[name] = {
             "source": str(source),
             "destination": str(destination),
@@ -624,8 +619,12 @@ def load_training_config(path: Path, project_root: Path) -> Dict[str, object]:
 
 
 def write_runtime_data_yaml(dataset_root: Path, destination: Path) -> Path:
-    """Write an Ultralytics data file with the current absolute dataset root."""
+    """Write the canonical Ultralytics data file for a dataset in this checkout.
 
+    Every path is bound to the resolved ``dataset_root`` on this machine, so the
+    file stays valid after the dataset is rebuilt or imported from another host.
+    Rebuilds, imports, and training all publish this same content.
+    """
     dataset = Path(dataset_root).expanduser().resolve()
     target = Path(destination).expanduser().resolve()
     target.parent.mkdir(parents=True, exist_ok=True)

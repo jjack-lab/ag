@@ -54,7 +54,7 @@ switch ($Mode) {
             $rebuildScript,
             '--raw-root', (Join-Path $ProjectRoot 'data\external\waid\raw'),
             '--manifest', (Join-Path $ProjectRoot 'reproducibility\waid4500\dataset_manifest.csv'),
-            '--output', (Join-Path $ProjectRoot 'data\external\waid\derived\waid4500_v1')
+            '--output', (Join-Path $ProjectRoot 'data\external\waid\derived\waid4500_rebuilt')
         )
     }
     'smoke' {

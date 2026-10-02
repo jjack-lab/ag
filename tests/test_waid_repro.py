@@ -442,6 +442,19 @@ class WaidAssetImportTest(unittest.TestCase):
         self.assertEqual(2, report["components"]["raw"]["files"])
         self.assertEqual(len(b"raw-image") + len(b"1 0.5 0.5 0.2 0.2\n"), report["components"]["raw"]["bytes"])
 
+    def test_import_rewrites_frozen_dataset_data_yaml_for_the_destination(self):
+        import_assets(self.sources, self.project)
+
+        destination = self.project / "data/external/waid/derived/waid4500_v1"
+        data_yaml = yaml.safe_load((destination / "data.yaml").read_text(encoding="utf-8"))
+
+        # The imported copy must not keep the source machine's absolute root.
+        self.assertEqual(str(destination.resolve()), data_yaml["path"])
+        self.assertEqual("images/train", data_yaml["train"])
+        self.assertEqual("images/valid", data_yaml["val"])
+        self.assertEqual("images/test", data_yaml["test"])
+        self.assertEqual(dict(CLASS_NAMES), data_yaml["names"])
+
     def test_refuses_existing_destination_without_replace(self):
         import_assets(self.sources, self.project)
 
@@ -925,6 +938,14 @@ class WaidPowerShellWorkflowTest(unittest.TestCase):
         self.assertNotIn("E:\\", text)
         for mode in ("verify", "rebuild", "smoke", "train", "resume"):
             self.assertIn("'{}'".format(mode), text)
+
+    def test_rebuild_mode_defaults_to_a_fresh_output_directory(self):
+        text = self.script().read_text(encoding="utf-8-sig")
+
+        # The frozen dataset always exists and rebuild refuses an existing output,
+        # so the documented one-command rebuild must target a separate directory.
+        self.assertNotIn("derived\\waid4500_v1'", text)
+        self.assertIn("derived\\waid4500_rebuilt'", text)
 
     def test_powershell_help_does_not_run_workflow(self):
         result = subprocess.run(
