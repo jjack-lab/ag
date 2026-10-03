@@ -651,23 +651,36 @@ def load_training_config(path: Path, project_root: Path) -> Dict[str, object]:
             raise ValueError("{} must be boolean".format(field))
     if not str(payload["name"]).strip():
         raise ValueError("name must not be empty")
+    if payload.get("train_list") is not None:
+        value = Path(str(payload["train_list"]))
+        resolved = (root / value).resolve() if not value.is_absolute() else value.resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError as exc:
+            raise ValueError("train_list is outside project root") from exc
+        if resolved.suffix.lower() != ".txt":
+            raise ValueError("train_list must be a .txt list of training images")
+        config["train_list"] = resolved
     config["project_root"] = root
     return config
 
 
-def write_runtime_data_yaml(dataset_root: Path, destination: Path) -> Path:
+def write_runtime_data_yaml(
+    dataset_root: Path, destination: Path, train: str = "images/train"
+) -> Path:
     """Write the canonical Ultralytics data file for a dataset in this checkout.
 
     Every path is bound to the resolved ``dataset_root`` on this machine, so the
     file stays valid after the dataset is rebuilt or imported from another host.
-    Rebuilds, imports, and training all publish this same content.
+    Rebuilds, imports, and training all publish this same content. ``train`` may
+    name a repeat-factor list instead of the plain training directory.
     """
     dataset = Path(dataset_root).expanduser().resolve()
     target = Path(destination).expanduser().resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "path": str(dataset),
-        "train": "images/train",
+        "train": str(train),
         "val": "images/valid",
         "test": "images/test",
         "names": dict(CLASS_NAMES),
@@ -843,6 +856,18 @@ def run_training(
         if not resume_path.is_file():
             raise FileNotFoundError("resume checkpoint not found: {}".format(resume_path))
         require_portable_resume(resume_path, Path(config["project"]))
+
+    train_entry = "images/train"
+    if config.get("train_list") is not None:
+        train_list = Path(config["train_list"]).expanduser().resolve()
+        if not train_list.is_file():
+            raise FileNotFoundError("train list not found: {}".format(train_list))
+        try:
+            train_entry = train_list.relative_to(
+                Path(config["data_root"]).expanduser().resolve()
+            ).as_posix()
+        except ValueError:
+            train_entry = train_list.as_posix()
     elif not Path(config["model"]).is_file():
         raise FileNotFoundError("pretrained model not found: {}".format(config["model"]))
 
@@ -850,7 +875,9 @@ def run_training(
     selected_device = str(device) if device is not None else str(runtime["selected_device"])
     output_project = Path(config["project"])
     runtime_yaml = write_runtime_data_yaml(
-        Path(config["data_root"]), output_project / "waid4500_runtime_data.yaml"
+        Path(config["data_root"]),
+        output_project / "waid4500_runtime_data.yaml",
+        train=train_entry,
     )
     kwargs = build_train_kwargs(config, smoke=smoke, device=selected_device)
     kwargs["data"] = str(runtime_yaml)

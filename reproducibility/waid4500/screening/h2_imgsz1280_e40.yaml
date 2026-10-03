@@ -1,0 +1,14 @@
+model: data/external/waid/cache/yolo11s.pt
+data_root: data/external/waid/derived/waid4500_v1
+manifest: reproducibility/waid4500/dataset_manifest.csv
+project: outputs/training/waid4500_yolo11s/screening
+epochs: 40
+patience: 40
+batch: 4
+workers: 0
+seed: 42
+deterministic: true
+cos_lr: true
+device: auto
+name: screening_h2_imgsz1280_e40
+imgsz: 1280
