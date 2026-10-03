@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-02（WAID 复现加固已合并回 `integration`（`992f64a`，6 项 Important 全修、真实端到端 `status=passed`）；多 seed 最后一格 CVB-transfer seed 20260908 已按用户要求暂停在 epoch 8，检查点完整可 `--resume`）
+- 最后更新：2026-10-03（WAID 复现加固已合并回 `integration`（`992f64a`，真实端到端 `status=passed`）；多 seed 最后一格 CVB-transfer seed 20260908 已从 epoch 8 断点 `--resume` 恢复训练（PID 6240））
 
 ## 当前阶段目标
 
@@ -128,14 +128,16 @@
   清单哈希与冻结矩阵一致。日志 `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908.{stdout,stderr}.log`、
   PID 文件同名 `.pid`（均在 `.worktrees/cross-domain-behavior` 下），输出
   `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260908`。
-  **该臂已按用户要求在 2026-10-02 22:45 暂停**（epoch 8 落盘后由监视器在干净边界停进程）：
-  已完成 9 轮（epoch 0--8），最佳仍是 **epoch 4 = 0.8266304028**（`best.pt` 18:56 写入），
-  `last.pt` 的 `epoch=8`、含完整 optimizer/scheduler/scaler/rng，可直接续训。恢复命令 = 上面
-  启动命令原样加 `--resume`（工作目录 `.worktrees/cross-domain-behavior`）；恢复前确认无
-  重复进程。暂停监视器日志
-  `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908.pause-watcher.log`。
+  **该臂 2026-10-02 22:45 曾在 epoch 8 边界被用户要求暂停，随后于 2026-10-03 12:25:27
+  用原命令加 `--resume` 恢复**（PID 6240，GPU 4347 MiB / 100%，`validate_resume_binding()`
+  通过、无绑定错误，从 epoch 9 起继续）。已完成 9 轮（epoch 0--8），当前最佳仍是
+  **epoch 4 = 0.8266304028**（`best.pt` 10-02 18:56 写入）；恢复日志
+  `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908_resume_20261002.{stdout,stderr}.log`
+  （文件名后缀是调用时写的日期标签，实际启动时刻为 2026-10-03 12:25:27；进程运行中无法改名，
+  以内容与 PID 文件为准）。暂停过程与监视器日志见「中断记录」2026-10-02 22:45 条目。
   逐轮 val_macro_f1：0.5183 / 0.5657 / 0.7873 / 0.7994 / **0.8266** / 0.7573 / 0.8087 /
-  0.7510 / 0.7544；最佳之后已连续 4 轮未刷新（patience=6，若不刷新将在 epoch 10 后早停）。
+  0.7510 / 0.7544；最佳之后已连续 4 轮未刷新（patience=6，若继续不刷新将在 epoch 10 后早停）。
+  识别进程靠完整命令行 + 输出目录，不能只信 PID；被回收就原命令加 `--resume`。
   必须串行、一次一条、不得并行占卡，只读 train/val。四条新臂跑完后还要执行计划 Task 7
   的汇总（`run_cbvd4_multiseed_validation --mode summarize` → `validation_metrics.csv`、
   `aggregate.json`、`report.md`）才算把矩阵结清。
@@ -164,11 +166,10 @@
   划分校验、逐样本内容哈希、portable `data.yaml`、续训越界 fail-closed、独立 rebuild 输出、
   整批导入事务。真实资产端到端 verifier `status=passed`（六层），此后可以声明"完整复现证据
   全部通过"。
-- [ ] 多 seed 矩阵**最后一格 CVB-transfer seed 20260908 已暂停在 epoch 8**（2026-10-02
-  14:44:46 启动、22:45 按用户要求暂停；已完成 9 轮，最佳 epoch 4=0.8266304028，`last.pt`
-  为 epoch 8 完整状态）。恢复：原启动命令加 `--resume`（见「中断记录」2026-10-02 条目）；
-  单 GPU 不得并行，异常退出只在绑定有效且无重复进程时按原参数 `--resume`，全程不得读取
-  正式 test。
+- [ ] 多 seed 矩阵**最后一格 CVB-transfer seed 20260908 已恢复训练**（2026-10-03 12:25:27 自
+  epoch 8 断点 `--resume` 恢复，PID 6240；已完成 9 轮，最佳 epoch 4=0.8266304028）。命令见
+  「中断记录」2026-10-02 14:44:46 条目 + `--resume`；单 GPU 不得并行，异常退出只在绑定有效
+  且无重复进程时按原参数 `--resume`，全程不得读取正式 test。
 - [ ] 四条新臂齐后执行计划 Task 7 汇总：`run_cbvd4_multiseed_validation --mode summarize`
   → `validation_metrics.csv`、`aggregate.json`、`report.md`（三者当前都还不存在，缺了它
   矩阵不算结清）。
@@ -384,6 +385,14 @@
   optimizer/scheduler/scaler/rng 齐全 → 可原样 `--resume`。训练任务的
   `cvb_transfer_seed_20260908_exit=-1`（被主动 kill）与 `stdout.log` 为空都是预期现象，
   不要误判为失败运行。恢复命令即上面 14:44:46 那条命令加 `--resume`。
+- 2026-10-03 12:25:27：按用户「继续下一个训练」的指示恢复该臂（**恢复前已确认无重复进程**、
+  GPU 空闲，`last.pt` 为 epoch 8 完整状态）。命令 = 2026-10-02 14:44:46 那条原样加
+  `--resume`，PID 6240，日志
+  `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908_resume_20261002.{stdout,stderr}.log`
+  （文件名后缀 20261002 只是调用时写的标签，实际启动为 2026-10-03 12:25:27），PID 文件已更新为
+  6240。自检：`--resume` 生效、`validate_resume_binding()` 通过（stderr 无绑定错误）、
+  GPU 4347 MiB / 100%（确在训练）。本次**未再挂暂停监视器**（用户未要求），训练将继续到
+  早停或 30 轮上限。
 
 ## 还原上一段对话
 
