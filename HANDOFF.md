@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-03（多 seed 矩阵已结清（六格 + Task 7 汇总，Kinetics 均值 0.845496 vs CVB-transfer 0.833625）；WAID 复现加固已合并主线；申报材料与仓库整理入库，主线工作树完全干净）
+- 最后更新：2026-10-03（多 seed 矩阵已结清；WAID 复现加固已合并；申报材料与仓库整理入库；四项 P0 逐项推进：确认集协议+冻结工具已就绪待素材、论文统计实现中、WAID 改进预注册草案待你选档、推广门控经核实早已实现）
 
 ## 当前阶段目标
 
@@ -208,11 +208,26 @@
   已提交（`ae0d828`、`f0f51f7`、`86c033c`）；`data/delivery-processes.json`（运行时 PID
   登记）与 5 个第三方/大文件（`AID.pdf`、`CoastCor-Net.py/.yaml`、`train.zip`、`代码.zip`）
   已加入 `.gitignore`（`360f210`、`4183efb`），**主线工作树现在完全干净**。
-- [ ] 数据：采集或取得新的前瞻性独立牧场视频，按源视频冻结新的确认集，并记录许可、来源、哈希和暴露边界。
-- [ ] 论文统计：报告多 seed 均值/方差、逐类指标、校准、风险—覆盖率和按源视频 bootstrap；把当前结果定位为监督域适配与协议审计，不宣称完全独立外部验证。
-- [ ] WAID：在冻结基线上预注册精度改进实验（本次资产整合与训练入口本身不提升精度，
-  不同 GPU/CUDA/Ultralytics 版本也不保证逐字节相同的权重）。
+- [ ] 数据（**协议与工具已就绪，等素材**）：前瞻性独立确认集的暴露边界机制已实现并提交到
+  跨域分支（`323bac3` 模块+CLI+7 项测试、`547cda2` 协议文档
+  `docs/experiments/2026-10-03-prospective-confirmation-set-protocol.md`）：新视频必须逐条
+  SHA-256 与开发登记表 `manifests/cbvd4/source_videos.csv`（397 条，哈希
+  `a0aad746…`）比对，命中即 exit 1 拒绝；实测把真实已暴露的 `10.mp4` 放进候选目录被正确
+  拒绝。**本地已确认没有可用的新视频**（CBVD-5 687 个 mp4 属开发语料，E 盘那批属既有项目
+  数据），需用户提供新牧场视频才能冻结。
+- [ ] 论文统计（**进行中**）：多 seed 均值/方差/配对差值/逐类 F1 已有；校准（ECE/Brier/NLL、
+  交叉拟合温度）、风险—覆盖率（含 AURC）、按源视频聚类 bootstrap 区间正在由子代理实现
+  （跨域分支，基于六格 `validation_predictions.csv` 的 logits 与 `source_video_id`）。
+- [ ] WAID：预注册**草案已写**（`docs/superpowers/specs/2026-10-03-waid-improvement-preregistration-design.md`，
+  提交 `70fd90f`）：假设来自仓库自有证据（训练集 zebra 仅 289 图 vs sheep 1041 图），单变量
+  规则 H1 类别过采样 / H2 imgsz 960→1280，只读 valid、test 本阶段不读，附 A/B/C 三档成本。
+  **等你选档位并在第 7 节勾选后才开跑**。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
+  → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
+  的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
+  `scripts/promote_cbvd4_model.py` 仅当 `promotion.json` 的 `promoted=true` 才落盘交付模型；
+  `delivery_tests/test_promote_cbvd4_model.py` + `test_cbvd4_evaluation.py` **13 passed**；
+  已有一条真实的 `promoted=false` 拒绝记录）。**因此该项只等前两项产出合格候选**，无需再写代码。
 
 ## 决策与坑（不要再踩）
 
