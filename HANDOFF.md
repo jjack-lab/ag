@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-03（WAID 复现加固已合并回 `integration`（`992f64a`，真实端到端 `status=passed`）；多 seed 最后一格 CVB-transfer seed 20260908 已从 epoch 8 断点 `--resume` 恢复训练（PID 6240））
+- 最后更新：2026-10-03（多 seed 矩阵四条新臂全部跑完、**六格齐全**（最后一条 CVB-transfer seed 20260908 早停收尾，11 轮、0.8266304028），下一步只剩计划 Task 7 汇总；WAID 复现加固已合并主线且真实端到端 `status=passed`）
 
 ## 当前阶段目标
 
@@ -56,6 +56,25 @@
   `outputs/cbvd4/paper_20260922/logs/kinetics_seed_20260908_resume2_20261001.stdout.log`。
   至此 Kinetics 臂三个 seed 齐全：0.8398443 / 0.8530159 / 0.8436268（均值 0.8455，
   样本标准差 0.0068）；CVB-transfer 臂还差 seed 20260908。
+- 多 seed 矩阵第 4 条（也是最后一条）新增臂 **CVB-transfer seed 20260908 已完成**：
+  2026-10-03 13:58:09 正常收尾（`resume_exit=0`，**epoch 10 早停**，共 11 轮；中途按用户
+  要求在 epoch 8 暂停、次日 12:25:27 `--resume` 恢复）。validation Macro-F1=
+  **0.8266304027953745**（最佳 epoch 4）、accuracy=0.8943089431，最佳 `best.pt` SHA-256=
+  `0d3b19161a482fd3021ee843e75623b979a5f0b99d0180f9468b9d9aa604380e`
+  （与 `validation_metrics.json` 一致），`test_metrics_read=false`，清单哈希与冻结矩阵一致。
+  逐类 F1：grazing 0.8886 / drinking 0.8571 / **ruminating-standing 0.5607** /
+  ruminating-lying 1.0000。日志
+  `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908_resume_20261002.stdout.log`。
+  **至此六格齐全**（两臂 × 三 seed，全部 `test_metrics_read=false`）：
+
+  | 初始化 | 20260824 | 20260901 | 20260908 | 均值 | 样本标准差 |
+  | --- | --- | --- | --- | --- | --- |
+  | Kinetics | 0.8398443 | 0.8530159 | 0.8436268 | 0.84550 | 0.0068 |
+  | CVB-transfer | 0.8407228 | 0.8325413 | 0.8266304 | 0.83330 | 0.0071 |
+
+  即两个初始化的 seed 波动同量级（≈0.007），Kinetics 三个 seed 一致高于 CVB-transfer
+  （平均高约 0.0122）。**这仍是 validation 稳定性观察；按预注册，做选择前必须跑完
+  计划 Task 7 汇总，且不得读取正式 test。**
 - WAID4500 YOLO11s 可复现包已入库（分支 `codex/waid-reproducibility`，现共 10 个提交，
   即 Codex 的 8 个加本次的 `f18bd4d` 修复与 `842b1bd` 交接）：
   manifest 合约、原子重建、本地资产导入、可移植训练入口、证据验证器、
@@ -128,19 +147,16 @@
   清单哈希与冻结矩阵一致。日志 `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908.{stdout,stderr}.log`、
   PID 文件同名 `.pid`（均在 `.worktrees/cross-domain-behavior` 下），输出
   `outputs/cbvd4/paper_20260922/multiseed_validation/cvb_transfer_init/seed_20260908`。
-  **该臂 2026-10-02 22:45 曾在 epoch 8 边界被用户要求暂停，随后于 2026-10-03 12:25:27
-  用原命令加 `--resume` 恢复**（PID 6240，GPU 4347 MiB / 100%，`validate_resume_binding()`
-  通过、无绑定错误，从 epoch 9 起继续）。已完成 9 轮（epoch 0--8），当前最佳仍是
-  **epoch 4 = 0.8266304028**（`best.pt` 10-02 18:56 写入）；恢复日志
-  `outputs/cbvd4/paper_20260922/logs/cvb_transfer_seed_20260908_resume_20261002.{stdout,stderr}.log`
-  （文件名后缀是调用时写的日期标签，实际启动时刻为 2026-10-03 12:25:27；进程运行中无法改名，
-  以内容与 PID 文件为准）。暂停过程与监视器日志见「中断记录」2026-10-02 22:45 条目。
-  逐轮 val_macro_f1：0.5183 / 0.5657 / 0.7873 / 0.7994 / **0.8266** / 0.7573 / 0.8087 /
-  0.7510 / 0.7544；最佳之后已连续 4 轮未刷新（patience=6，若继续不刷新将在 epoch 10 后早停）。
-  识别进程靠完整命令行 + 输出目录，不能只信 PID；被回收就原命令加 `--resume`。
-  必须串行、一次一条、不得并行占卡，只读 train/val。四条新臂跑完后还要执行计划 Task 7
-  的汇总（`run_cbvd4_multiseed_validation --mode summarize` → `validation_metrics.csv`、
-  `aggregate.json`、`report.md`）才算把矩阵结清。
+  **该臂已于 2026-10-03 13:58:09 完成**（epoch 10 早停，共 11 轮，validation Macro-F1
+  0.8266304028；中途 10-02 22:45 曾在 epoch 8 边界按用户要求暂停，10-03 12:25:27
+  `--resume` 恢复）。逐轮 val_macro_f1：0.5183 / 0.5657 / 0.7873 / 0.7994 / **0.8266** /
+  0.7573 / 0.8087 / 0.7510 / 0.7544 / 0.8017 / 0.8181；最佳之后连续 6 轮未刷新即早停。
+  日志 `.../logs/cvb_transfer_seed_20260908_resume_20261002.stdout.log`（7262 字节最终摘要）。
+  **六格矩阵已全部有 validation 结果，当前没有训练进程在跑、GPU 空闲**；下一步只剩计划
+  Task 7 汇总（`run_cbvd4_multiseed_validation --mode summarize` → `validation_metrics.csv`、
+  `aggregate.json`、`report.md`，三者当前仍不存在），跑完才算把矩阵结清。
+  历史启动日志与暂停监视器日志保留在 `.worktrees/cross-domain-behavior` 的
+  `outputs/cbvd4/paper_20260922/logs/` 下；识别进程靠完整命令行 + 输出目录，不能只信 PID。
 - 运行方式经验（务必遵守）：本环境会静默回收无人托管的进程——2026-09-29 的会话后台任务在
   跑完 epoch 2 后被回收；2026-09-30 用 `Start-Process` 脱离式进程重试也在约 3 分钟后被回收；
   最终仍用**会话托管的后台任务**恢复成功并正常跑完。所以长训练只能走会话托管后台任务，
@@ -166,10 +182,9 @@
   划分校验、逐样本内容哈希、portable `data.yaml`、续训越界 fail-closed、独立 rebuild 输出、
   整批导入事务。真实资产端到端 verifier `status=passed`（六层），此后可以声明"完整复现证据
   全部通过"。
-- [ ] 多 seed 矩阵**最后一格 CVB-transfer seed 20260908 已恢复训练**（2026-10-03 12:25:27 自
-  epoch 8 断点 `--resume` 恢复，PID 6240；已完成 9 轮，最佳 epoch 4=0.8266304028）。命令见
-  「中断记录」2026-10-02 14:44:46 条目 + `--resume`；单 GPU 不得并行，异常退出只在绑定有效
-  且无重复进程时按原参数 `--resume`，全程不得读取正式 test。
+- [x] 多 seed 矩阵四条新臂全部完成（2026-10-03 13:58 最后一格 CVB-transfer seed 20260908
+  早停收尾，11 轮、0.8266304028）；六格齐全，全部 `test_metrics_read=false`，两臂 seed
+  波动同量级（≈0.007）。当前**没有训练进程在跑**。
 - [ ] 四条新臂齐后执行计划 Task 7 汇总：`run_cbvd4_multiseed_validation --mode summarize`
   → `validation_metrics.csv`、`aggregate.json`、`report.md`（三者当前都还不存在，缺了它
   矩阵不算结清）。
@@ -393,6 +408,15 @@
   6240。自检：`--resume` 生效、`validate_resume_binding()` 通过（stderr 无绑定错误）、
   GPU 4347 MiB / 100%（确在训练）。本次**未再挂暂停监视器**（用户未要求），训练将继续到
   早停或 30 轮上限。
+- 2026-10-03 13:58:09：CVB-transfer seed 20260908 **正常收尾**（不是中断）：
+  `cvb_transfer_seed_20260908_resume_exit=0`，恢复日志写出 7262 字节最终 JSON 摘要；
+  epoch 9 = 0.8017、epoch 10 = 0.8181 均未刷新 epoch 4 的 0.8266304028，patience=6 触发
+  早停，共 11 轮。核对：`val_macro_f1=0.8266304027953745`、`accuracy=0.8943089430894309`、
+  `best.pt` 实际 SHA-256 与 `validation_metrics.json` 同为
+  `0d3b19161a482fd3021ee843e75623b979a5f0b99d0180f9468b9d9aa604380e`、
+  `test_metrics_read=false`、清单哈希与冻结矩阵一致；产物齐全（`metrics.json`、
+  `classification_report.csv`、`confusion_matrix.*`、`training_curves.png`）。
+  **多 seed 矩阵四条新臂至此全部跑完，六格齐全。** 下一步只剩计划 Task 7 汇总。
 
 ## 还原上一段对话
 
