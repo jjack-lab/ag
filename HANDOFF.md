@@ -239,6 +239,16 @@
   开跑前还差一件事：H1（类别过采样）在 Ultralytics 8.x 检测训练中无原生支持，需先实现
   LVIS 风格重复因子清单（生成 `train_rf.txt`，运行期 `data.yaml` 指向它）+ TDD 测试；
   H2 仅需新增一份 `imgsz: 1280` 配置变体。
+  **H1 已实现**（`cattle_health_app/detection/waid_repeat_factors.py` + `tests/test_waid_repeat_factors.py`
+  **10 passed**，提交见分支日志）：`class_image_counts` / `repeat_factors`（`max(1, sqrt(head/n_c))`）
+  / `apportion_copies`（最大余数法，确定性）/ `write_repeat_list`。真实数据实测：因子
+  zebra 1.8979、kiang 1.4458、camelus 1.3261，清单 4,500 → **5,176 条（+15.0%）**，落在
+  `data/external/waid/derived/waid4500_v1/splits/train_rf_h1.txt`（本地产物、未入库）；
+  类别计数与冻结的 `class_statistics.csv` **完全一致**（可作交叉校验）。**H1 每轮约慢 15%**
+  （≈4.6 分钟/轮），预算按此调整。
+  **下一步（开跑前）**：给 WAID 训练配置加可选 `train_list` 字段并让运行期 `data.yaml` 的
+  `train` 指向它（含测试），再新增 H2 的 `imgsz: 1280` 配置，然后按缩水版筛选
+  （3 臂 × 1 seed × 40 轮 ≈ 8 h，H1 约 9.2 h）串行开跑。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
