@@ -2,7 +2,7 @@
 
 > 谁在干活谁维护。任何 AI 接手第一步：读完本文件 → `git log --oneline -10` + `git status` + `git worktree list` 核对 → 跑测试 → 从「下一步」清单继续。规则见 `AGENTS.md`。
 
-- 最后更新：2026-10-03（多 seed 矩阵四条新臂全部跑完、**六格齐全**（最后一条 CVB-transfer seed 20260908 早停收尾，11 轮、0.8266304028），下一步只剩计划 Task 7 汇总；WAID 复现加固已合并主线且真实端到端 `status=passed`）
+- 最后更新：2026-10-03（多 seed 矩阵**已结清**：六格齐全 + Task 7 汇总完成，Kinetics 均值 0.845496 vs CVB-transfer 0.833625，配对差值符号在新 seed 上反转，全程 `test_data_read=false`、不作晋级决定；WAID 复现加固已合并主线且真实端到端 `status=passed`）
 
 ## 当前阶段目标
 
@@ -152,13 +152,21 @@
   `--resume` 恢复）。逐轮 val_macro_f1：0.5183 / 0.5657 / 0.7873 / 0.7994 / **0.8266** /
   0.7573 / 0.8087 / 0.7510 / 0.7544 / 0.8017 / 0.8181；最佳之后连续 6 轮未刷新即早停。
   日志 `.../logs/cvb_transfer_seed_20260908_resume_20261002.stdout.log`（7262 字节最终摘要）。
-  **六格矩阵已全部有 validation 结果**；计划 **Task 7 汇总已于 2026-10-03 14:08:23 启动**
-  （PID 17112，`--mode summarize --device cuda --batch-size 4 --workers 0`，工作目录
-  `.worktrees/cross-domain-behavior`，日志
-  `outputs/cbvd4/paper_20260922/logs/multiseed_summarize_20261003.{stdout,stderr}.log`），
-  产物为 `validation_metrics.csv`、`aggregate.json`、`report.md`（启动时三者均不存在）。
-  该步骤只做 validation-only 逐样本推理，**不得读取正式 test**；跑完核对产物里
-  `test_data_read=false` / 无 test 键后才算把矩阵结清。
+  **六格矩阵已全部有 validation 结果**；**计划 Task 7 汇总已于 2026-10-03 14:49 完成**
+  （14:08:23 启动，PID 17112，`--mode summarize --device cuda --batch-size 4 --workers 0`，
+  日志 `outputs/cbvd4/paper_20260922/logs/multiseed_summarize_20261003.{stdout,stderr}.log`）。
+  产物：`validation_metrics.csv`（6 行）、`aggregate.json`
+  （39.6 KB，含每格 984 条逐样本预测路径与按源视频错误计数）、`report.md`，另有
+  `analysis/<初始化>/seed_<seed>/validation_predictions.csv`。
+  **结果**：Kinetics 均值 **0.845496**（样本标准差 0.006782）vs CVB-transfer **0.833625**
+  （0.006623）；配对差值 cvb−kinetics = **+0.000878 / −0.020475 / −0.016016**（旧 seed 微正、
+  两个新 seed 明显为负 → 符号反转）；`test_data_read=false`（`aggregate.json` 里唯一的
+  "test" 字样就是这个布尔键），六格全部 validation-only。
+  注意一处 0.001 量级差异：最后一格在训练内记录的 0.8266304028 与汇总统一重算的
+  **0.8276105066** 不同（其余五格两者逐位一致）；汇总是对冻结 `best.pt` 的统一重评估，
+  跨格比较应以 `validation_metrics.csv` 为准，训练内数字来自内存模型末轮评估。
+  另已将结论写入跨域分支的 `docs/data/2026-08-23-public-cattle-video-data-record.md`
+  （实验台账 + 假设修正表 + 复现命令），提交 `1606b71`。
   历史启动日志与暂停监视器日志保留在 `.worktrees/cross-domain-behavior` 的
   `outputs/cbvd4/paper_20260922/logs/` 下；识别进程靠完整命令行 + 输出目录，不能只信 PID。
 - 运行方式经验（务必遵守）：本环境会静默回收无人托管的进程——2026-09-29 的会话后台任务在
@@ -189,9 +197,11 @@
 - [x] 多 seed 矩阵四条新臂全部完成（2026-10-03 13:58 最后一格 CVB-transfer seed 20260908
   早停收尾，11 轮、0.8266304028）；六格齐全，全部 `test_metrics_read=false`，两臂 seed
   波动同量级（≈0.007）。当前**没有训练进程在跑**。
-- [ ] 四条新臂齐后执行计划 Task 7 汇总：`run_cbvd4_multiseed_validation --mode summarize`
-  → `validation_metrics.csv`、`aggregate.json`、`report.md`（三者当前都还不存在，缺了它
-  矩阵不算结清）。
+- [x] 四条新臂齐后执行计划 Task 7 汇总（2026-10-03 完成）：`validation_metrics.csv`、
+  `aggregate.json`、`report.md` 已生成，`test_data_read=false`；Kinetics 均值 0.845496
+  （样本标准差 0.006782）vs CVB-transfer 0.833625（0.006623），配对差值 +0.000878 /
+  −0.020475 / −0.016016；结论已写入跨域分支数据记录（`1606b71`）。**多 seed 矩阵至此结清，
+  且按预注册不作任何候选选择或晋级决定。**
 - [ ] 主线：把申报材料相关未跟踪文件整理提交（`~$*` Office 临时文件已忽略，勿提交）。
 - [ ] 数据：采集或取得新的前瞻性独立牧场视频，按源视频冻结新的确认集，并记录许可、来源、哈希和暴露边界。
 - [ ] 论文统计：报告多 seed 均值/方差、逐类指标、校准、风险—覆盖率和按源视频 bootstrap；把当前结果定位为监督域适配与协议审计，不宣称完全独立外部验证。
@@ -421,6 +431,17 @@
   `test_metrics_read=false`、清单哈希与冻结矩阵一致；产物齐全（`metrics.json`、
   `classification_report.csv`、`confusion_matrix.*`、`training_curves.png`）。
   **多 seed 矩阵四条新臂至此全部跑完，六格齐全。** 下一步只剩计划 Task 7 汇总。
+- 2026-10-03 14:49:02：计划 **Task 7 汇总完成**（`summarize_exit=0`，14:08:23 启动、耗时约
+  41 分钟）：生成 `validation_metrics.csv`（6 行）、`aggregate.json`（39.6 KB）、`report.md`
+  与 `analysis/<初始化>/seed_<seed>/validation_predictions.csv`（每格 984 条）。
+  核对：`aggregate.json.test_data_read=false`、`seed_count_per_initialization=3`；
+  Kinetics 均值 0.8454960（样本标准差 0.0067818）、CVB-transfer 均值 0.8336248
+  （0.0066230）；配对差值 +0.0008785 / −0.0204746 / −0.0160163；逐类均值显示
+  ruminating-standing 为两臂最弱（kinetics 0.624246 / cvb 0.591244）。
+  **一处需知的差异**：最后一格训练内记录 0.8266304028、汇总统一重算为 0.8276105066
+  （Δ≈0.00098），其余五格两者逐位一致；跨格比较以统一重算的 CSV 为准。
+  本轮为 validation-only，**未读取正式 test**；矩阵至此结清，按预注册不作候选选择。
+  `report.md` 亦明确写着 `No promotion decision is made from this validation-only experiment.`
 
 ## 还原上一段对话
 
