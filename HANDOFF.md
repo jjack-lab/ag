@@ -152,9 +152,13 @@
   `--resume` 恢复）。逐轮 val_macro_f1：0.5183 / 0.5657 / 0.7873 / 0.7994 / **0.8266** /
   0.7573 / 0.8087 / 0.7510 / 0.7544 / 0.8017 / 0.8181；最佳之后连续 6 轮未刷新即早停。
   日志 `.../logs/cvb_transfer_seed_20260908_resume_20261002.stdout.log`（7262 字节最终摘要）。
-  **六格矩阵已全部有 validation 结果，当前没有训练进程在跑、GPU 空闲**；下一步只剩计划
-  Task 7 汇总（`run_cbvd4_multiseed_validation --mode summarize` → `validation_metrics.csv`、
-  `aggregate.json`、`report.md`，三者当前仍不存在），跑完才算把矩阵结清。
+  **六格矩阵已全部有 validation 结果**；计划 **Task 7 汇总已于 2026-10-03 14:08:23 启动**
+  （PID 17112，`--mode summarize --device cuda --batch-size 4 --workers 0`，工作目录
+  `.worktrees/cross-domain-behavior`，日志
+  `outputs/cbvd4/paper_20260922/logs/multiseed_summarize_20261003.{stdout,stderr}.log`），
+  产物为 `validation_metrics.csv`、`aggregate.json`、`report.md`（启动时三者均不存在）。
+  该步骤只做 validation-only 逐样本推理，**不得读取正式 test**；跑完核对产物里
+  `test_data_read=false` / 无 test 键后才算把矩阵结清。
   历史启动日志与暂停监视器日志保留在 `.worktrees/cross-domain-behavior` 的
   `outputs/cbvd4/paper_20260922/logs/` 下；识别进程靠完整命令行 + 输出目录，不能只信 PID。
 - 运行方式经验（务必遵守）：本环境会静默回收无人托管的进程——2026-09-29 的会话后台任务在
