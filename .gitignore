@@ -46,3 +46,9 @@ data/external/*/derived/*
 !data/external/*/derived/.gitkeep
 data/external/*/cache/*
 data/external/.tools/
+
+# Office lock temp files (e.g. ~$智控-项目计划书.docx)
+~$*
+
+# Local delivery process registry written by start_delivery.ps1 (machine state)
+data/delivery-processes.json
