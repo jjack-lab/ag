@@ -215,13 +215,27 @@
   `a0aad746…`）比对，命中即 exit 1 拒绝；实测把真实已暴露的 `10.mp4` 放进候选目录被正确
   拒绝。**本地已确认没有可用的新视频**（CBVD-5 687 个 mp4 属开发语料，E 盘那批属既有项目
   数据），需用户提供新牧场视频才能冻结。
-- [ ] 论文统计（**进行中**）：多 seed 均值/方差/配对差值/逐类 F1 已有；校准（ECE/Brier/NLL、
-  交叉拟合温度）、风险—覆盖率（含 AURC）、按源视频聚类 bootstrap 区间正在由子代理实现
-  （跨域分支，基于六格 `validation_predictions.csv` 的 logits 与 `source_video_id`）。
+- [x] 论文统计（2026-10-03 完成）：跨域分支 `a89769d`（模块 1707 行 + CLI + 27 项测试）、
+  `dc0f3e3`（结果文档 `docs/experiments/2026-10-03-cbvd4-validation-calibration-coverage.md`）。
+  已独立核验：聚焦 **27 passed**；`calibration.csv` 的 macro-F1 与既有 `validation_metrics.csv`
+  **逐位一致**；`report.md` 明示 test 永不读取、不作选择/晋级决定。关键结果：原始 softmax
+  严重过度自信（pooled ECE 0.449 → 交叉拟合温度后 0.034 / cvb 0.442 → 0.052），AURC
+  0.0174（kinetics）/ 0.0232（cvb），选择性准确率@0.7 覆盖 0.9840 / 0.9705；配对差值
+  +0.000878 / −0.020475 / −0.016016，**三个区间均含 0** → 两臂无已确立差异。
+  另修正一处此前说法：`delivery_tests/test_external_behavior_cli.py` 的 2 项失败只出现在
+  WAID worktree 与主检出，**本 worktree 为 8/8 通过**；本 worktree 的预存失败是
+  `test_cross_domain_behavior_reporting.py::test_committed_result_document_records_verified_
+  complete_evidence`（断言文档中缺失的句子，与本批改动无关，子代理未改任何既有文件）。
 - [ ] WAID：预注册**草案已写**（`docs/superpowers/specs/2026-10-03-waid-improvement-preregistration-design.md`，
   提交 `70fd90f`）：假设来自仓库自有证据（训练集 zebra 仅 289 图 vs sheep 1041 图），单变量
-  规则 H1 类别过采样 / H2 imgsz 960→1280，只读 valid、test 本阶段不读，附 A/B/C 三档成本。
-  **等你选档位并在第 7 节勾选后才开跑**。
+  规则 H1 类别过采样 / H2 imgsz 960→1280，只读 valid、test 本阶段不读。用户已选 **B 档
+  （筛选→确认）**。**当前卡在预算核实**：归档 `results.csv` 显示 120 轮累计 3.6 h（≈108 s/轮），
+  而早先 1 epoch 冒烟（90 张）14.4 s 折算 4500 张约 13 分钟/轮——两者相差 7 倍，必须先做
+  一次 2 轮实测确定真实速度，再回填预算；若真为 13 分钟/轮，B 档 9 次运行 ≈ 78 h，远超
+  20–30 h 估计，需重新选择档位或降低筛选轮数。批准前不启动任何正式训练。
+  另 H1（类别过采样）在 Ultralytics 8.x 检测训练中无原生支持，需先实现"重复因子训练清单"
+  （生成 `train_rf.txt` 并让运行期 `data.yaml` 指向它）+ 测试；H2 仅需新增一份 imgsz 1280
+  的配置变体。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
