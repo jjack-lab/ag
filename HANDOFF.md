@@ -246,9 +246,22 @@
   `data/external/waid/derived/waid4500_v1/splits/train_rf_h1.txt`（本地产物、未入库）；
   类别计数与冻结的 `class_statistics.csv` **完全一致**（可作交叉校验）。**H1 每轮约慢 15%**
   （≈4.6 分钟/轮），预算按此调整。
-  **下一步（开跑前）**：给 WAID 训练配置加可选 `train_list` 字段并让运行期 `data.yaml` 的
-  `train` 指向它（含测试），再新增 H2 的 `imgsz: 1280` 配置，然后按缩水版筛选
-  （3 臂 × 1 seed × 40 轮 ≈ 8 h，H1 约 9.2 h）串行开跑。
+  **接线已完成并启动筛选**（2026-10-03 19:46:57）：`load_training_config` 新增可选
+  `train_list`（必须落在项目内且为 `.txt`），`write_runtime_data_yaml(..., train=...)`
+  支持指向清单，`run_training` 在启动前校验清单存在并算出相对数据集根的条目；
+  新增 `tests/test_waid_train_list.py` **7 passed**、既有 WAID 测试 **58 passed** 无回归；
+  提交 `2213819`。三份预注册筛选配置入库
+  `reproducibility/waid4500/screening/{baseline_e40,h1_repeat_e40,h2_imgsz1280_e40}.yaml`。
+  **筛选正在运行**：一个会话托管后台任务按 baseline_e40 → h1_repeat_e40 → h2_imgsz1280_e40
+  串联执行（失败即停），链日志
+  `outputs/training/waid4500_yolo11s/logs/screening_chain.log`，各臂日志
+  `…/logs/screening_<name>.{stdout,stderr}.log`，输出 `…/screening/screening_<name>/`。
+  预计 baseline ≈2.7 h、H1 ≈3.1 h（清单 +15%）、H2 分辨率 ×1.8 未知 ≈5 h，合计 **≈11 h**；
+  被环境回收时按当前臂 `--resume` 续（每轮落 checkpoint），恢复前确认无重复进程。
+  已核验 baseline 的运行期 `data.yaml` 为 `train: images/train`；H1 启动后应变为
+  `train: splits/train_rf_h1.txt`（这是接线在真实训练中的端到端证据，接手时必须复核）。
+  已知小缺口（未修，留给后续）：`load_training_config` 用 `utf-8` 读配置，手工编辑带 BOM
+  的配置会读失败（本批配置已按无 BOM 生成并验证可加载）。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
