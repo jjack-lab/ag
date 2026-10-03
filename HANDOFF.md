@@ -229,13 +229,16 @@
 - [ ] WAID：预注册**草案已写**（`docs/superpowers/specs/2026-10-03-waid-improvement-preregistration-design.md`，
   提交 `70fd90f`）：假设来自仓库自有证据（训练集 zebra 仅 289 图 vs sheep 1041 图），单变量
   规则 H1 类别过采样 / H2 imgsz 960→1280，只读 valid、test 本阶段不读。用户已选 **B 档
-  （筛选→确认）**。**当前卡在预算核实**：归档 `results.csv` 显示 120 轮累计 3.6 h（≈108 s/轮），
-  而早先 1 epoch 冒烟（90 张）14.4 s 折算 4500 张约 13 分钟/轮——两者相差 7 倍，必须先做
-  一次 2 轮实测确定真实速度，再回填预算；若真为 13 分钟/轮，B 档 9 次运行 ≈ 78 h，远超
-  20–30 h 估计，需重新选择档位或降低筛选轮数。批准前不启动任何正式训练。
-  另 H1（类别过采样）在 Ultralytics 8.x 检测训练中无原生支持，需先实现"重复因子训练清单"
-  （生成 `train_rf.txt` 并让运行期 `data.yaml` 指向它）+ 测试；H2 仅需新增一份 imgsz 1280
-  的配置变体。
+  （筛选→确认）**。**真实速度已实测**（2026-10-03 18:30，协议同筛选、仅 `epochs=2`，`probe_exit=0`）：
+  epoch 2 = **237.7 s = 3.96 分钟/轮**（累计 time 243.2 → 480.9 s；探测配置与日志在忽略目录
+  `outputs/training/waid4500_yolo11s/timing_probe_e2.yaml` 与 `…/logs/timing_probe_e2.*.log`，
+  输出 `…/reproduced/timing_probe_e2/`，2 轮后 val mAP50-95=0.4977，基线 120 轮为 0.584）。
+  由此回填预算：**筛选 40 轮 × 3 seeds × 3 臂 ≈ 23.8 h**，胜者 120 轮 × 3 seeds 确认 ≈ 23.8 h，
+  **B 档完整 ≈ 48 h**（超出草案 20–30 h 的估计，已向用户披露并等待其确认是否按此开跑、
+  或缩为 3 臂 × 1 seed 筛选 ≈ 7.9 h）。**批准前不启动正式训练。**
+  开跑前还差一件事：H1（类别过采样）在 Ultralytics 8.x 检测训练中无原生支持，需先实现
+  LVIS 风格重复因子清单（生成 `train_rf.txt`，运行期 `data.yaml` 指向它）+ TDD 测试；
+  H2 仅需新增一份 `imgsz: 1280` 配置变体。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
