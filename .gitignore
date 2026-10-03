@@ -52,3 +52,14 @@ data/external/.tools/
 
 # Local delivery process registry written by start_delivery.ps1 (machine state)
 data/delivery-processes.json
+
+# Local reference material kept out of Git: third-party papers/model code and
+# archived training outputs. CoastCor-Net.py/.yaml and 代码.zip are external
+# research code (arXiv 2502.20087 and other authors' modules), AID.pdf is a
+# third-party paper, and train.zip is a 19 MB YOLO run archive with plots and
+# weights (AGENTS.md forbids committing model archives).
+AID.pdf
+CoastCor-Net.py
+CoastCor-Net.yaml
+train.zip
+代码.zip
