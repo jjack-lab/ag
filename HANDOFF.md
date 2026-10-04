@@ -304,6 +304,22 @@
   `load_training_config` 校验通过）。**分析口径**：对每个 seed 算 H2−baseline 的配对差值，
   三个差值同号且幅度稳定 → 判定 +0.0154 超出 seed 波动，再决定是否做 120 轮确认；
   若差值跨 0 → 记为噪声，H2 不进确认阶段。
+  **2026-10-04 23:20:42 用户要求暂停，已在 epoch 边界干净停下**：监视器
+  `…/logs/seednoise_pause_watcher.log` 在 23:20:37 见第 10 轮落盘、等 15 秒确认后停掉
+  PID 5232（`still alive=False`）；链因非零退出码（`END baseline_e40_seed43 exit=-1`）
+  **自动停止且未启动下一臂**（`seed-noise chain done`）。当前无训练进程、GPU 空闲。
+  **断点**：`screening/screening_baseline_e40_seed43/` 已完成 **10/40 轮**，
+  `best.pt`/`last.pt` 均为 23:20:10 写出的同一检查点；已用 `require_portable_resume()`
+  核验其记录输出根 `…\waid4500_yolo11s\screening` 在项目内 → **ACCEPTED，可原样 `--resume`**。
+  **恢复方式**（工作目录 `/F:/new大创`，命令见本节）：
+  `train_waid_yolo11s.py --project-root F:\new大创 --config
+  outputs/training/waid4500_yolo11s/screening_configs_seeds/baseline_e40_seed43.yaml
+  --resume outputs/training/waid4500_yolo11s/screening/screening_baseline_e40_seed43/weights/last.pt`，
+  之后按 seed-noise 链顺序继续未启动的三个臂：`h2_imgsz1280_e40_seed43` →
+  `baseline_e40_seed44` → `h2_imgsz1280_e40_seed44`（配置在忽略目录
+  `outputs/training/waid4500_yolo11s/screening_configs_seeds/`）。
+  **seed 配对差值现状**：仅 seed 42 完整（H2−baseline = **+0.0154**，0.59852 vs 0.58312）；
+  seeds 43/44 未跑完，故"是否超噪声"的结论**尚未成立**，不得提前下结论。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
