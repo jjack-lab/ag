@@ -252,16 +252,18 @@
   新增 `tests/test_waid_train_list.py` **7 passed**、既有 WAID 测试 **58 passed** 无回归；
   提交 `2213819`。三份预注册筛选配置入库
   `reproducibility/waid4500/screening/{baseline_e40,h1_repeat_e40,h2_imgsz1280_e40}.yaml`。
-  **筛选正在运行**：一个会话托管后台任务按 baseline_e40 → h1_repeat_e40 → h2_imgsz1280_e40
-  串联执行（失败即停），链日志
-  `outputs/training/waid4500_yolo11s/logs/screening_chain.log`，各臂日志
-  `…/logs/screening_<name>.{stdout,stderr}.log`，输出 `…/screening/screening_<name>/`。
-  预计 baseline ≈2.7 h、H1 ≈3.1 h（清单 +15%）、H2 分辨率 ×1.8 未知 ≈5 h，合计 **≈11 h**；
-  被环境回收时按当前臂 `--resume` 续（每轮落 checkpoint），恢复前确认无重复进程。
+  **筛选首夜被环境回收**：链日志只写到 `START baseline_e40`，baseline 跑到 **35/40 轮**
+  （`results.csv` 累计 14145 s → 真实均值 ≈ **6.7 分钟/轮**，明显慢于探测的 3.96 分钟/轮，
+  故修正预算：baseline 40 轮 ≈4.5 h、H1 ≈5.2 h、H2 ≈8 h，合计 **≈17–18 h**）。2026-10-04
+  11:00 起用第二个链（`screening_chain2.log`）**从断点续跑**：先 `--resume` baseline
+  （PID 8368；`--resume` 生效、续训越界守卫放行、stderr 无绑定错误），随后串行 H1、H2。
+  被回收时按当前臂 `--resume` 续（每轮落 checkpoint），恢复前确认无重复进程。
   已核验 baseline 的运行期 `data.yaml` 为 `train: images/train`；H1 启动后应变为
-  `train: splits/train_rf_h1.txt`（这是接线在真实训练中的端到端证据，接手时必须复核）。
-  已知小缺口（未修，留给后续）：`load_training_config` 用 `utf-8` 读配置，手工编辑带 BOM
-  的配置会读失败（本批配置已按无 BOM 生成并验证可加载）。
+  `train: splits/train_rf_h1.txt`（接线在真实训练中的端到端证据，接手时必须复核）。
+  **更正一条先前记录**：此前写的"配置读取不吃 BOM"**是错的**——实测 PyYAML 会跳过流起始
+  BOM，`load_training_config` 能正常加载带 BOM 的配置，当时那次失败重跑也正常通过，
+  判定为一次性瞬时故障而非代码缺陷；已保留 BOM 回归测试
+  （`tests/test_waid_train_list.py::test_reads_a_config_written_with_a_byte_order_mark`）。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；

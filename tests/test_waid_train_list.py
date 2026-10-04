@@ -81,6 +81,15 @@ class WaidTrainListTest(unittest.TestCase):
 
         self.assertEqual(path, config["train_list"])
 
+    def test_reads_a_config_written_with_a_byte_order_mark(self):
+        self.write_config()
+        content = self.config_path.read_bytes()
+        self.config_path.write_bytes(b"\xef\xbb\xbf" + content)
+
+        config = load_training_config(self.config_path, self.root)
+
+        self.assertEqual(960, config["imgsz"])
+
     def test_rejects_a_train_list_outside_the_project(self):
         with self.assertRaisesRegex(ValueError, "outside project root"):
             load_training_config(self.write_config(train_list="../outside.txt"), self.root)
