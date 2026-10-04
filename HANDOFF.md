@@ -293,6 +293,17 @@
   格式与 H1/H2 不同），若需要可后续独立复算。**下一步待用户定**：H2 按预注册做
   120 轮 × 3 seeds 确认（≈35 h）＋基线同 seeds 配对（再 ≈30 h），或先做 40 轮 × 3 seeds
   的 seed 波动估计（H2+baseline 各 3 seeds ≈ 20 h）以判断 +0.015 是否超噪声。
+  **用户选 B（先量 seed 波动）**，2026-10-04 22:41 启动配对链：复用已有 seed 42，另补
+  **seeds 43/44**，故只需 4 次运行——`baseline_e40_seed43` → `h2_imgsz1280_e40_seed43` →
+  `baseline_e40_seed44` → `h2_imgsz1280_e40_seed44`（按 seed 成对，中途被回收也能拿到完整配对），
+  预计 **≈13.6 h**（baseline ≈2.9 h/次、H2 ≈3.9 h/次）。链日志
+  `outputs/training/waid4500_yolo11s/logs/seednoise_chain.log`，各臂日志
+  `…/logs/seednoise_<name>.{stdout,stderr}.log`，输出 `…/screening/screening_<name>/`。
+  配置由两份已入库的筛选配置仅改 `seed`/`name` 生成，落在忽略目录
+  `outputs/training/waid4500_yolo11s/screening_configs_seeds/`（生成命令见本节；四份均经
+  `load_training_config` 校验通过）。**分析口径**：对每个 seed 算 H2−baseline 的配对差值，
+  三个差值同号且幅度稳定 → 判定 +0.0154 超出 seed 波动，再决定是否做 120 轮确认；
+  若差值跨 0 → 记为噪声，H2 不进确认阶段。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
