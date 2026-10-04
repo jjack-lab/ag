@@ -264,6 +264,18 @@
   BOM，`load_training_config` 能正常加载带 BOM 的配置，当时那次失败重跑也正常通过，
   判定为一次性瞬时故障而非代码缺陷；已保留 BOM 回归测试
   （`tests/test_waid_train_list.py::test_reads_a_config_written_with_a_byte_order_mark`）。
+  **baseline 已完成**（2026-10-04 11:19:11，40 轮，`exit=0`）：最佳即最后一轮
+  **mAP50-95=0.58312 / mAP50=0.95695 / P=0.94478 / R=0.91767**，与 120 轮冻结基线
+  （0.584）基本持平 → **40 轮足以支撑筛选比较**，这是筛选阶段的重要校准点。
+  **H1 首启失败已定位并修复**：Ultralytics 对 `.txt` 训练清单的条目是**按训练进程 CWD
+  解析**的（不是数据集根），我原先写的是相对路径 → 它去找 `F:\new大创\images\train\...`，
+  33 秒后以 `No valid images found` 退出（`exit=1`）。修法：清单改写**绝对路径**
+  （提交 `18ac364`，含契约测试），重新生成 5,176 条绝对路径；重启后 stdout 实测
+  **扫描 5,176 张图**（`123/5176 … 687/5176`）→ 接线端到端成立。同时清理了失败残留
+  （`screening_h1_repeat_e40/`）与 AMP 检查下载残留的仓库根 `yolo26n.pt`。
+  第三个链（`screening_chain3.log`，2026-10-04 11:20:58 起）按 **H1 → H2** 串行执行；
+  按实测（冷启动前 35 轮均值 ≈6.7 分钟/轮，续跑 5 轮 ≈3.7 分钟/轮）估计剩余
+  H1 ≈4–4.6 h、H2 ≈5.7–7.4 h，合计 **≈10–12 h**。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
