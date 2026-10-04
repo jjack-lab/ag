@@ -141,8 +141,9 @@ def write_repeat_list(
 
     lines: List[str] = []
     for (image, _weight), count in zip(entries, copies):
-        relative = image.relative_to(root).as_posix()
-        lines.extend([relative] * count)
+        # Ultralytics resolves a train-list entry against the training process
+        # CWD, not the dataset root, so entries must be absolute paths.
+        lines.extend([image.as_posix()] * count)
     target = Path(destination).expanduser().resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("".join("{}\n".format(line) for line in lines), encoding="utf-8")

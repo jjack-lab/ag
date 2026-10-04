@@ -1,6 +1,7 @@
 """Tests for LVIS-style repeat-factor sampling of the WAID4500 train split."""
 
 import math
+from pathlib import Path
 
 import pytest
 
@@ -100,14 +101,16 @@ def test_write_repeat_list_repeats_rare_class_images_more_often(tmp_path):
     assert sum(1 for line in lines if "rare-1" in line) > sum(
         1 for line in lines if "common-1" in line
     )
-    assert sorted(set(lines)) == sorted(
-        [
-            "images/train/common-1.jpg",
-            "images/train/common-2.jpg",
-            "images/train/common-3.jpg",
-            "images/train/rare-1.jpg",
-        ]
-    )
+    # Ultralytics resolves list entries against the training process CWD, so the
+    # list must carry absolute paths to be usable from any working directory.
+    assert all(Path(line).is_absolute() for line in lines)
+    assert all(Path(line).is_file() for line in set(lines))
+    assert sorted(Path(line).name for line in set(lines)) == [
+        "common-1.jpg",
+        "common-2.jpg",
+        "common-3.jpg",
+        "rare-1.jpg",
+    ]
 
 
 def test_write_repeat_list_is_deterministic(tmp_path):
