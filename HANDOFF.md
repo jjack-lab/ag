@@ -320,6 +320,11 @@
   `outputs/training/waid4500_yolo11s/screening_configs_seeds/`）。
   **seed 配对差值现状**：仅 seed 42 完整（H2−baseline = **+0.0154**，0.59852 vs 0.58312）；
   seeds 43/44 未跑完，故"是否超噪声"的结论**尚未成立**，不得提前下结论。
+  **2026-10-05 12:16:22 已按用户指示恢复**（链 `seednoise_chain2.log`）：先 `--resume`
+  `baseline_e40_seed43`（PID 3400，绑定校验通过、stderr 无错误，自 epoch 11 继续），随后排队
+  `h2_imgsz1280_e40_seed43` → `baseline_e40_seed44` → `h2_imgsz1280_e40_seed44`；
+  剩余约 **12.6 h**（baseline 余 30 轮 ≈1.9 h、H2 s43 ≈3.9 h、baseline s44 ≈2.9 h、
+  H2 s44 ≈3.9 h）。被回收即按当前臂 `--resume`（先确认无重复进程）。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
