@@ -318,13 +318,20 @@
   之后按 seed-noise 链顺序继续未启动的三个臂：`h2_imgsz1280_e40_seed43` →
   `baseline_e40_seed44` → `h2_imgsz1280_e40_seed44`（配置在忽略目录
   `outputs/training/waid4500_yolo11s/screening_configs_seeds/`）。
-  **seed 配对差值现状**：仅 seed 42 完整（H2−baseline = **+0.0154**，0.59852 vs 0.58312）；
-  seeds 43/44 未跑完，故"是否超噪声"的结论**尚未成立**，不得提前下结论。
+  **seed 配对差值现状**（2026-10-06 11:05 核验，valid 最佳 mAP50-95）：
+  seed 42：baseline 0.58312 / H2 0.59852 → **+0.01540**；
+  seed 43：baseline 0.57803 / H2 0.59924 → **+0.02121**；
+  seed 44：baseline 0.57939 已完成，**H2 仅 23/40 轮（0.57102，仍在上升）→ 该差值此刻无效**，
+  不得据此下结论。两组完整差值**同号且量级一致（+0.015~+0.021）**，等第三组完成后才能判"是否超 seed 波动"。
   **2026-10-05 12:16:22 已按用户指示恢复**（链 `seednoise_chain2.log`）：先 `--resume`
   `baseline_e40_seed43`（PID 3400，绑定校验通过、stderr 无错误，自 epoch 11 继续），随后排队
   `h2_imgsz1280_e40_seed43` → `baseline_e40_seed44` → `h2_imgsz1280_e40_seed44`；
   剩余约 **12.6 h**（baseline 余 30 轮 ≈1.9 h、H2 s43 ≈3.9 h、baseline s44 ≈2.9 h、
   H2 s44 ≈3.9 h）。被回收即按当前臂 `--resume`（先确认无重复进程）。
+  **2026-10-06 11:05:34 再次恢复**：chain2 在夜里跑完 `baseline s43`（14:07）、`h2 s43`（18:27）、
+  `baseline s44`（20:53）后，`h2 s44` 于 23:26:43 停在 23/40 轮被回收；本次用 chain3
+  `--resume` 该臂（PID 26060，绑定校验通过、stderr 无错误、GPU 5125 MiB，自 epoch 24 继续），
+  余 17 轮 ≈1.8 h。**这是最后一个臂**，完成后即可出 seed-noise 结论。
 - [ ] 仅当预注册候选在新的确认集达到 Macro-F1 ≥ 0.70 且每类 F1 ≥ 0.60，才安装 CBVD4 模型并执行上传视频端到端演示。
   → **门控机制其实早已实现且为绿**（`cattle_health_app/behavior/cbvd4_evaluation.py`
   的 `PromotionDecision` 固定 `macro_f1_threshold=0.70`、`per_class_f1_threshold=0.60`；
