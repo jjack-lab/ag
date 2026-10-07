@@ -336,6 +336,17 @@
   0.584 + 本轮 40 轮配对证据）；(B) A 再加 baseline × 3 seeds × 120 轮（≈+30 h，完全配对的
   冻结协议确认，最严格）；(C) 就此以"40 轮筛选协议"结论收尾（较弱，但已完成且可复现）；
   (D) 无论选哪个，**"独立确认"仍必须等第 1 项的新素材**，否则只能声明 validation 提升。
+  **用户选 A，2026-10-07 11:08:28 已启动确认链**：H2（imgsz 1280）**120 轮 × seeds 42 → 43 → 44**
+  串行（`confirmation_chain.log`），首个 `h2_e120_seed42` 运行中（PID 1860，GPU 5081 MiB；
+  运行期 `data.yaml` 的 train/val/test 与冻结划分一致，仅分辨率不同）。确认配置已入库
+  `reproducibility/waid4500/confirmation/h2_e120_seed{42,43,44}.yaml`（epochs/patience 120、
+  输出到独立目录 `outputs/training/waid4500_yolo11s/confirmation`，三份均过
+  `load_training_config` 校验）。**预计 ≈36 h**（≈6 分钟/轮 × 120 轮 × 3 seeds），夜里大概率
+  被回收，按当前臂 `--resume` 续（先确认无重复进程），日志
+  `…/logs/confirmation_<name>.{stdout,stderr}.log`。
+  **对比口径（不可事后更改）**：H2 三 seed 与**冻结基线 120 轮 seed42（valid 0.584）**及本轮
+  40 轮配对证据（+0.015~+0.021）联合判断；确认阶段**不读正式 test**，test 留给最终一次性
+  确认（且需第 1 项新素材）。
   **2026-10-05 12:16:22 已按用户指示恢复**（链 `seednoise_chain2.log`）：先 `--resume`
   `baseline_e40_seed43`（PID 3400，绑定校验通过、stderr 无错误，自 epoch 11 继续），随后排队
   `h2_imgsz1280_e40_seed43` → `baseline_e40_seed44` → `h2_imgsz1280_e40_seed44`；

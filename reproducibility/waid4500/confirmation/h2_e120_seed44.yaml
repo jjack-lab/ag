@@ -1,0 +1,14 @@
+model: data/external/waid/cache/yolo11s.pt
+data_root: data/external/waid/derived/waid4500_v1
+manifest: reproducibility/waid4500/dataset_manifest.csv
+project: outputs/training/waid4500_yolo11s/confirmation
+epochs: 120
+patience: 120
+batch: 4
+workers: 0
+seed: 44
+deterministic: true
+cos_lr: true
+device: auto
+name: confirm_h2_imgsz1280_e120_seed44
+imgsz: 1280
