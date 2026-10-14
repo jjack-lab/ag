@@ -27,9 +27,10 @@ const VERDICT_LABELS: Record<VideoReview["verdict"], string> = {
 type Props = {
   selectedJob: VideoJob | null;
   onSelectJob: (job: VideoJob) => void;
+  onReviewSaved?: () => void;
 };
 
-export default function VideoReviewWorkspace({ selectedJob, onSelectJob }: Props) {
+export default function VideoReviewWorkspace({ selectedJob, onSelectJob, onReviewSaved }: Props) {
   const [jobs, setJobs] = useState<VideoJob[]>([]);
   const [reviews, setReviews] = useState<VideoReview[]>([]);
   const [historyError, setHistoryError] = useState("");
@@ -82,6 +83,7 @@ export default function VideoReviewWorkspace({ selectedJob, onSelectJob }: Props
     try {
       const saved = await createVideoReview(selectedJob.id, review);
       setReviews((rows) => [...rows, saved]);
+      onReviewSaved?.();
       setNote("");
     } catch (error) {
       setReviewError(error instanceof Error ? error.message : "保存复核记录失败");

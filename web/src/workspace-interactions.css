@@ -31,6 +31,13 @@
 .health-evidence-limit { margin: 0; font-size: .85rem; }
 @media (max-width: 900px) { .health-evidence-chain { grid-template-columns: 1fr; } .health-evidence-node + .health-evidence-node::before { display: none; } }
 .video-review-workspace { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(255,255,255,.04); }
+.video-event-timeline { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(163,230,53,.2); border-radius: 18px; background: rgba(163,230,53,.035); }
+.video-event-timeline header { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.video-event-timeline small, .video-event-timeline p { color: var(--muted, #9ca3af); }
+.video-event-timeline ol { display: grid; gap: 8px; max-height: 330px; overflow: auto; list-style: none; margin: 0; padding: 0; }
+.video-event-timeline li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; }
+.video-event-timeline li button { border: 0; border-radius: 7px; padding: 7px 10px; background: #a3e635; color: #17210a; font-weight: 700; cursor: pointer; }
+.video-event-timeline li a { margin-left: auto; color: #c6ef8b; }
 .video-review-workspace h4, .video-review-workspace p { margin: 0; }
 .video-review-workspace p, .video-job-list span, .video-review-item span { color: var(--muted, #9ca3af); }
 .video-job-list { display: grid; gap: 8px; max-height: 210px; overflow: auto; }

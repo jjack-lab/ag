@@ -19,6 +19,7 @@ import {
 import CrossDomainResults from "./CrossDomainResults";
 import HealthEvidence from "./HealthEvidence";
 import VideoReviewWorkspace from "./VideoReviewWorkspace";
+import VideoEventTimeline from "./VideoEventTimeline";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
@@ -43,7 +44,9 @@ export default function RecognitionStudio() {
   const [tracker, setTracker] = useState<"bytetrack.yaml" | "botsort.yaml">(
     "bytetrack.yaml",
   );
+  const [reviewRevision, setReviewRevision] = useState(0);
   const runToken = useRef(0);
+  const resultVideo = useRef<HTMLVideoElement>(null);
 
   useEffect(
     () => () => {
@@ -290,6 +293,7 @@ export default function RecognitionStudio() {
           )}
           {tracking && (
             <video
+              ref={resultVideo}
               src={resultMediaUrl(tracking.video_path)}
               controls
               aria-label={tracking.species === "sheep" ? "羊只视频追踪结果" : "牛只视频追踪结果"}
@@ -331,6 +335,11 @@ export default function RecognitionStudio() {
             <small>若浏览器无法直接播放结果视频，请使用“下载结果视频”。</small>
           </div>
         )}
+        {tracking && videoJob && <VideoEventTimeline jobId={videoJob.id} refreshKey={reviewRevision} onSeek={(seconds) => {
+          if (!resultVideo.current) return;
+          resultVideo.current.currentTime = seconds;
+          resultVideo.current.scrollIntoView?.({ block: "center", behavior: "smooth" });
+        }} />}
         {tracking && (
           <HealthEvidence
             species={tracking.species || "cattle"}
@@ -452,6 +461,7 @@ export default function RecognitionStudio() {
         )}
         {!isImage && <VideoReviewWorkspace
           selectedJob={videoJob}
+          onReviewSaved={() => setReviewRevision((value) => value + 1)}
           onSelectJob={(job) => {
             runToken.current += 1;
             setResult({ kind: "video", data: job });

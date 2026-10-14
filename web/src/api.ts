@@ -97,6 +97,15 @@ export type VideoReview = {
   created_at: string;
 };
 
+export type VideoEvent = {
+  id: number;
+  kind: "alert" | "behavior" | "review";
+  time_seconds: number;
+  track_id: number | null;
+  label: string;
+  detail: string;
+};
+
 export type NewVideoReview = Pick<VideoReview, "issue_type" | "track_id" | "time_seconds" | "verdict" | "note">;
 
 export type AnimalLink = {
@@ -240,6 +249,14 @@ export function fetchVideoJobs(): Promise<VideoJob[]> {
 
 export function fetchVideoReviews(jobId: string): Promise<VideoReview[]> {
   return request(`/api/jobs/${jobId}/reviews`);
+}
+
+export function fetchVideoEvents(jobId: string): Promise<VideoEvent[]> {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}/events`);
+}
+
+export function videoEventClipUrl(jobId: string, eventId: number): string {
+  return `/api/jobs/${encodeURIComponent(jobId)}/events/${eventId}/clip`;
 }
 
 export function createVideoReview(jobId: string, review: NewVideoReview): Promise<VideoReview> {
