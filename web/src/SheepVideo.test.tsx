@@ -20,6 +20,8 @@ it("submits sheep class and presents tracking without cattle health claims", asy
         health_report_html: "sheep-job/report.html", frame_count: 30,
         tracked_cattle: 2, alert_count: 0, species: "sheep",
         health_evidence: [], behavior_model_status: "unavailable",
+        sheep_motion_summary: [{ track_id: 7, still_seconds: 1, moving_seconds: 2,
+          fast_seconds: 0.5, observed_seconds: 3.5 }],
       },
     }) } as Response;
   });
@@ -34,5 +36,6 @@ it("submits sheep class and presents tracking without cattle health claims", asy
   expect(await screen.findByText("已追踪 2 只羊")).toBeInTheDocument();
   expect(submittedClass).toBe("0");
   expect(screen.getByText(/羊的健康规则尚未验证/)).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "羊只活动状态分析" })).toHaveTextContent("移动 2.0 秒");
   expect(screen.queryByRole("link", { name: "健康报告" })).not.toBeInTheDocument();
 });

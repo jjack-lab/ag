@@ -9,7 +9,7 @@ function timestamp(seconds: number) {
 }
 
 const kindLabels: Record<VideoEvent["kind"], string> = {
-  alert: "规则提示", behavior: "行为切换", review: "人工复核", correction: "画面纠错",
+  alert: "规则提示", behavior: "行为切换", review: "人工复核", correction: "画面纠错", movement: "活动状态",
 };
 
 export default function VideoEventTimeline({ jobId, refreshKey, onSeek }: Props) {

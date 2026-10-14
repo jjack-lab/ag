@@ -64,6 +64,10 @@ def video_events(result, reviews, result_root, job_id, corrections=()):
         events.append({"kind": "correction", "time_seconds": float(correction["time_seconds"]),
                        "track_id": correction.get("track_id"), "label": "画面纠错",
                        "detail": correction.get("note") or ""})
+    for movement in result.get("sheep_motion_events") or []:
+        events.append({"kind": "movement", "time_seconds": movement["time_seconds"],
+                       "track_id": movement["track_id"], "label": movement["label"],
+                       "detail": movement["detail"]})
     events.sort(key=lambda item: (item["time_seconds"], item["kind"], item["track_id"] or -1))
     return [{**item, "id": index} for index, item in enumerate(events)]
 

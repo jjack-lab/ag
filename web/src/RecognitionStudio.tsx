@@ -351,6 +351,18 @@ export default function RecognitionStudio() {
             profiles={tracking.health_evidence || []}
           />
         )}
+        {tracking?.species === "sheep" && <section className="sheep-motion-panel" aria-label="羊只活动状态分析">
+          <header><strong>羊只活动状态</strong><small>根据检测框中心位移估计，仅描述移动程度</small></header>
+          <p>低位移、移动、快速移动为规则估计，不能据此判断采食、坐卧或健康状态。镜头移动和 ID 切换会影响结果。</p>
+          {(tracking.sheep_motion_summary || []).length === 0 && <p>此视频没有足够的连续追踪帧，暂无法估计活动状态。</p>}
+          {(tracking.sheep_motion_summary || []).map((row) => <article key={row.track_id}>
+            <strong>视频内 ID {row.track_id}</strong>
+            <span>低位移 {row.still_seconds.toFixed(1)} 秒</span>
+            <span>移动 {row.moving_seconds.toFixed(1)} 秒</span>
+            <span>快速移动 {row.fast_seconds.toFixed(1)} 秒</span>
+            <small>有效观察 {row.observed_seconds.toFixed(1)} 秒</small>
+          </article>)}
+        </section>}
         {tracking?.trajectory_anomaly_status === "ok" && (
           <section
             className="behavior-result"

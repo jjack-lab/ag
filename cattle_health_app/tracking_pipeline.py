@@ -27,6 +27,7 @@ from cattle_health_app.behavior.overlay import (
 )
 from health_monitor import CattleHealthMonitor, DetectionObservation, HealthConfig
 from cattle_health_app.health_evidence import build_health_evidence
+from cattle_health_app.sheep_motion import summarize_sheep_motion
 from inference_profile import build_track_kwargs
 
 LOGGER = logging.getLogger(__name__)
@@ -60,6 +61,8 @@ class TrackingVideoResult:
     trajectory_anomaly_status: str = "unavailable"
     trajectory_anomaly_reason: Optional[str] = None
     trajectory_anomalies: list = field(default_factory=list)
+    sheep_motion_summary: list = field(default_factory=list)
+    sheep_motion_events: list = field(default_factory=list)
 
     def to_dict(self, media_root=None) -> dict:
         root = Path(media_root).resolve() if media_root else None
@@ -125,6 +128,8 @@ class TrackingVideoResult:
             "trajectory_anomaly_status": self.trajectory_anomaly_status,
             "trajectory_anomaly_reason": self.trajectory_anomaly_reason,
             "trajectory_anomalies": self.trajectory_anomalies,
+            "sheep_motion_summary": self.sheep_motion_summary,
+            "sheep_motion_events": self.sheep_motion_events,
         }
 
 
@@ -526,6 +531,9 @@ def process_tracked_video(
                 anomaly_csv = None
                 anomaly_payload = []
 
+    sheep_motion_summary, sheep_motion_events = (
+        summarize_sheep_motion(rows, fps) if class_id == 0 else ([], [])
+    )
     return TrackingVideoResult(
         video_path=video_path,
         trajectory_csv=trajectory_csv,
@@ -538,6 +546,8 @@ def process_tracked_video(
         species="sheep" if class_id == 0 else "cattle",
         track_ids=sorted(track_ids_seen),
         health_evidence=build_health_evidence(monitor.summarize_health(), monitor.alerts) if class_id == 1 else [],
+        sheep_motion_summary=sheep_motion_summary,
+        sheep_motion_events=sheep_motion_events,
         behavior_csv=behavior_csv,
         behavior_summary_csv=behavior_summary_csv,
         behavior_report_json=behavior_report_json,

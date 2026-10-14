@@ -72,6 +72,19 @@ export type TrackingResult = {
   trajectory_anomaly_status?: "ok" | "skipped" | "failed" | "unavailable";
   trajectory_anomaly_reason?: string | null;
   trajectory_anomalies?: TrajectoryAnomaly[];
+  sheep_motion_summary?: {
+    track_id: number;
+    still_seconds: number;
+    moving_seconds: number;
+    fast_seconds: number;
+    observed_seconds: number;
+  }[];
+  sheep_motion_events?: {
+    track_id: number;
+    time_seconds: number;
+    label: string;
+    detail: string;
+  }[];
 };
 
 export type VideoJob = {
@@ -99,7 +112,7 @@ export type VideoReview = {
 
 export type VideoEvent = {
   id: number;
-  kind: "alert" | "behavior" | "review" | "correction";
+  kind: "alert" | "behavior" | "review" | "correction" | "movement";
   time_seconds: number;
   track_id: number | null;
   label: string;
@@ -164,6 +177,7 @@ export type AnimalProfile = {
   visits: (AnimalLink & {
     recorded_at: string;
     health_evidence: HealthEvidenceProfile | null;
+    sheep_motion: NonNullable<TrackingResult["sheep_motion_summary"]>[number] | null;
     reviews: VideoReview[];
   })[];
   followups: AnimalFollowup[];

@@ -676,12 +676,18 @@ def create_app(
                 (row for row in profiles if row.get("track_id") == link["track_id"]),
                 None,
             )
+            sheep_motion = next(
+                (row for row in (job.result.get("sheep_motion_summary", []) if job.result else [])
+                 if row.get("track_id") == link["track_id"]),
+                None,
+            )
             reviews = [row for row in repository.list_video_reviews(job.id)
                        if row["track_id"] == link["track_id"]]
             visits.append({
                 **link,
                 "recorded_at": job.created_at,
                 "health_evidence": evidence,
+                "sheep_motion": sheep_motion,
                 "reviews": reviews,
             })
         return {
