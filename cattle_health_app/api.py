@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 import csv
+import hashlib
 import io
 import json
 import math
@@ -9,6 +10,7 @@ import os
 from pathlib import Path
 from shutil import copyfileobj
 from typing import Literal, Optional
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -19,6 +21,7 @@ from pydantic import BaseModel, Field
 import cv2
 
 from cattle_health_app.domain import AlertLevel
+from cattle_health_app.dataset_evaluation import evaluate_annotations
 from cattle_health_app.jobs import VideoJobService
 from cattle_health_app.media_processor import LocalMediaProcessor
 from cattle_health_app.model_registry import (
@@ -383,6 +386,81 @@ def create_app(
         if not 1 <= limit <= 100:
             raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
         return [job.to_dict() for job in repository.list_video_jobs(limit)]
+
+    @app.get("/api/evaluations")
+    def list_dataset_evaluations():
+        return repository.list_dataset_evaluations()
+
+    @app.post("/api/evaluations", status_code=201)
+    async def create_dataset_evaluation(
+        annotations: UploadFile = File(...),
+        job_id: str = Form(...),
+        dataset_name: str = Form(...),
+        source_url: str = Form(...),
+        dataset_version: str = Form(...),
+        license_name: str = Form(...),
+        split_name: str = Form(...),
+    ):
+        try:
+            job = repository.get_video_job(job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        if job.status != "completed" or not job.result:
+            raise HTTPException(status_code=409, detail="只能评测已完成的视频")
+        metadata = [dataset_name, source_url, dataset_version, license_name, split_name]
+        if any(not value.strip() or len(value) > 300 for value in metadata):
+            raise HTTPException(status_code=422, detail="数据集来源、版本、许可与划分均须填写")
+        parsed_url = urlparse(source_url.strip())
+        if parsed_url.scheme not in ("http", "https") or not parsed_url.netloc:
+            raise HTTPException(status_code=422, detail="来源网址无效")
+        if split_name.strip() not in ("development", "validation", "external_test"):
+            raise HTTPException(status_code=422, detail="划分必须为 development、validation 或 external_test")
+        try:
+            source_path = Path(job.source_path).resolve()
+            source_path.relative_to(upload_dir.resolve())
+            prediction_path = result_file(result_dir, job_id, job.result.get("trajectory_csv"))
+            video_path = result_file(result_dir, job_id, job.result.get("video_path"))
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail="任务文件路径无效") from error
+        if not source_path.is_file() or prediction_path is None or not prediction_path.is_file() or video_path is None or not video_path.is_file():
+            raise HTTPException(status_code=404, detail="原视频或结果文件不存在")
+        annotation_bytes = await annotations.read(20 * 1024 * 1024 + 1)
+        if not annotation_bytes or len(annotation_bytes) > 20 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="标注 CSV 必须小于 20 MB")
+        evaluation_id = uuid4().hex
+        annotation_dir = media_root / "evaluations" / evaluation_id
+        annotation_dir.mkdir(parents=True, exist_ok=False)
+        annotation_path = annotation_dir / "annotations.csv"
+        annotation_path.write_bytes(annotation_bytes)
+        capture = cv2.VideoCapture(str(video_path))
+        try:
+            width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        finally:
+            capture.release()
+        try:
+            metrics = evaluate_annotations(annotation_path, prediction_path, width, height,
+                                           0 if job.result.get("species") == "sheep" else 1,
+                                           frame_count=frame_count)
+        except (ValueError, UnicodeError) as error:
+            annotation_path.unlink(missing_ok=True)
+            annotation_dir.rmdir()
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        digest = hashlib.sha256()
+        with source_path.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        evaluation = {
+            "id": evaluation_id, "job_id": job_id,
+            "dataset_name": dataset_name.strip(), "source_url": source_url.strip(),
+            "dataset_version": dataset_version.strip(), "license_name": license_name.strip(),
+            "split_name": split_name.strip(), "video_sha256": digest.hexdigest(),
+            "annotations_sha256": hashlib.sha256(annotation_bytes).hexdigest(),
+            "metrics": metrics, "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        }
+        repository.save_dataset_evaluation(evaluation)
+        return evaluation
 
     @app.get("/api/jobs/{job_id}/reviews")
     def list_video_reviews(job_id: str):

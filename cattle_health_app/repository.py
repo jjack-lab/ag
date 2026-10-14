@@ -89,6 +89,23 @@ class SQLiteRepository:
             )
             connection.execute(
                 """
+                CREATE TABLE IF NOT EXISTS dataset_evaluations (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT NOT NULL REFERENCES video_jobs(id),
+                    dataset_name TEXT NOT NULL,
+                    source_url TEXT NOT NULL,
+                    dataset_version TEXT NOT NULL,
+                    license_name TEXT NOT NULL,
+                    split_name TEXT NOT NULL,
+                    video_sha256 TEXT NOT NULL,
+                    annotations_sha256 TEXT NOT NULL,
+                    metrics_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
                 CREATE TABLE IF NOT EXISTS animal_links (
                     job_id TEXT NOT NULL REFERENCES video_jobs(id),
                     track_id INTEGER NOT NULL,
@@ -260,6 +277,31 @@ class SQLiteRepository:
             )
             if cursor.rowcount == 0:
                 raise KeyError(correction_id)
+
+    def save_dataset_evaluation(self, evaluation: dict):
+        values = {**evaluation, "metrics_json": json.dumps(evaluation["metrics"])}
+        values.pop("metrics")
+        with self._connection() as connection:
+            connection.execute(
+                """INSERT INTO dataset_evaluations
+                (id, job_id, dataset_name, source_url, dataset_version, license_name,
+                 split_name, video_sha256, annotations_sha256, metrics_json, created_at)
+                VALUES (:id, :job_id, :dataset_name, :source_url, :dataset_version, :license_name,
+                        :split_name, :video_sha256, :annotations_sha256, :metrics_json, :created_at)""",
+                values,
+            )
+
+    def list_dataset_evaluations(self):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM dataset_evaluations ORDER BY created_at DESC, id DESC"
+            ).fetchall()
+        result = []
+        for row in rows:
+            value = dict(row)
+            value["metrics"] = json.loads(value.pop("metrics_json"))
+            result.append(value)
+        return result
 
     def save_animal_link(self, link: dict):
         with self._connection() as connection:

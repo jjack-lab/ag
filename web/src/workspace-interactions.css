@@ -57,6 +57,22 @@
 .correction-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 9px; }
 .correction-row button:last-child { margin-left: auto; }
 @media (max-width: 650px) { .video-correction-editor form { grid-template-columns: 1fr; } }
+.dataset-evaluation-center { display: grid; gap: 14px; padding: 22px; border: 1px solid rgba(163,230,53,.22); border-radius: 18px; background: rgba(163,230,53,.035); }
+.dataset-evaluation-center header { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.dataset-evaluation-center h3, .dataset-evaluation-center p { margin: 0; }
+.dataset-evaluation-center p, .dataset-evaluation-center small { color: var(--muted, #9ca3af); }
+.dataset-evaluation-center form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.dataset-evaluation-center form label { display: grid; gap: 6px; }
+.dataset-evaluation-center form input, .dataset-evaluation-center form select { min-width: 0; padding: 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: #162226; color: #fff; font: inherit; }
+.dataset-evaluation-center form button { grid-column: 1 / -1; padding: 10px; border: 0; border-radius: 8px; background: #a3e635; color: #17210a; font-weight: 700; cursor: pointer; }
+.dataset-evaluation-center form button:disabled { opacity: .5; cursor: default; }
+.dataset-evaluation-list { display: grid; gap: 12px; }
+.dataset-evaluation-list article { display: grid; gap: 9px; padding: 15px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; overflow-wrap: anywhere; }
+.dataset-evaluation-list article > div:first-child { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.dataset-evaluation-list a { color: #c6ef8b; }
+.evaluation-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
+.evaluation-metrics span { display: grid; gap: 3px; padding: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; }
+@media (max-width: 650px) { .dataset-evaluation-center form { grid-template-columns: 1fr; } .evaluation-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 .video-review-workspace h4, .video-review-workspace p { margin: 0; }
 .video-review-workspace p, .video-job-list span, .video-review-item span { color: var(--muted, #9ca3af); }
 .video-job-list { display: grid; gap: 8px; max-height: 210px; overflow: auto; }

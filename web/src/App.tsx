@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { AlertRecord, Dashboard, fetchAlerts, fetchDashboard } from "./api";
 import RecognitionStudio from "./RecognitionStudio";
+import DatasetEvaluationCenter from "./DatasetEvaluationCenter";
 import "./workspace-interactions.css";
 
 type WorkspaceView = "overview" | "monitor" | "alerts" | "cattle" | "analytics";
@@ -332,6 +333,7 @@ export default function App() {
                 <article><span>中风险告警</span><strong>{alertDistribution.medium}</strong></article>
                 <article><span>低风险告警</span><strong>{alertDistribution.low}</strong></article>
               </div>
+              <DatasetEvaluationCenter />
             </section>
           )}
         </div>

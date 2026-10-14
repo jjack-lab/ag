@@ -121,6 +121,31 @@ export type VideoCorrection = {
   created_at: string;
 };
 
+export type DatasetEvaluation = {
+  id: string;
+  job_id: string;
+  dataset_name: string;
+  source_url: string;
+  dataset_version: string;
+  license_name: string;
+  split_name: "development" | "validation" | "external_test";
+  video_sha256: string;
+  annotations_sha256: string;
+  metrics: {
+    labeled_frames: number;
+    ground_truth_boxes: number;
+    true_positive: number;
+    false_positive: number;
+    false_negative: number;
+    precision: number;
+    recall: number;
+    f1: number;
+    id_switches: number;
+    iou_threshold: number;
+  };
+  created_at: string;
+};
+
 export type NewVideoCorrection = Pick<VideoCorrection, "kind" | "time_seconds" | "track_id" | "corrected_track_id" | "behavior_label" | "box" | "note">;
 
 export type NewVideoReview = Pick<VideoReview, "issue_type" | "track_id" | "time_seconds" | "verdict" | "note">;
@@ -293,6 +318,25 @@ export function deleteVideoCorrection(jobId: string, correctionId: string): Prom
 
 export function videoCorrectionsCsvUrl(jobId: string): string {
   return `/api/jobs/${encodeURIComponent(jobId)}/corrections.csv`;
+}
+
+export function fetchDatasetEvaluations(): Promise<DatasetEvaluation[]> {
+  return request("/api/evaluations");
+}
+
+export function createDatasetEvaluation(values: {
+  jobId: string; datasetName: string; sourceUrl: string; datasetVersion: string;
+  licenseName: string; splitName: DatasetEvaluation["split_name"]; annotations: File;
+}): Promise<DatasetEvaluation> {
+  const body = new FormData();
+  body.append("job_id", values.jobId);
+  body.append("dataset_name", values.datasetName);
+  body.append("source_url", values.sourceUrl);
+  body.append("dataset_version", values.datasetVersion);
+  body.append("license_name", values.licenseName);
+  body.append("split_name", values.splitName);
+  body.append("annotations", values.annotations);
+  return request("/api/evaluations", { method: "POST", body });
 }
 
 export function createVideoReview(jobId: string, review: NewVideoReview): Promise<VideoReview> {
