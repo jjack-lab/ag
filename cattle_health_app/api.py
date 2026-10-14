@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+import csv
+import io
 import json
+import math
 import os
 from pathlib import Path
 from shutil import copyfileobj
@@ -10,8 +13,10 @@ from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+import cv2
 
 from cattle_health_app.domain import AlertLevel
 from cattle_health_app.jobs import VideoJobService
@@ -21,7 +26,7 @@ from cattle_health_app.model_registry import (
     resolve_detector_model,
 )
 from cattle_health_app.repository import SQLiteRepository
-from cattle_health_app.video_events import create_event_clip, video_events
+from cattle_health_app.video_events import create_event_clip, result_file, video_events
 
 
 MAX_UPLOAD_BYTES = int(os.environ.get("AGRINEBULA_MAX_UPLOAD_MB", "512")) * 1024 * 1024
@@ -142,6 +147,26 @@ class VideoReviewRequest(BaseModel):
     track_id: Optional[int] = Field(default=None, ge=0)
     time_seconds: Optional[float] = Field(default=None, ge=0)
     verdict: Literal["confirmed", "rejected", "uncertain"]
+    note: str = Field(min_length=1, max_length=1000)
+
+
+class CorrectionBox(BaseModel):
+    x: float = Field(ge=0, lt=1)
+    y: float = Field(ge=0, lt=1)
+    width: float = Field(gt=0, le=1)
+    height: float = Field(gt=0, le=1)
+
+
+class VideoCorrectionRequest(BaseModel):
+    kind: Literal["missed_detection", "id_correction", "behavior_correction"]
+    time_seconds: float = Field(ge=0)
+    track_id: Optional[int] = Field(default=None, ge=0)
+    corrected_track_id: Optional[int] = Field(default=None, ge=0)
+    behavior_label: Optional[Literal[
+        "grazing", "drinking", "ruminating-standing", "ruminating-lying",
+        "resting-standing", "resting-lying", "walking", "standing", "lying",
+    ]] = None
+    box: Optional[CorrectionBox] = None
     note: str = Field(min_length=1, max_length=1000)
 
 
@@ -376,7 +401,8 @@ def create_app(
         if job.status != "completed" or job.result is None:
             raise HTTPException(status_code=409, detail="视频任务尚未完成")
         try:
-            return video_events(job.result, repository.list_video_reviews(job_id), result_dir, job_id)
+            return video_events(job.result, repository.list_video_reviews(job_id), result_dir,
+                                job_id, repository.list_video_corrections(job_id))
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
 
@@ -393,6 +419,99 @@ def create_app(
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         return FileResponse(clip, media_type="video/mp4", filename=f"{job_id}-event-{event_id}.mp4")
+
+    def completed_video_job(job_id):
+        try:
+            job = repository.get_video_job(job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        if job.status != "completed" or job.result is None:
+            raise HTTPException(status_code=409, detail="只能纠正已完成的视频")
+        return job
+
+    @app.get("/api/jobs/{job_id}/corrections")
+    def list_video_corrections(job_id: str):
+        completed_video_job(job_id)
+        return repository.list_video_corrections(job_id)
+
+    @app.post("/api/jobs/{job_id}/corrections", status_code=201)
+    def create_video_correction(job_id: str, request: VideoCorrectionRequest):
+        job = completed_video_job(job_id)
+        if not math.isfinite(request.time_seconds):
+            raise HTTPException(status_code=422, detail="时间点无效")
+        box = request.box.model_dump() if request.box else None
+        if box and (box["x"] + box["width"] > 1 or box["y"] + box["height"] > 1):
+            raise HTTPException(status_code=422, detail="标注框超出画面")
+        known_tracks = set(job.result.get("track_ids") or [])
+        if not known_tracks:
+            known_tracks = {row.get("track_id") for row in job.result.get("health_evidence", [])}
+        if request.kind == "missed_detection":
+            if box is None or request.track_id is not None or request.corrected_track_id is not None or request.behavior_label is not None:
+                raise HTTPException(status_code=422, detail="漏检标注需要画框且不能填 Track ID")
+        elif request.kind == "id_correction":
+            if (request.track_id not in known_tracks or request.corrected_track_id is None
+                    or request.corrected_track_id == request.track_id or box is not None
+                    or request.behavior_label is not None):
+                raise HTTPException(status_code=422, detail="ID 修正需要原 Track ID 和不同的新 ID")
+        else:
+            if (job.result.get("species") == "sheep" or request.track_id not in known_tracks
+                    or request.behavior_label is None or box is not None
+                    or request.corrected_track_id is not None):
+                raise HTTPException(status_code=422, detail="行为修正仅适用于已识别的牛只 Track ID")
+        try:
+            video_path = result_file(result_dir, job_id, job.result.get("video_path"))
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        if video_path is None or not video_path.is_file():
+            raise HTTPException(status_code=404, detail="结果视频不存在")
+        capture = cv2.VideoCapture(str(video_path))
+        try:
+            fps = capture.get(cv2.CAP_PROP_FPS)
+            frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
+        finally:
+            capture.release()
+        if not math.isfinite(fps) or fps <= 0 or not math.isfinite(frame_count) or frame_count <= 0:
+            raise HTTPException(status_code=422, detail="视频元数据无效")
+        frame_index = round(request.time_seconds * fps)
+        if frame_index >= frame_count:
+            raise HTTPException(status_code=422, detail="时间点超出视频")
+        correction = {
+            "id": uuid4().hex, "job_id": job_id,
+            "species": job.result.get("species", "cattle"),
+            "kind": request.kind, "frame_index": frame_index,
+            "time_seconds": round(frame_index / fps, 6),
+            "track_id": request.track_id, "corrected_track_id": request.corrected_track_id,
+            "behavior_label": request.behavior_label, "box": box,
+            "note": request.note.strip(),
+            "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        }
+        if not correction["note"]:
+            raise HTTPException(status_code=422, detail="纠错说明不能为空")
+        repository.save_video_correction(correction)
+        return correction
+
+    @app.delete("/api/jobs/{job_id}/corrections/{correction_id}", status_code=204)
+    def delete_video_correction(job_id: str, correction_id: str):
+        completed_video_job(job_id)
+        try:
+            repository.delete_video_correction(job_id, correction_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="纠错记录不存在") from error
+
+    @app.get("/api/jobs/{job_id}/corrections.csv")
+    def export_video_corrections(job_id: str):
+        completed_video_job(job_id)
+        stream = io.StringIO()
+        fields = ["id", "job_id", "species", "kind", "frame_index", "time_seconds",
+                  "track_id", "corrected_track_id", "behavior_label", "x", "y", "width",
+                  "height", "note", "created_at"]
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        for correction in repository.list_video_corrections(job_id):
+            box = correction.pop("box") or {}
+            writer.writerow({**correction, **box})
+        return StreamingResponse(iter(["\ufeff" + stream.getvalue()]), media_type="text/csv; charset=utf-8",
+                                 headers={"Content-Disposition": 'attachment; filename="corrections.csv"'})
 
     @app.post("/api/jobs/{job_id}/reviews", status_code=201)
     def create_video_review(job_id: str, request: VideoReviewRequest):

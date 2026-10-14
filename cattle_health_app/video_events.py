@@ -23,7 +23,7 @@ def result_file(result_root, job_id, relative_name):
     return path
 
 
-def video_events(result, reviews, result_root, job_id):
+def video_events(result, reviews, result_root, job_id, corrections=()):
     events = []
     for profile in result.get("health_evidence") or []:
         for observation in profile.get("observations") or []:
@@ -60,6 +60,10 @@ def video_events(result, reviews, result_root, job_id):
         events.append({"kind": "review", "time_seconds": float(second),
                        "track_id": review.get("track_id"),
                        "label": "人工复核", "detail": review.get("note") or ""})
+    for correction in corrections:
+        events.append({"kind": "correction", "time_seconds": float(correction["time_seconds"]),
+                       "track_id": correction.get("track_id"), "label": "画面纠错",
+                       "detail": correction.get("note") or ""})
     events.sort(key=lambda item: (item["time_seconds"], item["kind"], item["track_id"] or -1))
     return [{**item, "id": index} for index, item in enumerate(events)]
 

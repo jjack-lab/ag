@@ -99,12 +99,29 @@ export type VideoReview = {
 
 export type VideoEvent = {
   id: number;
-  kind: "alert" | "behavior" | "review";
+  kind: "alert" | "behavior" | "review" | "correction";
   time_seconds: number;
   track_id: number | null;
   label: string;
   detail: string;
 };
+
+export type VideoCorrection = {
+  id: string;
+  job_id: string;
+  species: "cattle" | "sheep";
+  kind: "missed_detection" | "id_correction" | "behavior_correction";
+  frame_index: number;
+  time_seconds: number;
+  track_id: number | null;
+  corrected_track_id: number | null;
+  behavior_label: string | null;
+  box: { x: number; y: number; width: number; height: number } | null;
+  note: string;
+  created_at: string;
+};
+
+export type NewVideoCorrection = Pick<VideoCorrection, "kind" | "time_seconds" | "track_id" | "corrected_track_id" | "behavior_label" | "box" | "note">;
 
 export type NewVideoReview = Pick<VideoReview, "issue_type" | "track_id" | "time_seconds" | "verdict" | "note">;
 
@@ -257,6 +274,25 @@ export function fetchVideoEvents(jobId: string): Promise<VideoEvent[]> {
 
 export function videoEventClipUrl(jobId: string, eventId: number): string {
   return `/api/jobs/${encodeURIComponent(jobId)}/events/${eventId}/clip`;
+}
+
+export function fetchVideoCorrections(jobId: string): Promise<VideoCorrection[]> {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}/corrections`);
+}
+
+export function createVideoCorrection(jobId: string, correction: NewVideoCorrection): Promise<VideoCorrection> {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}/corrections`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(correction),
+  });
+}
+
+export function deleteVideoCorrection(jobId: string, correctionId: string): Promise<void> {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}/corrections/${encodeURIComponent(correctionId)}`, { method: "DELETE" });
+}
+
+export function videoCorrectionsCsvUrl(jobId: string): string {
+  return `/api/jobs/${encodeURIComponent(jobId)}/corrections.csv`;
 }
 
 export function createVideoReview(jobId: string, review: NewVideoReview): Promise<VideoReview> {

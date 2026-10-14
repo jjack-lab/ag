@@ -68,6 +68,27 @@ class SQLiteRepository:
             )
             connection.execute(
                 """
+                CREATE TABLE IF NOT EXISTS video_corrections (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT NOT NULL REFERENCES video_jobs(id),
+                    species TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    frame_index INTEGER NOT NULL,
+                    time_seconds REAL NOT NULL,
+                    track_id INTEGER,
+                    corrected_track_id INTEGER,
+                    behavior_label TEXT,
+                    box_json TEXT,
+                    note TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS video_corrections_job_idx ON video_corrections(job_id, frame_index)"
+            )
+            connection.execute(
+                """
                 CREATE TABLE IF NOT EXISTS animal_links (
                     job_id TEXT NOT NULL REFERENCES video_jobs(id),
                     track_id INTEGER NOT NULL,
@@ -203,6 +224,42 @@ class SQLiteRepository:
                 (job_id,),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def save_video_correction(self, correction: dict):
+        values = {**correction, "box_json": json.dumps(correction["box"]) if correction["box"] else None}
+        values.pop("box")
+        with self._connection() as connection:
+            connection.execute(
+                """INSERT INTO video_corrections
+                (id, job_id, species, kind, frame_index, time_seconds, track_id,
+                 corrected_track_id, behavior_label, box_json, note, created_at)
+                VALUES (:id, :job_id, :species, :kind, :frame_index, :time_seconds, :track_id,
+                        :corrected_track_id, :behavior_label, :box_json, :note, :created_at)""",
+                values,
+            )
+
+    def list_video_corrections(self, job_id: str):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM video_corrections WHERE job_id = ? ORDER BY frame_index, created_at, id",
+                (job_id,),
+            ).fetchall()
+        result = []
+        for row in rows:
+            value = dict(row)
+            box_json = value.pop("box_json")
+            value["box"] = json.loads(box_json) if box_json else None
+            result.append(value)
+        return result
+
+    def delete_video_correction(self, job_id: str, correction_id: str):
+        with self._connection() as connection:
+            cursor = connection.execute(
+                "DELETE FROM video_corrections WHERE job_id = ? AND id = ?",
+                (job_id, correction_id),
+            )
+            if cursor.rowcount == 0:
+                raise KeyError(correction_id)
 
     def save_animal_link(self, link: dict):
         with self._connection() as connection:

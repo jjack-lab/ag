@@ -20,6 +20,7 @@ import CrossDomainResults from "./CrossDomainResults";
 import HealthEvidence from "./HealthEvidence";
 import VideoReviewWorkspace from "./VideoReviewWorkspace";
 import VideoEventTimeline from "./VideoEventTimeline";
+import VideoCorrectionEditor from "./VideoCorrectionEditor";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
@@ -340,6 +341,10 @@ export default function RecognitionStudio() {
           resultVideo.current.currentTime = seconds;
           resultVideo.current.scrollIntoView?.({ block: "center", behavior: "smooth" });
         }} />}
+        {tracking && videoJob && <VideoCorrectionEditor key={videoJob.id} jobId={videoJob.id}
+          videoPath={tracking.video_path} species={tracking.species || "cattle"}
+          trackIds={tracking.track_ids || []}
+          onCorrectionChanged={() => setReviewRevision((value) => value + 1)} />}
         {tracking && (
           <HealthEvidence
             species={tracking.species || "cattle"}

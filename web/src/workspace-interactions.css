@@ -38,6 +38,25 @@
 .video-event-timeline li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; }
 .video-event-timeline li button { border: 0; border-radius: 7px; padding: 7px 10px; background: #a3e635; color: #17210a; font-weight: 700; cursor: pointer; }
 .video-event-timeline li a { margin-left: auto; color: #c6ef8b; }
+.video-correction-editor { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(255,255,255,.14); border-radius: 18px; background: rgba(255,255,255,.035); }
+.video-correction-editor header, .correction-history { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.video-correction-editor p, .video-correction-editor small { color: var(--muted, #9ca3af); margin: 0; }
+.correction-video-shell { position: relative; width: min(100%, 720px); margin: 0 auto; background: #000; }
+.correction-video-shell video { display: block; width: 100%; height: auto; }
+.correction-draw-layer { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+.correction-draft-box, .correction-saved-box { position: absolute; border: 2px solid #a3e635; background: rgba(163,230,53,.12); pointer-events: none; }
+.correction-saved-box { border-color: #38bdf8; background: rgba(56,189,248,.12); }
+.video-correction-editor form { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.video-correction-editor form label { display: grid; gap: 5px; }
+.video-correction-editor form label:has(textarea), .video-correction-editor form > span, .video-correction-editor form > button:last-child { grid-column: 1 / -1; }
+.video-correction-editor input, .video-correction-editor select, .video-correction-editor textarea { min-width: 0; padding: 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: #162226; color: #fff; font: inherit; }
+.video-correction-editor textarea { min-height: 70px; resize: vertical; }
+.video-correction-editor button { border: 1px solid rgba(163,230,53,.35); border-radius: 8px; padding: 9px 12px; background: rgba(163,230,53,.1); color: #c6ef8b; cursor: pointer; }
+.video-correction-editor button:disabled { opacity: .5; cursor: default; }
+.correction-history a { color: #c6ef8b; }
+.correction-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 9px; }
+.correction-row button:last-child { margin-left: auto; }
+@media (max-width: 650px) { .video-correction-editor form { grid-template-columns: 1fr; } }
 .video-review-workspace h4, .video-review-workspace p { margin: 0; }
 .video-review-workspace p, .video-job-list span, .video-review-item span { color: var(--muted, #9ca3af); }
 .video-job-list { display: grid; gap: 8px; max-height: 210px; overflow: auto; }
