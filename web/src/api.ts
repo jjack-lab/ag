@@ -84,6 +84,20 @@ export type VideoJob = {
   error?: string | null;
 };
 
+export type VideoReview = {
+  id: string;
+  job_id: string;
+  species: "cattle" | "sheep";
+  issue_type: "missed_detection" | "id_switch" | "false_alert" | "health_concern" | "other";
+  track_id: number | null;
+  time_seconds: number | null;
+  verdict: "confirmed" | "rejected" | "uncertain";
+  note: string;
+  created_at: string;
+};
+
+export type NewVideoReview = Pick<VideoReview, "issue_type" | "track_id" | "time_seconds" | "verdict" | "note">;
+
 export type ImageRecognitionResult = {
   kind: "image";
   status: "completed";
@@ -186,6 +200,22 @@ export function createVideoJob(
 
 export function fetchVideoJob(id: string): Promise<VideoJob> {
   return request(`/api/jobs/${id}`);
+}
+
+export function fetchVideoJobs(): Promise<VideoJob[]> {
+  return request("/api/jobs/video");
+}
+
+export function fetchVideoReviews(jobId: string): Promise<VideoReview[]> {
+  return request(`/api/jobs/${jobId}/reviews`);
+}
+
+export function createVideoReview(jobId: string, review: NewVideoReview): Promise<VideoReview> {
+  return request(`/api/jobs/${jobId}/reviews`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(review),
+  });
 }
 
 export function fetchCrossDomainExperiment(): Promise<CrossDomainExperimentResult> {

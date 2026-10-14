@@ -70,6 +70,49 @@ class WebApiTests(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("resolved", response.json()["status"])
 
+    def test_lists_completed_video_jobs_and_persists_review(self):
+        from fastapi.testclient import TestClient
+
+        self.repository.save_video_job(VideoJobRecord(
+            id="job-1", source_path="cattle.mp4", status="completed", progress=1,
+            created_at="2026-10-14T10:00:00+08:00",
+            updated_at="2026-10-14T10:01:00+08:00",
+            result={"species": "cattle", "tracked_cattle": 2,
+                    "health_evidence": [{"track_id": 7}]},
+        ))
+        client = TestClient(create_app(self.repository))
+
+        jobs = client.get("/api/jobs/video").json()
+        self.assertEqual(["job-1"], [job["id"] for job in jobs])
+        response = client.post("/api/jobs/job-1/reviews", json={
+            "issue_type": "false_alert", "track_id": 7,
+            "time_seconds": 12.5, "note": "现场复核未见异常",
+            "verdict": "confirmed",
+        })
+        self.assertEqual(201, response.status_code)
+        review = response.json()
+        self.assertEqual("job-1", review["job_id"])
+        self.assertEqual("cattle", review["species"])
+        self.assertEqual(7, review["track_id"])
+        self.assertEqual([review], client.get("/api/jobs/job-1/reviews").json())
+        self.assertEqual(404, client.get("/api/jobs/missing/reviews").status_code)
+
+    def test_review_requires_completed_job_and_valid_track(self):
+        from fastapi.testclient import TestClient
+
+        self.repository.save_video_job(VideoJobRecord(
+            id="queued", source_path="sheep.mp4", status="queued", progress=0,
+            created_at="2026-10-14T10:00:00+08:00",
+            updated_at="2026-10-14T10:00:00+08:00",
+        ))
+        client = TestClient(create_app(self.repository))
+        payload = {"issue_type": "id_switch", "track_id": 3,
+                   "note": "两只羊在画面中互换 ID", "verdict": "confirmed"}
+        self.assertEqual(409, client.post("/api/jobs/queued/reviews", json=payload).status_code)
+        self.assertEqual(422, client.post("/api/jobs/queued/reviews", json={
+            **payload, "issue_type": "disease_prediction"
+        }).status_code)
+
     def test_recognizes_uploaded_image_and_serves_result(self):
         from fastapi.testclient import TestClient
 

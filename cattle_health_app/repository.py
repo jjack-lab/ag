@@ -48,6 +48,24 @@ class SQLiteRepository:
                 )
                 """
             )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS video_reviews (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT NOT NULL REFERENCES video_jobs(id),
+                    species TEXT NOT NULL,
+                    issue_type TEXT NOT NULL,
+                    track_id INTEGER,
+                    time_seconds REAL,
+                    verdict TEXT NOT NULL,
+                    note TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS video_reviews_job_idx ON video_reviews(job_id, created_at)"
+            )
 
     def save_alert(self, alert: AlertRecord):
         values = alert.to_dict()
@@ -124,6 +142,34 @@ class SQLiteRepository:
         if row is None:
             raise KeyError(job_id)
         return self._to_video_job(row)
+
+    def list_video_jobs(self, limit: int = 20):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM video_jobs ORDER BY created_at DESC, id DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [self._to_video_job(row) for row in rows]
+
+    def save_video_review(self, review: dict):
+        with self._connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO video_reviews
+                (id, job_id, species, issue_type, track_id, time_seconds, verdict, note, created_at)
+                VALUES (:id, :job_id, :species, :issue_type, :track_id, :time_seconds,
+                        :verdict, :note, :created_at)
+                """,
+                review,
+            )
+
+    def list_video_reviews(self, job_id: str):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM video_reviews WHERE job_id = ? ORDER BY created_at, id",
+                (job_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def latest_completed_video_job(self) -> VideoJobRecord:
         with self._connection() as connection:

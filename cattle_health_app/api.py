@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Optional
+from typing import Literal, Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -134,6 +134,14 @@ def _validated_cross_domain_summary(payload):
 
 class ResolveAlertRequest(BaseModel):
     note: str = Field(min_length=1, max_length=500)
+
+
+class VideoReviewRequest(BaseModel):
+    issue_type: Literal["missed_detection", "id_switch", "false_alert", "health_concern", "other"]
+    track_id: Optional[int] = Field(default=None, ge=0)
+    time_seconds: Optional[float] = Field(default=None, ge=0)
+    verdict: Literal["confirmed", "rejected", "uncertain"]
+    note: str = Field(min_length=1, max_length=1000)
 
 
 def create_app(
@@ -330,6 +338,44 @@ def create_app(
         tracker: str = Form("bytetrack.yaml"),
     ):
         return enqueue_video(file, conf, iou, class_id, tracker)
+
+    @app.get("/api/jobs/video")
+    def list_video_jobs(limit: int = 20):
+        if not 1 <= limit <= 100:
+            raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
+        return [job.to_dict() for job in repository.list_video_jobs(limit)]
+
+    @app.get("/api/jobs/{job_id}/reviews")
+    def list_video_reviews(job_id: str):
+        try:
+            repository.get_video_job(job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        return repository.list_video_reviews(job_id)
+
+    @app.post("/api/jobs/{job_id}/reviews", status_code=201)
+    def create_video_review(job_id: str, request: VideoReviewRequest):
+        try:
+            job = repository.get_video_job(job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        if job.status != "completed" or job.result is None:
+            raise HTTPException(status_code=409, detail="只能复核已完成的视频")
+        review = {
+            "id": uuid4().hex,
+            "job_id": job_id,
+            "species": job.result.get("species", "cattle"),
+            "issue_type": request.issue_type,
+            "track_id": request.track_id,
+            "time_seconds": request.time_seconds,
+            "verdict": request.verdict,
+            "note": request.note.strip(),
+            "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        }
+        if not review["note"]:
+            raise HTTPException(status_code=422, detail="复核说明不能为空")
+        repository.save_video_review(review)
+        return review
 
     @app.get("/api/jobs/{job_id}")
     def get_video_job(job_id: str):

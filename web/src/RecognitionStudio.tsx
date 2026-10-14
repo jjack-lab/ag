@@ -18,6 +18,7 @@ import {
 } from "./api";
 import CrossDomainResults from "./CrossDomainResults";
 import HealthEvidence from "./HealthEvidence";
+import VideoReviewWorkspace from "./VideoReviewWorkspace";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
@@ -69,7 +70,7 @@ export default function RecognitionStudio() {
     if (!file) {
       setStatus("error");
       setMessage(
-        mode === "image" ? "请先选择一张牛只图片。" : "请先选择一段牛只视频。",
+        mode === "image" ? "请先选择一张牛只图片。" : "请先选择一段牛或羊视频。",
       );
       return;
     }
@@ -449,6 +450,15 @@ export default function RecognitionStudio() {
             {tracking.behavior_model_error && ` ${tracking.behavior_model_error}`}
           </p>
         )}
+        {!isImage && <VideoReviewWorkspace
+          selectedJob={videoJob}
+          onSelectJob={(job) => {
+            runToken.current += 1;
+            setResult({ kind: "video", data: job });
+            setStatus("idle");
+            setMessage("已打开历史视频结果和人工复核记录。");
+          }}
+        />}
       </div>
       <CrossDomainResults />
     </section>

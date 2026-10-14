@@ -30,3 +30,20 @@
 .health-evidence-node span { overflow-wrap: anywhere; }
 .health-evidence-limit { margin: 0; font-size: .85rem; }
 @media (max-width: 900px) { .health-evidence-chain { grid-template-columns: 1fr; } .health-evidence-node + .health-evidence-node::before { display: none; } }
+.video-review-workspace { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(255,255,255,.04); }
+.video-review-workspace h4, .video-review-workspace p { margin: 0; }
+.video-review-workspace p, .video-job-list span, .video-review-item span { color: var(--muted, #9ca3af); }
+.video-job-list { display: grid; gap: 8px; max-height: 210px; overflow: auto; }
+.video-job-list button { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; background: rgba(255,255,255,.05); color: inherit; text-align: left; cursor: pointer; }
+.video-job-list button[aria-pressed="true"] { border-color: #a3e635; }
+.video-job-list button:disabled { opacity: .55; cursor: default; }
+.video-review-panel { display: grid; gap: 12px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.12); }
+.video-review-panel form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.video-review-panel label { display: grid; gap: 5px; }
+.video-review-panel label:has(textarea), .video-review-panel form button { grid-column: 1 / -1; }
+.video-review-panel input, .video-review-panel select, .video-review-panel textarea { min-width: 0; padding: 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: #162226; color: #fff; font: inherit; }
+.video-review-panel textarea { min-height: 74px; resize: vertical; }
+.video-review-panel form button { padding: 10px; border: 0; border-radius: 8px; background: #a3e635; color: #17210a; font-weight: 700; cursor: pointer; }
+.video-review-panel form button:disabled { opacity: .5; cursor: default; }
+.video-review-item { display: grid; gap: 5px; padding: 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; }
+@media (max-width: 650px) { .video-review-panel form { grid-template-columns: 1fr; } .video-job-list button { flex-direction: column; } }
