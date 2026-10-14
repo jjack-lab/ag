@@ -104,7 +104,7 @@ class LocalMediaProcessor:
                 class_id,
                 tracker,
                 progress_callback=progress_callback,
-                behavior_runtime=self._behavior_runtime_for_video(),
+                behavior_runtime=self._behavior_runtime_for_video() if class_id == 1 else None,
             )
 
     def detect_video(self, source_path, result_dir, conf, iou, class_id):

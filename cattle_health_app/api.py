@@ -190,7 +190,10 @@ def create_app(
         alerts = repository.list_alerts(status="open")
         try:
             latest_job = repository.latest_completed_video_job()
-            monitored_cattle = int(latest_job.result.get("tracked_cattle", 0))
+            monitored_cattle = (
+                int(latest_job.result.get("tracked_cattle", 0))
+                if latest_job.result.get("species", "cattle") == "cattle" else 0
+            )
         except KeyError:
             monitored_cattle = 0
         high_risk_cattle = {
@@ -301,6 +304,8 @@ def create_app(
         }
 
     def enqueue_video(file, conf, iou, class_id, tracker):
+        if class_id not in {0, 1}:
+            raise HTTPException(status_code=422, detail="Video tracking supports cattle or sheep only")
         if tracker not in {"bytetrack.yaml", "botsort.yaml"}:
             raise HTTPException(status_code=422, detail="Unsupported tracker")
         suffix = _validated_suffix(

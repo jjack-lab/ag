@@ -56,6 +56,7 @@ class Monitor:
     def export_alerts_csv(self, path): Path(path).write_text("", encoding="utf-8")
     def export_health_summary_csv(self, path): Path(path).write_text("", encoding="utf-8")
     def export_alerts_html(self, path): Path(path).write_text("", encoding="utf-8")
+    def summarize_health(self): return []
 
 
 def install_video_fakes(monkeypatch, writer=Writer):
@@ -119,6 +120,35 @@ def test_no_runtime_and_failed_runtime_are_explicit_without_fabricated_predictio
     assert failed.behavior_model_status == "failed"
     assert failed.behavior_summary[0]["display_name"] == "无法确定"
     assert "bad checkpoint" in failed.behavior_report_json.read_text(encoding="utf-8")
+
+
+def test_sheep_video_tracks_without_cattle_health_or_behavior_claims(tmp_path, monkeypatch):
+    from health_monitor import CattleHealthMonitor
+
+    install_video_fakes(monkeypatch)
+    monkeypatch.setattr(pipeline, "CattleHealthMonitor", CattleHealthMonitor)
+
+    class SheepResult(Result):
+        boxes = SimpleNamespace(
+            id=Values([7]), xywh=Values([[2.0, 2.0, 3.0, 3.0]]),
+            cls=Values([0]), conf=Values([0.9]),
+        )
+
+    class SheepModel:
+        def track(self, frame, **kwargs):
+            return [SheepResult(frame)]
+
+    result = pipeline.process_tracked_video(
+        SheepModel(), tmp_path / "sheep.mp4", tmp_path / "out", .2, .5,
+        class_id=0, behavior_runtime=Runtime(),
+    )
+    assert result.to_dict(tmp_path)["species"] == "sheep"
+    assert result.tracked_cattle == 1
+    assert result.alert_count == 0
+    assert result.health_evidence == []
+    assert result.behavior_model_status == "unavailable"
+    assert result.trajectory_anomaly_status == "unavailable"
+    assert "羊只健康评估尚未验证" in result.health_report_html.read_text(encoding="utf-8")
 
 
 def test_writer_open_failure_removes_partial_video(tmp_path, monkeypatch):

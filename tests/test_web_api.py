@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import copyfile
 
 from cattle_health_app.api import create_app
-from cattle_health_app.domain import AlertLevel, AlertRecord
+from cattle_health_app.domain import AlertLevel, AlertRecord, VideoJobRecord
 from cattle_health_app.model_registry import ModelArtifact
 from cattle_health_app.repository import SQLiteRepository
 
@@ -46,6 +46,18 @@ class WebApiTests(unittest.TestCase):
         dashboard = client.get("/api/dashboard").json()
         self.assertEqual(1, dashboard["high_risk_cattle"])
         self.assertEqual(1, dashboard["open_alerts"])
+
+    def test_sheep_video_does_not_inflate_cattle_dashboard_count(self):
+        from fastapi.testclient import TestClient
+
+        self.repository.save_video_job(VideoJobRecord(
+            id="sheep-job", source_path="sheep.mp4", status="completed", progress=1.0,
+            created_at="2026-10-14T10:00:00+08:00",
+            updated_at="2026-10-14T10:01:00+08:00",
+            result={"tracked_cattle": 4, "species": "sheep"},
+        ))
+        dashboard = TestClient(create_app(self.repository)).get("/api/dashboard").json()
+        self.assertEqual(0, dashboard["monitored_cattle"])
 
     def test_resolves_alert_with_operator_note(self):
         from fastapi.testclient import TestClient

@@ -87,7 +87,9 @@ describe("AgriNebula application", () => {
     });
     await user.click(screen.getByRole("button", { name: "开始图片识别" }));
 
-    expect(await screen.findByText("识别到 9 头牛")).toBeInTheDocument();
+    expect(await screen.findByText("识别到 9 个目标")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "识别类别" }), { target: { value: "0" } });
+    expect(screen.getByText("识别到 9 个目标")).toBeInTheDocument();
     expect(screen.getByAltText("牛只图片识别结果")).toHaveAttribute(
       "src",
       "/media/results/cattle_detected.jpg",

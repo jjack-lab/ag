@@ -17,10 +17,11 @@ import {
   VideoJob,
 } from "./api";
 import CrossDomainResults from "./CrossDomainResults";
+import HealthEvidence from "./HealthEvidence";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
-  | { kind: "image"; data: ImageRecognitionResult }
+  | { kind: "image"; data: ImageRecognitionResult; classId: number }
   | { kind: "video"; data: VideoJob };
 
 const DEFAULT_MESSAGE = "选择文件后，系统会自动使用牧业专用模型识别。";
@@ -88,7 +89,7 @@ export default function RecognitionStudio() {
           tracker,
         });
         if (runToken.current !== token) return;
-        setResult({ kind: "image", data: imageResult });
+        setResult({ kind: "image", data: imageResult, classId });
         setStatus("idle");
         setMessage("识别完成，结果已经显示在右侧。");
         return;
@@ -164,7 +165,9 @@ export default function RecognitionStudio() {
           <label className="upload-zone">
             <input
               key={mode}
-              aria-label={isImage ? "选择牛只图片" : "选择牛只视频"}
+              aria-label={isImage
+                ? classId === 0 ? "选择羊只图片" : "选择牛只图片"
+                : classId === 0 ? "选择羊只视频" : "选择牛只视频"}
               type="file"
               accept={isImage ? "image/*" : "video/*"}
               onChange={(event) => {
@@ -182,8 +185,8 @@ export default function RecognitionStudio() {
               {file
                 ? file.name
                 : isImage
-                  ? "选择或拖入牛只图片"
-                  : "选择或拖入牛只视频"}
+                  ? classId === 0 ? "选择或拖入羊只图片" : "选择或拖入牛只图片"
+                  : classId === 0 ? "选择或拖入羊只视频" : "选择或拖入牛只视频"}
             </strong>
             <small>
               {isImage ? "支持 JPG、PNG、BMP" : "支持 MP4、AVI、MOV、MKV"}
@@ -222,8 +225,9 @@ export default function RecognitionStudio() {
                 value={classId}
                 onChange={(event) => setClassId(Number(event.target.value))}
               >
-                <option value={-1}>全部牲畜</option>
+                <option value={-1}>{isImage ? "全部牲畜" : "默认牛"}</option>
                 <option value={1}>牛</option>
+                <option value={0}>羊</option>
               </select>
             </label>
             {!isImage && (
@@ -269,8 +273,8 @@ export default function RecognitionStudio() {
       <div className="recognition-result">
         <div className="result-header">
           <span>识别结果</span>
-          {imageResult && <strong>识别到 {imageResult.detection_count} 头牛</strong>}
-          {tracking && <strong>已追踪 {tracking.tracked_cattle} 头牛</strong>}
+          {imageResult && <strong>识别到 {imageResult.detection_count} {result?.kind === "image" && result.classId === 1 ? "头牛" : result?.kind === "image" && result.classId === 0 ? "只羊" : "个目标"}</strong>}
+          {tracking && <strong>已追踪 {tracking.tracked_cattle} {tracking.species === "sheep" ? "只羊" : "头牛"}</strong>}
         </div>
         <div className="result-stage">
           {!result && (
@@ -287,7 +291,7 @@ export default function RecognitionStudio() {
             <video
               src={resultMediaUrl(tracking.video_path)}
               controls
-              aria-label="牛只视频追踪结果"
+              aria-label={tracking.species === "sheep" ? "羊只视频追踪结果" : "牛只视频追踪结果"}
             />
           )}
         </div>
@@ -299,25 +303,25 @@ export default function RecognitionStudio() {
                 ? ` · ${tracking.trajectory_anomaly_count} 条轨迹异常`
                 : ""}
             </span>
-            <a
+            {tracking.species !== "sheep" && <a
               href={resultMediaUrl(tracking.health_report_html)}
               target="_blank"
               rel="noreferrer"
             >
               <FileText size={14} /> 健康报告
-            </a>
+            </a>}
             <a href={resultMediaUrl(tracking.video_path)} download>
               下载结果视频
             </a>
             <a href={resultMediaUrl(tracking.trajectory_csv)} download>
               轨迹 CSV
             </a>
-            <a href={resultMediaUrl(tracking.alert_csv)} download>
+            {tracking.species !== "sheep" && <a href={resultMediaUrl(tracking.alert_csv)} download>
               告警 CSV
-            </a>
-            <a href={resultMediaUrl(tracking.health_summary_csv)} download>
+            </a>}
+            {tracking.species !== "sheep" && <a href={resultMediaUrl(tracking.health_summary_csv)} download>
               健康汇总 CSV
-            </a>
+            </a>}
             {tracking.trajectory_anomaly_csv && (
               <a href={resultMediaUrl(tracking.trajectory_anomaly_csv)} download>
                 轨迹异常 CSV
@@ -325,6 +329,12 @@ export default function RecognitionStudio() {
             )}
             <small>若浏览器无法直接播放结果视频，请使用“下载结果视频”。</small>
           </div>
+        )}
+        {tracking && (
+          <HealthEvidence
+            species={tracking.species || "cattle"}
+            profiles={tracking.health_evidence || []}
+          />
         )}
         {tracking?.trajectory_anomaly_status === "ok" && (
           <section
@@ -428,7 +438,9 @@ export default function RecognitionStudio() {
         )}
         {tracking && tracking.behavior_model_status === "unavailable" && (
           <p className="behavior-unavailable">
-            行为模型未加载，检测、追踪和规则健康分析仍可用。
+            {tracking.species === "sheep"
+              ? "羊的行为与健康模型尚未验证，本次仅提供检测和追踪。"
+              : "行为模型未加载，检测、追踪和规则健康分析仍可用。"}
           </p>
         )}
         {tracking && tracking.behavior_model_status === "failed" && (

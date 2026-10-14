@@ -26,6 +26,7 @@ from cattle_health_app.behavior.overlay import (
     get_cjk_font as _get_cjk_font,
 )
 from health_monitor import CattleHealthMonitor, DetectionObservation, HealthConfig
+from cattle_health_app.health_evidence import build_health_evidence
 from inference_profile import build_track_kwargs
 
 LOGGER = logging.getLogger(__name__)
@@ -43,6 +44,8 @@ class TrackingVideoResult:
     frame_count: int
     tracked_cattle: int
     alert_count: int
+    species: str = "cattle"
+    health_evidence: list = field(default_factory=list)
     behavior_csv: Optional[Path] = None
     behavior_summary_csv: Optional[Path] = None
     behavior_report_json: Optional[Path] = None
@@ -105,6 +108,8 @@ class TrackingVideoResult:
             "frame_count": self.frame_count,
             "tracked_cattle": self.tracked_cattle,
             "alert_count": self.alert_count,
+            "species": self.species,
+            "health_evidence": self.health_evidence,
             "behavior_csv": display(self.behavior_csv),
             "behavior_summary_csv": display(self.behavior_summary_csv),
             "behavior_report_json": display(self.behavior_report_json),
@@ -282,7 +287,10 @@ def process_tracked_video(
         video_path.unlink(missing_ok=True)
         raise ValueError("Unable to create tracked video: {}".format(video_path))
 
-    monitor = CattleHealthMonitor(HealthConfig(fps=fps, cattle_class_ids={class_id}))
+    # Existing health thresholds and behavior labels were validated for cattle only.
+    monitor = CattleHealthMonitor(HealthConfig(fps=fps, cattle_class_ids={1} if class_id == 1 else set()))
+    if class_id != 1:
+        behavior_runtime = None
     rows = []
     behavior_rows = []
     track_ids_seen = set()
@@ -425,7 +433,16 @@ def process_tracked_video(
     health_report_html = root / "{}_health_report.html".format(source.stem)
     monitor.export_alerts_csv(str(alert_csv))
     monitor.export_health_summary_csv(str(health_summary_csv))
-    monitor.export_alerts_html(str(health_report_html))
+    if class_id == 1:
+        monitor.export_alerts_html(str(health_report_html))
+    else:
+        health_report_html.write_text(
+            '<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
+            '<title>羊只健康评估未开放</title><body><h1>羊只健康评估尚未验证</h1>'
+            '<p>本次仅提供羊只检测与视频内追踪，不提供健康评分或疾病预测。</p>'
+            '</body></html>',
+            encoding="utf-8",
+        )
 
     behavior_csv = None
     behavior_summary_csv = None
@@ -482,7 +499,7 @@ def process_tracked_video(
     anomaly_status = "unavailable"
     anomaly_reason = None
     anomaly_payload = []
-    if rows:
+    if rows and class_id == 1:
         report = detect_trajectory_anomalies(rows, fps=fps)
         anomaly_status = report.status
         anomaly_reason = report.reason
@@ -516,6 +533,8 @@ def process_tracked_video(
         frame_count=frame_index,
         tracked_cattle=len(track_ids_seen),
         alert_count=len(monitor.alerts),
+        species="sheep" if class_id == 0 else "cattle",
+        health_evidence=build_health_evidence(monitor.summarize_health(), monitor.alerts) if class_id == 1 else [],
         behavior_csv=behavior_csv,
         behavior_summary_csv=behavior_summary_csv,
         behavior_report_json=behavior_report_json,

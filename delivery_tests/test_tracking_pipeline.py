@@ -29,6 +29,19 @@ def test_tracking_result_serializes_relative_artifacts(tmp_path):
     assert payload["behavior_summary"] == [{"track_id": 7, "display_name": "采食", "duration_seconds": 12.5, "percentage": 62.5}]
 
 
+def test_tracking_result_exposes_health_evidence_and_species(tmp_path):
+    result = TrackingVideoResult(
+        video_path=tmp_path / "video.mp4", trajectory_csv=tmp_path / "tracks.csv",
+        alert_csv=tmp_path / "alerts.csv", health_summary_csv=tmp_path / "health.csv",
+        health_report_html=tmp_path / "health.html", frame_count=10,
+        tracked_cattle=1, alert_count=1, species="cattle",
+        health_evidence=[{"track_id": 7, "risk_score": 20, "observations": []}],
+    )
+    payload = result.to_dict(media_root=tmp_path)
+    assert payload["species"] == "cattle"
+    assert payload["health_evidence"][0]["track_id"] == 7
+
+
 def test_crop_xywh_adds_context_clamps_to_frame_and_rejects_empty_boxes():
     frame = np.arange(10 * 20 * 3, dtype=np.uint8).reshape(10, 20, 3)
     crop = _crop_xywh(frame, (1.0, 1.0, 4.0, 4.0), context=0.15)

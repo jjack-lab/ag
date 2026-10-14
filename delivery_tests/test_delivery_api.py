@@ -58,6 +58,21 @@ def test_create_video_job_returns_202(client):
     assert response.json()["status"] == "queued"
 
 
+def test_video_job_accepts_sheep_and_rejects_unsupported_species(client):
+    sheep = client.post(
+        "/api/jobs/video",
+        files={"file": ("sheep.mp4", b"video", "video/mp4")},
+        data={"class_id": "0"},
+    )
+    unsupported = client.post(
+        "/api/jobs/video",
+        files={"file": ("other.mp4", b"video", "video/mp4")},
+        data={"class_id": "5"},
+    )
+    assert sheep.status_code == 202
+    assert unsupported.status_code == 422
+
+
 def test_missing_job_returns_404(client):
     response = client.get("/api/jobs/missing")
 

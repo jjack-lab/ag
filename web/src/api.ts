@@ -35,6 +35,20 @@ export type TrajectoryAnomaly = {
   top_contributors?: string[];
 };
 
+export type HealthEvidenceProfile = {
+  track_id: number;
+  risk_score: number;
+  risk_level: string;
+  observations: {
+    type: string;
+    label: string;
+    time_seconds: number | null;
+    confidence: number | null;
+    detail: string;
+    suggestion: string;
+  }[];
+};
+
 export type TrackingResult = {
   video_path: string;
   trajectory_csv: string;
@@ -43,6 +57,8 @@ export type TrackingResult = {
   health_report_html: string;
   frame_count: number;
   tracked_cattle: number;
+  species?: "cattle" | "sheep";
+  health_evidence?: HealthEvidenceProfile[];
   alert_count: number;
   behavior_csv?: string | null;
   behavior_summary_csv?: string | null;
