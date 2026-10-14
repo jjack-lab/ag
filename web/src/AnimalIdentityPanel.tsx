@@ -10,6 +10,7 @@ import {
   fetchAnimalProfile,
   VideoJob,
 } from "./api";
+import AnimalTrend from "./AnimalTrend";
 
 export default function AnimalIdentityPanel({ job }: { job: VideoJob }) {
   const [links, setLinks] = useState<AnimalLink[]>([]);
@@ -123,6 +124,7 @@ export default function AnimalIdentityPanel({ job }: { job: VideoJob }) {
     </div>)}
     {profile && <div className="animal-profile">
       <strong>{profile.animal_id} · {profile.species === "sheep" ? "羊" : "牛"} · {profile.visits.length} 次视频记录</strong>
+      <AnimalTrend profile={profile} />
       {profile.visits.map((visit) => <article key={`${visit.job_id}:${visit.track_id}`}>
         <span>{new Date(visit.recorded_at).toLocaleString("zh-CN")} · 视频内 ID {visit.track_id}</span>
         {visit.health_evidence
