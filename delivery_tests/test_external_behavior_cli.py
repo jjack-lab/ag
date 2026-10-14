@@ -208,6 +208,8 @@ def test_experiment_dry_run_writes_hash_bound_protocol(tmp_path):
 
     result = experiment_main(
         [
+            "--project-root",
+            str(tmp_path),
             "--manifest",
             str(strict_manifest),
             "--manifest",
@@ -279,6 +281,8 @@ def test_experiment_protocol_preserves_preexisting_manual_audit_directory(tmp_pa
     assert (
         experiment_main(
             [
+                "--project-root",
+                str(tmp_path),
                 "--manifest",
                 str(manifest),
                 "--output",
