@@ -58,6 +58,7 @@ export type TrackingResult = {
   frame_count: number;
   tracked_cattle: number;
   species?: "cattle" | "sheep";
+  track_ids?: number[];
   health_evidence?: HealthEvidenceProfile[];
   alert_count: number;
   behavior_csv?: string | null;
@@ -97,6 +98,37 @@ export type VideoReview = {
 };
 
 export type NewVideoReview = Pick<VideoReview, "issue_type" | "track_id" | "time_seconds" | "verdict" | "note">;
+
+export type AnimalLink = {
+  job_id: string;
+  track_id: number;
+  animal_id: string;
+  species: "cattle" | "sheep";
+  linked_at: string;
+};
+
+export type AnimalProfile = {
+  animal_id: string;
+  species: "cattle" | "sheep";
+  visits: (AnimalLink & {
+    recorded_at: string;
+    health_evidence: HealthEvidenceProfile | null;
+    reviews: VideoReview[];
+  })[];
+  followups: AnimalFollowup[];
+};
+
+export type AnimalFollowup = {
+  id: string;
+  animal_id: string;
+  kind: "field_observation" | "veterinary_diagnosis";
+  observed_at: string;
+  note: string;
+  diagnosis: string | null;
+  source_reference: string | null;
+  verification_status: "user_recorded";
+  created_at: string;
+};
 
 export type ImageRecognitionResult = {
   kind: "image";
@@ -215,6 +247,37 @@ export function createVideoReview(jobId: string, review: NewVideoReview): Promis
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(review),
+  });
+}
+
+export function fetchAnimalLinks(jobId: string): Promise<AnimalLink[]> {
+  return request(`/api/jobs/${jobId}/animal-links`);
+}
+
+export function createAnimalLink(jobId: string, trackId: number, animalId: string): Promise<AnimalLink> {
+  return request(`/api/jobs/${jobId}/animal-links`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ track_id: trackId, animal_id: animalId }),
+  });
+}
+
+export function deleteAnimalLink(jobId: string, trackId: number): Promise<void> {
+  return request(`/api/jobs/${jobId}/animal-links/${trackId}`, { method: "DELETE" });
+}
+
+export function fetchAnimalProfile(animalId: string): Promise<AnimalProfile> {
+  return request(`/api/animals/${encodeURIComponent(animalId)}`);
+}
+
+export function createAnimalFollowup(
+  animalId: string,
+  values: Pick<AnimalFollowup, "kind" | "observed_at" | "note" | "diagnosis" | "source_reference">,
+): Promise<AnimalFollowup> {
+  return request(`/api/animals/${encodeURIComponent(animalId)}/followups`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(values),
   });
 }
 

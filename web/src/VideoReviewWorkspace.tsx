@@ -8,6 +8,7 @@ import {
   VideoJob,
   VideoReview,
 } from "./api";
+import AnimalIdentityPanel from "./AnimalIdentityPanel";
 
 const ISSUE_LABELS: Record<VideoReview["issue_type"], string> = {
   missed_detection: "漏检",
@@ -137,6 +138,7 @@ export default function VideoReviewWorkspace({ selectedJob, onSelectJob }: Props
           <p>{review.note}</p>
         </article>)}
       </div>}
+      {selectedJob?.status === "completed" && <AnimalIdentityPanel job={selectedJob} />}
     </section>
   );
 }

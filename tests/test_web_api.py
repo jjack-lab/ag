@@ -113,6 +113,67 @@ class WebApiTests(unittest.TestCase):
             **payload, "issue_type": "disease_prediction"
         }).status_code)
 
+    def test_links_tracks_from_two_days_to_one_manual_animal_profile(self):
+        from fastapi.testclient import TestClient
+
+        for day, track in [("14", 7), ("15", 3)]:
+            self.repository.save_video_job(VideoJobRecord(
+                id=f"job-{day}", source_path=f"cattle-{day}.mp4",
+                status="completed", progress=1,
+                created_at=f"2026-10-{day}T10:00:00+08:00",
+                updated_at=f"2026-10-{day}T10:01:00+08:00",
+                result={"species": "cattle", "track_ids": [track, 8] if day == "14" else [track],
+                        "health_evidence": [{"track_id": track, "risk_score": 20}]},
+            ))
+        client = TestClient(create_app(self.repository))
+        for day, track in [("14", 7), ("15", 3)]:
+            response = client.post(f"/api/jobs/job-{day}/animal-links", json={
+                "track_id": track, "animal_id": "C-023",
+            })
+            self.assertEqual(201, response.status_code)
+        profile = client.get("/api/animals/C-023").json()
+        self.assertEqual("cattle", profile["species"])
+        self.assertEqual(2, len(profile["visits"]))
+        self.assertEqual({3, 7}, {row["track_id"] for row in profile["visits"]})
+        self.assertEqual(422, client.post("/api/jobs/job-14/animal-links", json={
+            "track_id": 999, "animal_id": "C-999",
+        }).status_code)
+        self.assertEqual(409, client.post("/api/jobs/job-14/animal-links", json={
+            "track_id": 7, "animal_id": "C-999",
+        }).status_code)
+        self.assertEqual(409, client.post("/api/jobs/job-14/animal-links", json={
+            "track_id": 8, "animal_id": "C-023",
+        }).status_code)
+
+        self.repository.save_video_job(VideoJobRecord(
+            id="sheep-job", source_path="sheep.mp4", status="completed", progress=1,
+            created_at="2026-10-16T10:00:00+08:00",
+            updated_at="2026-10-16T10:01:00+08:00",
+            result={"species": "sheep", "track_ids": [4]},
+        ))
+        self.assertEqual(409, client.post("/api/jobs/sheep-job/animal-links", json={
+            "track_id": 4, "animal_id": "C-023",
+        }).status_code)
+
+        invalid = client.post("/api/animals/C-023/followups", json={
+            "kind": "veterinary_diagnosis", "observed_at": "2026-10-16",
+            "note": "兽医检查", "diagnosis": "示例疾病",
+        })
+        self.assertEqual(422, invalid.status_code)
+        created = client.post("/api/animals/C-023/followups", json={
+            "kind": "veterinary_diagnosis", "observed_at": "2026-10-16",
+            "note": "兽医检查", "diagnosis": "示例疾病",
+            "source_reference": "诊疗记录-001",
+        })
+        self.assertEqual(201, created.status_code)
+        self.assertEqual("user_recorded", created.json()["verification_status"])
+        profile = client.get("/api/animals/C-023").json()
+        self.assertEqual([created.json()], profile["followups"])
+        self.assertEqual(204, client.delete("/api/jobs/job-14/animal-links/7").status_code)
+        self.assertEqual(404, client.delete("/api/jobs/job-14/animal-links/7").status_code)
+        self.assertEqual(1, len(client.get("/api/animals/C-023").json()["visits"]))
+        self.assertEqual(409, client.delete("/api/jobs/job-15/animal-links/3").status_code)
+
     def test_recognizes_uploaded_image_and_serves_result(self):
         from fastapi.testclient import TestClient
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 import json
 import os
 from pathlib import Path
@@ -142,6 +142,19 @@ class VideoReviewRequest(BaseModel):
     time_seconds: Optional[float] = Field(default=None, ge=0)
     verdict: Literal["confirmed", "rejected", "uncertain"]
     note: str = Field(min_length=1, max_length=1000)
+
+
+class AnimalLinkRequest(BaseModel):
+    track_id: int = Field(ge=0)
+    animal_id: str = Field(min_length=1, max_length=40)
+
+
+class AnimalFollowupRequest(BaseModel):
+    kind: Literal["field_observation", "veterinary_diagnosis"]
+    observed_at: date
+    note: str = Field(min_length=1, max_length=1000)
+    diagnosis: Optional[str] = Field(default=None, max_length=200)
+    source_reference: Optional[str] = Field(default=None, max_length=300)
 
 
 def create_app(
@@ -376,6 +389,108 @@ def create_app(
             raise HTTPException(status_code=422, detail="复核说明不能为空")
         repository.save_video_review(review)
         return review
+
+    @app.get("/api/jobs/{job_id}/animal-links")
+    def list_job_animal_links(job_id: str):
+        try:
+            repository.get_video_job(job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        return repository.list_job_animal_links(job_id)
+
+    @app.post("/api/jobs/{job_id}/animal-links", status_code=201)
+    def create_animal_link(job_id: str, request: AnimalLinkRequest):
+        try:
+            job = repository.get_video_job(job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        if job.status != "completed" or job.result is None:
+            raise HTTPException(status_code=409, detail="只能关联已完成的视频")
+        known_tracks = set(job.result.get("track_ids") or [])
+        if not known_tracks:
+            known_tracks = {
+                row.get("track_id") for row in job.result.get("health_evidence", [])
+            }
+        if request.track_id not in known_tracks:
+            raise HTTPException(status_code=422, detail="该视频结果中没有此 Track ID")
+        animal_id = request.animal_id.strip()
+        if not animal_id or any(char in animal_id for char in "/\\?#"):
+            raise HTTPException(status_code=422, detail="个体编号格式无效")
+        link = {
+            "job_id": job_id,
+            "track_id": request.track_id,
+            "animal_id": animal_id,
+            "species": job.result.get("species", "cattle"),
+            "linked_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        }
+        try:
+            repository.save_animal_link(link)
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        return link
+
+    @app.delete("/api/jobs/{job_id}/animal-links/{track_id}", status_code=204)
+    def delete_animal_link(job_id: str, track_id: int):
+        try:
+            repository.delete_animal_link(job_id, track_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="未找到个体关联") from error
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+
+    @app.get("/api/animals/{animal_id}")
+    def get_animal_profile(animal_id: str):
+        links = repository.list_animal_links(animal_id)
+        if not links:
+            raise HTTPException(status_code=404, detail="未找到个体档案")
+        visits = []
+        for link in links:
+            job = repository.get_video_job(link["job_id"])
+            profiles = job.result.get("health_evidence", []) if job.result else []
+            evidence = next(
+                (row for row in profiles if row.get("track_id") == link["track_id"]),
+                None,
+            )
+            reviews = [row for row in repository.list_video_reviews(job.id)
+                       if row["track_id"] == link["track_id"]]
+            visits.append({
+                **link,
+                "recorded_at": job.created_at,
+                "health_evidence": evidence,
+                "reviews": reviews,
+            })
+        return {
+            "animal_id": animal_id,
+            "species": links[0]["species"],
+            "visits": visits,
+            "followups": repository.list_animal_followups(animal_id),
+        }
+
+    @app.post("/api/animals/{animal_id}/followups", status_code=201)
+    def create_animal_followup(animal_id: str, request: AnimalFollowupRequest):
+        if not repository.list_animal_links(animal_id):
+            raise HTTPException(status_code=404, detail="未找到个体档案")
+        diagnosis = (request.diagnosis or "").strip() or None
+        source_reference = (request.source_reference or "").strip() or None
+        if request.kind == "veterinary_diagnosis" and not (diagnosis and source_reference):
+            raise HTTPException(status_code=422, detail="兽医结论需填写诊断和记录出处")
+        if request.kind == "field_observation" and diagnosis:
+            raise HTTPException(status_code=422, detail="现场观察不能填写疾病诊断")
+        followup = {
+            "id": uuid4().hex,
+            "animal_id": animal_id,
+            "kind": request.kind,
+            "observed_at": request.observed_at.isoformat(),
+            "note": request.note.strip(),
+            "diagnosis": diagnosis,
+            "source_reference": source_reference,
+            "verification_status": "user_recorded",
+            "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        }
+        if not followup["note"]:
+            raise HTTPException(status_code=422, detail="回访说明不能为空")
+        repository.save_animal_followup(followup)
+        return followup
 
     @app.get("/api/jobs/{job_id}")
     def get_video_job(job_id: str):

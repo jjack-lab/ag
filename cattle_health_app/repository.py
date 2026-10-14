@@ -66,6 +66,39 @@ class SQLiteRepository:
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS video_reviews_job_idx ON video_reviews(job_id, created_at)"
             )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS animal_links (
+                    job_id TEXT NOT NULL REFERENCES video_jobs(id),
+                    track_id INTEGER NOT NULL,
+                    animal_id TEXT NOT NULL,
+                    species TEXT NOT NULL,
+                    linked_at TEXT NOT NULL,
+                    PRIMARY KEY (job_id, track_id)
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS animal_links_animal_idx ON animal_links(animal_id)"
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS animal_followups (
+                    id TEXT PRIMARY KEY,
+                    animal_id TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    observed_at TEXT NOT NULL,
+                    note TEXT NOT NULL,
+                    diagnosis TEXT,
+                    source_reference TEXT,
+                    verification_status TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS animal_followups_animal_idx ON animal_followups(animal_id, observed_at)"
+            )
 
     def save_alert(self, alert: AlertRecord):
         values = alert.to_dict()
@@ -168,6 +201,99 @@ class SQLiteRepository:
             rows = connection.execute(
                 "SELECT * FROM video_reviews WHERE job_id = ? ORDER BY created_at, id",
                 (job_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def save_animal_link(self, link: dict):
+        with self._connection() as connection:
+            existing = connection.execute(
+                "SELECT animal_id FROM animal_links WHERE job_id = ? AND track_id = ?",
+                (link["job_id"], link["track_id"]),
+            ).fetchone()
+            if existing is not None:
+                if existing["animal_id"] != link["animal_id"]:
+                    raise ValueError("track_already_linked")
+                return
+            species = connection.execute(
+                "SELECT species FROM animal_links WHERE animal_id = ? LIMIT 1",
+                (link["animal_id"],),
+            ).fetchone()
+            if species is not None and species["species"] != link["species"]:
+                raise ValueError("species_mismatch")
+            same_job = connection.execute(
+                "SELECT track_id FROM animal_links WHERE job_id = ? AND animal_id = ?",
+                (link["job_id"], link["animal_id"]),
+            ).fetchone()
+            if same_job is not None:
+                raise ValueError("animal_already_linked_in_job")
+            connection.execute(
+                """
+                INSERT INTO animal_links (job_id, track_id, animal_id, species, linked_at)
+                VALUES (:job_id, :track_id, :animal_id, :species, :linked_at)
+                """,
+                link,
+            )
+
+    def list_animal_links(self, animal_id: str):
+        with self._connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT l.* FROM animal_links l JOIN video_jobs j ON j.id = l.job_id
+                WHERE l.animal_id = ? ORDER BY j.created_at, l.job_id
+                """,
+                (animal_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_job_animal_links(self, job_id: str):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM animal_links WHERE job_id = ? ORDER BY track_id",
+                (job_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def delete_animal_link(self, job_id: str, track_id: int):
+        with self._connection() as connection:
+            link = connection.execute(
+                "SELECT animal_id FROM animal_links WHERE job_id = ? AND track_id = ?",
+                (job_id, track_id),
+            ).fetchone()
+            if link is None:
+                raise KeyError((job_id, track_id))
+            other = connection.execute(
+                "SELECT 1 FROM animal_links WHERE animal_id = ? AND NOT (job_id = ? AND track_id = ?) LIMIT 1",
+                (link["animal_id"], job_id, track_id),
+            ).fetchone()
+            followup = connection.execute(
+                "SELECT 1 FROM animal_followups WHERE animal_id = ? LIMIT 1",
+                (link["animal_id"],),
+            ).fetchone()
+            if other is None and followup is not None:
+                raise ValueError("已有回访记录，需先保留至少一个个体关联")
+            connection.execute(
+                "DELETE FROM animal_links WHERE job_id = ? AND track_id = ?",
+                (job_id, track_id),
+            )
+
+    def save_animal_followup(self, followup: dict):
+        with self._connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO animal_followups
+                (id, animal_id, kind, observed_at, note, diagnosis,
+                 source_reference, verification_status, created_at)
+                VALUES (:id, :animal_id, :kind, :observed_at, :note, :diagnosis,
+                        :source_reference, :verification_status, :created_at)
+                """,
+                followup,
+            )
+
+    def list_animal_followups(self, animal_id: str):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM animal_followups WHERE animal_id = ? ORDER BY observed_at, created_at, id",
+                (animal_id,),
             ).fetchall()
         return [dict(row) for row in rows]
 

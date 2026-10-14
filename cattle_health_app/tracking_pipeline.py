@@ -45,6 +45,7 @@ class TrackingVideoResult:
     tracked_cattle: int
     alert_count: int
     species: str = "cattle"
+    track_ids: list = field(default_factory=list)
     health_evidence: list = field(default_factory=list)
     behavior_csv: Optional[Path] = None
     behavior_summary_csv: Optional[Path] = None
@@ -109,6 +110,7 @@ class TrackingVideoResult:
             "tracked_cattle": self.tracked_cattle,
             "alert_count": self.alert_count,
             "species": self.species,
+            "track_ids": self.track_ids,
             "health_evidence": self.health_evidence,
             "behavior_csv": display(self.behavior_csv),
             "behavior_summary_csv": display(self.behavior_summary_csv),
@@ -534,6 +536,7 @@ def process_tracked_video(
         tracked_cattle=len(track_ids_seen),
         alert_count=len(monitor.alerts),
         species="sheep" if class_id == 0 else "cattle",
+        track_ids=sorted(track_ids_seen),
         health_evidence=build_health_evidence(monitor.summarize_health(), monitor.alerts) if class_id == 1 else [],
         behavior_csv=behavior_csv,
         behavior_summary_csv=behavior_summary_csv,
