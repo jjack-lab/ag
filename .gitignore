@@ -18,6 +18,7 @@ data/media/uploads/*
 !data/media/uploads/.gitkeep
 data/media/results/*
 !data/media/results/.gitkeep
+data/media/evaluations/*
 
 outputs/*
 !outputs/acceptance/
