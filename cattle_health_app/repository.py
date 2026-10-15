@@ -224,7 +224,7 @@ class SQLiteRepository:
     def list_inventory_rechecks(self, check_id: str):
         with self._connection() as connection:
             rows = connection.execute(
-                "SELECT * FROM inventory_rechecks WHERE check_id = ? ORDER BY created_at, id",
+                "SELECT * FROM inventory_rechecks WHERE check_id = ? ORDER BY created_at, rowid",
                 (check_id,),
             ).fetchall()
         return [dict(row) for row in rows]

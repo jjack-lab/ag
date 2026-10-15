@@ -81,3 +81,12 @@ def test_inventory_storage_is_append_only_and_persists(tmp_path):
     assert reopened.get_inventory_check("check-1")["expected_count"] == 20
     assert reopened.list_inventory_checks()[0]["id"] == "check-1"
     assert reopened.list_inventory_rechecks("check-1")[0]["counted_count"] == 18
+
+
+def test_later_recheck_wins_when_submitted_in_same_second(tmp_path):
+    repo = SQLiteRepository(tmp_path / "app.db")
+    repo.initialize()
+    repo.save_inventory_check(check())
+    repo.save_inventory_recheck(recheck(id="z-first"))
+    repo.save_inventory_recheck(recheck(id="a-second", counted_count=20, outcome="resolved"))
+    assert repo.list_inventory_rechecks("check-1")[-1]["id"] == "a-second"

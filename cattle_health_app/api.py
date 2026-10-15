@@ -23,6 +23,7 @@ import cv2
 from cattle_health_app.domain import AlertLevel
 from cattle_health_app.dataset_evaluation import evaluate_annotations
 from cattle_health_app.jobs import VideoJobService
+from cattle_health_app.inventory import inventory_state, validate_recheck
 from cattle_health_app.media_processor import LocalMediaProcessor
 from cattle_health_app.model_registry import (
     resolve_behavior_model,
@@ -184,6 +185,28 @@ class AnimalFollowupRequest(BaseModel):
     note: str = Field(min_length=1, max_length=1000)
     diagnosis: Optional[str] = Field(default=None, max_length=200)
     source_reference: Optional[str] = Field(default=None, max_length=300)
+
+
+class InventoryCheckRequest(BaseModel):
+    job_id: str = Field(min_length=1)
+    pen_id: str = Field(min_length=1, max_length=80)
+    expected_count: int = Field(ge=0)
+    baseline_source: str = Field(min_length=1, max_length=300)
+    observed_count: Optional[int] = Field(default=None, ge=0)
+    coverage: Literal["complete", "partial", "unknown"]
+    coverage_note: str = Field(min_length=1, max_length=1000)
+    operator_name: str = Field(min_length=1, max_length=100)
+    observed_at: datetime
+
+
+class InventoryRecheckRequest(BaseModel):
+    counted_count: int = Field(ge=0)
+    outcome: Literal["resolved", "shortfall_pending", "surplus_pending", "loss_user_recorded"]
+    movement_records_checked: bool = False
+    field_search_complete: bool = False
+    lost_count: Optional[int] = Field(default=None, ge=1)
+    operator_name: str = Field(min_length=1, max_length=100)
+    note: str = Field(min_length=1, max_length=1000)
 
 
 def create_app(
@@ -719,6 +742,80 @@ def create_app(
             raise HTTPException(status_code=422, detail="回访说明不能为空")
         repository.save_animal_followup(followup)
         return followup
+
+    def inventory_response(check: dict):
+        rechecks = [
+            {**row,
+             "movement_records_checked": bool(row["movement_records_checked"]),
+             "field_search_complete": bool(row["field_search_complete"])}
+            for row in repository.list_inventory_rechecks(check["id"])
+        ]
+        latest = rechecks[-1] if rechecks else None
+        state = inventory_state(check, latest)
+        job = repository.get_video_job(check["job_id"])
+        return {
+            **check, **state, "rechecks": rechecks,
+            "lost_count": latest["lost_count"] if state["status"] == "loss_user_recorded" else None,
+            "video_track_count": job.result.get("tracked_cattle", 0) if job.result else None,
+            "verification_status": "user_recorded",
+        }
+
+    @app.get("/api/inventory-checks")
+    def list_inventory_checks(limit: int = 100):
+        if not 1 <= limit <= 100:
+            raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
+        return [inventory_response(row) for row in repository.list_inventory_checks(limit)]
+
+    @app.post("/api/inventory-checks", status_code=201)
+    def create_inventory_check(request: InventoryCheckRequest):
+        try:
+            job = repository.get_video_job(request.job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="视频任务不存在") from error
+        if job.status != "completed" or job.result is None:
+            raise HTTPException(status_code=409, detail="只能为已完成的视频建立盘点")
+        if request.observed_at.tzinfo is None or request.observed_at.utcoffset() is None:
+            raise HTTPException(status_code=422, detail="盘点时间必须包含时区")
+        values = request.model_dump()
+        for key in ("pen_id", "baseline_source", "coverage_note", "operator_name"):
+            values[key] = values[key].strip()
+            if not values[key]:
+                raise HTTPException(status_code=422, detail=f"{key} 不能为空")
+        values["id"] = uuid4().hex
+        values["species"] = job.result.get("species", "cattle")
+        values["observed_at"] = request.observed_at.isoformat(timespec="seconds")
+        values["created_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
+        repository.save_inventory_check(values)
+        return inventory_response(values)
+
+    @app.get("/api/inventory-checks/{check_id}")
+    def get_inventory_check(check_id: str):
+        try:
+            return inventory_response(repository.get_inventory_check(check_id))
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="盘点记录不存在") from error
+
+    @app.post("/api/inventory-checks/{check_id}/rechecks", status_code=201)
+    def create_inventory_recheck(check_id: str, request: InventoryRecheckRequest):
+        try:
+            check = repository.get_inventory_check(check_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="盘点记录不存在") from error
+        values = request.model_dump()
+        for key in ("operator_name", "note"):
+            values[key] = values[key].strip()
+            if not values[key]:
+                raise HTTPException(status_code=422, detail=f"{key} 不能为空")
+        try:
+            validate_recheck(check, values)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        values.update({
+            "id": uuid4().hex, "check_id": check_id,
+            "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        })
+        repository.save_inventory_recheck(values)
+        return inventory_response(check)
 
     @app.get("/api/jobs/{job_id}")
     def get_video_job(job_id: str):
