@@ -137,6 +137,97 @@ class SQLiteRepository:
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS animal_followups_animal_idx ON animal_followups(animal_id, observed_at)"
             )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS inventory_checks (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT NOT NULL REFERENCES video_jobs(id),
+                    species TEXT NOT NULL,
+                    pen_id TEXT NOT NULL,
+                    expected_count INTEGER NOT NULL,
+                    baseline_source TEXT NOT NULL,
+                    observed_count INTEGER,
+                    coverage TEXT NOT NULL,
+                    coverage_note TEXT NOT NULL,
+                    operator_name TEXT NOT NULL,
+                    observed_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS inventory_checks_pen_idx ON inventory_checks(pen_id, created_at)"
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS inventory_rechecks (
+                    id TEXT PRIMARY KEY,
+                    check_id TEXT NOT NULL REFERENCES inventory_checks(id),
+                    counted_count INTEGER NOT NULL,
+                    outcome TEXT NOT NULL,
+                    movement_records_checked INTEGER NOT NULL,
+                    field_search_complete INTEGER NOT NULL,
+                    lost_count INTEGER,
+                    operator_name TEXT NOT NULL,
+                    note TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS inventory_rechecks_check_idx ON inventory_rechecks(check_id, created_at)"
+            )
+
+    def save_inventory_check(self, check: dict):
+        with self._connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO inventory_checks
+                (id, job_id, species, pen_id, expected_count, baseline_source,
+                 observed_count, coverage, coverage_note, operator_name, observed_at, created_at)
+                VALUES (:id, :job_id, :species, :pen_id, :expected_count, :baseline_source,
+                        :observed_count, :coverage, :coverage_note, :operator_name, :observed_at, :created_at)
+                """,
+                check,
+            )
+
+    def get_inventory_check(self, check_id: str):
+        with self._connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM inventory_checks WHERE id = ?", (check_id,)
+            ).fetchone()
+        if row is None:
+            raise KeyError(check_id)
+        return dict(row)
+
+    def list_inventory_checks(self, limit: int = 100):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM inventory_checks ORDER BY created_at DESC, id DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def save_inventory_recheck(self, recheck: dict):
+        with self._connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO inventory_rechecks
+                (id, check_id, counted_count, outcome, movement_records_checked,
+                 field_search_complete, lost_count, operator_name, note, created_at)
+                VALUES (:id, :check_id, :counted_count, :outcome, :movement_records_checked,
+                        :field_search_complete, :lost_count, :operator_name, :note, :created_at)
+                """,
+                recheck,
+            )
+
+    def list_inventory_rechecks(self, check_id: str):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM inventory_rechecks WHERE check_id = ? ORDER BY created_at, id",
+                (check_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def save_alert(self, alert: AlertRecord):
         values = alert.to_dict()
