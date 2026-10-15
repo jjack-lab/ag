@@ -114,4 +114,18 @@
 .animal-link-actions > button:last-child { padding: 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: transparent; color: inherit; cursor: pointer; }
 .animal-profile article { display: grid; gap: 4px; padding: 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 9px; }
 .animal-profile small { color: var(--muted, #9ca3af); }
+.inventory-panel { display: grid; gap: 14px; padding: 20px; border: 1px solid rgba(163,230,53,.22); border-radius: 18px; background: rgba(163,230,53,.035); }
+.inventory-panel h3, .inventory-panel h4, .inventory-panel p { margin: 0; }
+.inventory-panel p, .inventory-panel small { color: var(--muted, #9ca3af); }
+.inventory-disclaimer { padding: 10px; border-left: 3px solid #a3e635; }
+.inventory-panel form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.inventory-panel form label { display: grid; gap: 5px; }
+.inventory-panel input, .inventory-panel select { min-width: 0; padding: 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: #162226; color: #fff; font: inherit; }
+.inventory-panel button { padding: 10px; border: 1px solid rgba(163,230,53,.4); border-radius: 8px; background: rgba(163,230,53,.12); color: #c6ef8b; cursor: pointer; }
+.inventory-panel button:disabled { opacity: .5; cursor: default; }
+.inventory-panel form button { grid-column: 1 / -1; }
+.inventory-list { display: grid; gap: 12px; }
+.inventory-list article { display: grid; gap: 8px; padding: 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; }
+.inventory-check { display: flex !important; flex-direction: row; align-items: center; }
+@media (max-width: 650px) { .inventory-panel form { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .animal-identity-panel form { grid-template-columns: 1fr; } }

@@ -15,9 +15,10 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertRecord, Dashboard, fetchAlerts, fetchDashboard } from "./api";
 import RecognitionStudio from "./RecognitionStudio";
 import DatasetEvaluationCenter from "./DatasetEvaluationCenter";
+import InventoryPanel from "./InventoryPanel";
 import "./workspace-interactions.css";
 
-type WorkspaceView = "overview" | "monitor" | "alerts" | "cattle" | "analytics";
+type WorkspaceView = "overview" | "monitor" | "alerts" | "cattle" | "analytics" | "inventory";
 
 const capabilities = [
   {
@@ -52,6 +53,7 @@ const viewTitle: Record<WorkspaceView, string> = {
   alerts: "全部健康告警",
   cattle: "牛只档案",
   analytics: "数据分析",
+  inventory: "圈舍存栏核对",
 };
 
 export default function App() {
@@ -257,6 +259,7 @@ export default function App() {
           </button>
           <button type="button" className={activeView === "cattle" ? "active" : ""} aria-current={activeView === "cattle" ? "page" : undefined} onClick={() => openView("cattle")}><ShieldCheck size={18} /> 牛只档案</button>
           <button type="button" className={activeView === "analytics" ? "active" : ""} aria-current={activeView === "analytics" ? "page" : undefined} onClick={() => openView("analytics")}><ChartNoAxesCombined size={18} /> 数据分析</button>
+          <button type="button" className={activeView === "inventory" ? "active" : ""} aria-current={activeView === "inventory" ? "page" : undefined} onClick={() => openView("inventory")}><ShieldCheck size={18} /> 圈舍盘点</button>
           <div className="system-card">
             <i /> {dataError ? "数据暂不可用" : modelReady ? "系统运行正常" : "正在连接服务"}
             <small>本地模式 · {modelReady ? "YOLO11 已加载" : "等待模型状态"}</small>
@@ -326,6 +329,7 @@ export default function App() {
               <DatasetEvaluationCenter />
             </section>
           )}
+          {activeView === "inventory" && <InventoryPanel />}
         </div>
       </section>
     </main>

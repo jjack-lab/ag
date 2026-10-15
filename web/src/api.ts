@@ -99,6 +99,33 @@ export type VideoJob = {
   error?: string | null;
 };
 
+export type InventoryRecheck = {
+  id: string; check_id: string; counted_count: number;
+  outcome: "resolved" | "shortfall_pending" | "surplus_pending" | "loss_user_recorded";
+  movement_records_checked: boolean; field_search_complete: boolean;
+  lost_count: number | null; operator_name: string; note: string; created_at: string;
+};
+
+export type InventoryCheck = {
+  id: string; job_id: string; species: "cattle" | "sheep"; pen_id: string;
+  expected_count: number; baseline_source: string; observed_count: number | null;
+  coverage: "complete" | "partial" | "unknown"; coverage_note: string;
+  operator_name: string; observed_at: string; created_at: string;
+  status: "coverage_needed" | "count_needed" | "preliminary_match" |
+    "discrepancy_pending" | "verified_match" | "shortfall_pending" |
+    "surplus_pending" | "loss_user_recorded";
+  difference: number | null; current_count: number | null; video_track_count: number | null;
+  lost_count: number | null; verification_status: "user_recorded";
+  rechecks: InventoryRecheck[];
+};
+
+export type NewInventoryCheck = Pick<InventoryCheck, "job_id" | "pen_id" | "expected_count" |
+  "baseline_source" | "observed_count" | "coverage" | "coverage_note" |
+  "operator_name" | "observed_at">;
+
+export type NewInventoryRecheck = Pick<InventoryRecheck, "counted_count" | "outcome" |
+  "movement_records_checked" | "field_search_complete" | "lost_count" | "operator_name" | "note">;
+
 export type VideoReview = {
   id: string;
   job_id: string;
@@ -302,6 +329,22 @@ export function fetchVideoJob(id: string): Promise<VideoJob> {
 
 export function fetchVideoJobs(): Promise<VideoJob[]> {
   return request("/api/jobs/video");
+}
+
+export function fetchInventoryChecks(): Promise<InventoryCheck[]> {
+  return request("/api/inventory-checks");
+}
+
+export function createInventoryCheck(values: NewInventoryCheck): Promise<InventoryCheck> {
+  return request("/api/inventory-checks", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
+  });
+}
+
+export function createInventoryRecheck(checkId: string, values: NewInventoryRecheck): Promise<InventoryCheck> {
+  return request(`/api/inventory-checks/${encodeURIComponent(checkId)}/rechecks`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
+  });
 }
 
 export function fetchVideoReviews(jobId: string): Promise<VideoReview[]> {

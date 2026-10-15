@@ -19,6 +19,7 @@ import {
 import CrossDomainResults from "./CrossDomainResults";
 import HealthEvidence from "./HealthEvidence";
 import VideoReviewWorkspace from "./VideoReviewWorkspace";
+import InventoryPanel from "./InventoryPanel";
 import VideoEventTimeline from "./VideoEventTimeline";
 import VideoCorrectionEditor from "./VideoCorrectionEditor";
 
@@ -486,6 +487,7 @@ export default function RecognitionStudio() {
             setMessage("已打开历史视频结果和人工复核记录。");
           }}
         />}
+        {!isImage && <InventoryPanel selectedJob={videoJob} />}
       </div>
       <CrossDomainResults />
     </section>
