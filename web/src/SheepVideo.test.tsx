@@ -33,7 +33,7 @@ it("submits sheep class and presents tracking without cattle health claims", asy
     target: { files: [new File(["video"], "sheep.mp4", { type: "video/mp4" })] },
   });
   await user.click(screen.getByRole("button", { name: "开始视频识别" }));
-  expect(await screen.findByText("已追踪 2 只羊")).toBeInTheDocument();
+  expect(await screen.findByText("视频内 Track ID：2 个")).toBeInTheDocument();
   expect(submittedClass).toBe("0");
   expect(screen.getByText(/羊的健康规则尚未验证/)).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "羊只活动状态分析" })).toHaveTextContent("移动 2.0 秒");

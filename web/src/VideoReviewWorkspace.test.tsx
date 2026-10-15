@@ -52,7 +52,7 @@ it("reopens a completed job and saves a human review", async () => {
   render(<RecognitionStudio />);
   await user.click(screen.getByRole("button", { name: "视频识别" }));
   await user.click(await screen.findByRole("button", { name: /牛 · .*已完成 · 2 个视频内 ID/ }));
-  expect(await screen.findByText("已追踪 2 头牛")).toBeInTheDocument();
+  expect(await screen.findByText("视频内 Track ID：2 个")).toBeInTheDocument();
   await user.selectOptions(screen.getByLabelText("问题类型"), "false_alert");
   await user.type(screen.getByLabelText("视频内 Track ID（可选）"), "7");
   await user.type(screen.getByLabelText("时间点，秒（可选）"), "12.5");

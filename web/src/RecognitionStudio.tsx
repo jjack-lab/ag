@@ -279,7 +279,7 @@ export default function RecognitionStudio() {
         <div className="result-header">
           <span>识别结果</span>
           {imageResult && <strong>识别到 {imageResult.detection_count} {result?.kind === "image" && result.classId === 1 ? "头牛" : result?.kind === "image" && result.classId === 0 ? "只羊" : "个目标"}</strong>}
-          {tracking && <strong>已追踪 {tracking.tracked_cattle} {tracking.species === "sheep" ? "只羊" : "头牛"}</strong>}
+          {tracking && <strong>视频内 Track ID：{tracking.tracked_cattle} 个</strong>}
         </div>
         <div className="result-stage">
           {!result && (

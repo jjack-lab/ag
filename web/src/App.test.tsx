@@ -169,7 +169,7 @@ describe("AgriNebula application", () => {
       within(studio).getByRole("button", { name: "开始视频识别" }),
     );
 
-    expect(await screen.findByText("已追踪 3 头牛")).toBeInTheDocument();
+    expect(await screen.findByText("视频内 Track ID：3 个")).toBeInTheDocument();
     expect(screen.getByLabelText("牛只视频追踪结果")).toHaveAttribute(
       "src",
       "/media/results/job-1/cattle_tracked.mp4",

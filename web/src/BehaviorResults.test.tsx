@@ -41,7 +41,7 @@ async function completeVideoJob(result: Record<string, unknown>) {
     target: { files: [new File(["video"], "cattle.mp4", { type: "video/mp4" })] },
   });
   await user.click(screen.getByRole("button", { name: "开始视频识别" }));
-  await screen.findByText("已追踪 1 头牛");
+  await screen.findByText("视频内 Track ID：1 个");
 }
 
 afterEach(() => {
