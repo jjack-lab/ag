@@ -1,6 +1,7 @@
 export type Dashboard = {
-  monitored_cattle: number;
-  high_risk_cattle: number;
+  latest_cattle_track_count: number | null;
+  latest_cattle_processed_at: string | null;
+  high_risk_alerts: number;
   open_alerts: number;
   model_status: string;
 };

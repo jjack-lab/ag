@@ -44,7 +44,9 @@ class WebApiTests(unittest.TestCase):
 
         self.assertEqual("local", client.get("/api/health").json()["mode"])
         dashboard = client.get("/api/dashboard").json()
-        self.assertEqual(1, dashboard["high_risk_cattle"])
+        self.assertIsNone(dashboard["latest_cattle_track_count"])
+        self.assertIsNone(dashboard["latest_cattle_processed_at"])
+        self.assertEqual(1, dashboard["high_risk_alerts"])
         self.assertEqual(1, dashboard["open_alerts"])
 
     def test_sheep_video_does_not_inflate_cattle_dashboard_count(self):
@@ -57,7 +59,46 @@ class WebApiTests(unittest.TestCase):
             result={"tracked_cattle": 4, "species": "sheep"},
         ))
         dashboard = TestClient(create_app(self.repository)).get("/api/dashboard").json()
-        self.assertEqual(0, dashboard["monitored_cattle"])
+        self.assertIsNone(dashboard["latest_cattle_track_count"])
+
+    def test_dashboard_keeps_latest_cattle_video_when_newer_sheep_video_exists(self):
+        from fastapi.testclient import TestClient
+
+        self.repository.save_video_job(VideoJobRecord(
+            id="cattle-job", source_path="cattle.mp4", status="completed", progress=1.0,
+            created_at="2026-10-14T10:00:00+08:00",
+            updated_at="2026-10-14T10:01:00+08:00",
+            result={"tracked_cattle": 3, "species": "cattle"},
+        ))
+        self.repository.save_video_job(VideoJobRecord(
+            id="sheep-job", source_path="sheep.mp4", status="completed", progress=1.0,
+            created_at="2026-10-15T10:00:00+08:00",
+            updated_at="2026-10-15T10:01:00+08:00",
+            result={"tracked_cattle": 5, "species": "sheep"},
+        ))
+        self.repository.save_alert(AlertRecord(
+            id="a2", cattle_id="023", risk_type="isolation",
+            level=AlertLevel.HIGH, reason="isolation", suggestion="review",
+            occurred_at="2026-10-14T10:00:00+08:00", confidence=0.8,
+        ))
+
+        dashboard = TestClient(create_app(self.repository)).get("/api/dashboard").json()
+        self.assertEqual(3, dashboard["latest_cattle_track_count"])
+        self.assertEqual("2026-10-14T10:01:00+08:00", dashboard["latest_cattle_processed_at"])
+        self.assertEqual(2, dashboard["high_risk_alerts"])
+        self.assertEqual(2, dashboard["open_alerts"])
+
+    def test_dashboard_distinguishes_zero_detected_tracks_from_no_video(self):
+        from fastapi.testclient import TestClient
+
+        self.repository.save_video_job(VideoJobRecord(
+            id="cattle-zero", source_path="cattle.mp4", status="completed", progress=1.0,
+            created_at="2026-10-14T10:00:00+08:00",
+            updated_at="2026-10-14T10:01:00+08:00",
+            result={"tracked_cattle": 0, "species": "cattle"},
+        ))
+        dashboard = TestClient(create_app(self.repository)).get("/api/dashboard").json()
+        self.assertEqual(0, dashboard["latest_cattle_track_count"])
 
     def test_resolves_alert_with_operator_note(self):
         from fastapi.testclient import TestClient

@@ -239,19 +239,16 @@ def create_app(
     def dashboard():
         alerts = repository.list_alerts(status="open")
         try:
-            latest_job = repository.latest_completed_video_job()
-            monitored_cattle = (
-                int(latest_job.result.get("tracked_cattle", 0))
-                if latest_job.result.get("species", "cattle") == "cattle" else 0
-            )
+            latest_job = repository.latest_completed_cattle_video_job()
+            track_count = int(latest_job.result.get("tracked_cattle", 0))
+            processed_at = latest_job.updated_at
         except KeyError:
-            monitored_cattle = 0
-        high_risk_cattle = {
-            alert.cattle_id for alert in alerts if alert.level == AlertLevel.HIGH
-        }
+            track_count = None
+            processed_at = None
         return {
-            "monitored_cattle": monitored_cattle,
-            "high_risk_cattle": len(high_risk_cattle),
+            "latest_cattle_track_count": track_count,
+            "latest_cattle_processed_at": processed_at,
+            "high_risk_alerts": sum(alert.level == AlertLevel.HIGH for alert in alerts),
             "open_alerts": len(alerts),
             "model_status": "ready",
         }

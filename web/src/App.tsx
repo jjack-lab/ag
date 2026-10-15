@@ -23,7 +23,7 @@ const capabilities = [
   {
     icon: ScanSearch,
     title: "牛只识别与持续追踪",
-    text: "为每头牛建立稳定 ID，连续记录位置、速度与活动轨迹。",
+    text: "为视频内牛只分配 Track ID，记录位置、速度与活动轨迹。",
     meta: "YOLO · TRACK ID",
   },
   {
@@ -47,7 +47,7 @@ const riskLabel: Record<AlertRecord["level"], string> = {
 };
 
 const viewTitle: Record<WorkspaceView, string> = {
-  overview: "今日牧场健康概览",
+  overview: "视频任务与历史规则概览",
   monitor: "实时监控",
   alerts: "全部健康告警",
   cattle: "牛只档案",
@@ -89,10 +89,6 @@ export default function App() {
     };
   }, []);
 
-  const cattleRecords = useMemo(
-    () => Array.from(new Set(alerts.map((alert) => alert.cattle_id))),
-    [alerts],
-  );
   const alertDistribution = useMemo(
     () => ({
       high: alerts.filter((alert) => alert.level === "high").length,
@@ -135,14 +131,14 @@ export default function App() {
             <button
               type="button"
               className="alert-row"
-              aria-label={`牛 ${alert.cattle_id}，${alert.reason}，${riskLabel[alert.level]}`}
+              aria-label={`视频内 ID ${alert.cattle_id}，${alert.reason}，${riskLabel[alert.level]}`}
               aria-expanded={expanded}
               onClick={() => setSelectedAlertId(expanded ? null : alert.id)}
             >
               <span className={`severity severity-${alert.level}`} />
               <span className="cattle-avatar">{alert.cattle_id}</span>
               <span className="alert-copy">
-                <strong>牛 {alert.cattle_id}</strong>
+                <strong>视频内 ID {alert.cattle_id}</strong>
                 <small>{alert.reason}</small>
               </span>
               <span className="alert-meta">
@@ -151,7 +147,7 @@ export default function App() {
               </span>
             </button>
             {expanded && (
-              <div className="alert-details" role="region" aria-label={`牛 ${alert.cattle_id} 告警详情`}>
+              <div className="alert-details" role="region" aria-label={`视频内 ID ${alert.cattle_id} 告警详情`}>
                 <strong>处置建议：{alert.suggestion}</strong>
                 <span>发生时间：{new Date(alert.occurred_at).toLocaleString("zh-CN")}</span>
                 <span>置信度 {Math.round(alert.confidence * 100)}%</span>
@@ -167,19 +163,21 @@ export default function App() {
   const metrics = (
     <div className="metric-grid">
       <article>
-        <span>今日监测牛只</span>
-        <strong data-testid="monitored-cattle">{dashboard?.monitored_cattle ?? "—"}</strong>
-        <small>来自已完成追踪任务</small>
+        <span>最近牛视频 Track ID 数</span>
+        <strong data-testid="monitored-cattle">{dashboard ? dashboard.latest_cattle_track_count ?? "暂无记录" : "—"}</strong>
+        <small>{dashboard?.latest_cattle_processed_at
+          ? `处理时间：${new Date(dashboard.latest_cattle_processed_at).toLocaleString("zh-CN")}`
+          : "仅统计已完成的牛视频"}</small>
       </article>
       <article className="risk">
-        <span>高风险牛只</span>
-        <strong>{dashboard?.high_risk_cattle ?? "—"}</strong>
-        <small>需要优先人工复核</small>
+        <span>历史高风险规则提示</span>
+        <strong>{dashboard?.high_risk_alerts ?? "—"}</strong>
+        <small>未处理提示条数，需优先人工复核</small>
       </article>
       <article>
-        <span>待处理告警</span>
+        <span>历史未处理规则提示</span>
         <strong data-testid="open-alerts">{dashboard?.open_alerts ?? "—"}</strong>
-        <small>来自本地健康规则</small>
+        <small>跨视频累计；不代表当前牛只数</small>
       </article>
       <article>
         <span>模型运行状态</span>
@@ -311,16 +309,8 @@ export default function App() {
 
           {activeView === "cattle" && (
             <section className="focused-view">
-              <div className="view-intro"><ShieldCheck /><div><h3>个体记录</h3><p>根据当前告警记录汇总个体信息。</p></div></div>
-              {dataError ? <p className="view-empty">档案数据暂不可用，请确认 API 已启动。</p> : cattleRecords.length === 0 ? <p className="view-empty">尚无可展示的牛只档案，完成追踪任务后会自动汇总。</p> : (
-                <div className="record-grid">
-                  {cattleRecords.map((cattleId) => {
-                    const cattleAlerts = alerts.filter((alert) => alert.cattle_id === cattleId);
-                    const latest = cattleAlerts[0];
-                    return <article key={cattleId}><span>个体 ID</span><strong>牛 {cattleId}</strong><small>{cattleAlerts.length} 条告警 · 最新为{riskLabel[latest.level]}</small></article>;
-                  })}
-                </div>
-              )}
+              <div className="view-intro"><ShieldCheck /><div><h3>个体记录</h3><p>跨视频个体需由现场人员核对耳标后人工关联。视频内 Track ID 不能直接作为牛只档案编号。</p></div></div>
+              <p className="view-empty">请在视频识别结果中核对耳标并建立个体关联，再查看跨视频记录。</p>
             </section>
           )}
 

@@ -410,6 +410,21 @@ class SQLiteRepository:
             raise KeyError("completed")
         return self._to_video_job(row)
 
+    def latest_completed_cattle_video_job(self) -> VideoJobRecord:
+        with self._connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM video_jobs
+                WHERE status = 'completed' AND result_json IS NOT NULL
+                ORDER BY updated_at DESC, id DESC
+                """
+            ).fetchall()
+        for row in rows:
+            job = self._to_video_job(row)
+            if job.result.get("species", "cattle") == "cattle":
+                return job
+        raise KeyError("completed cattle")
+
     @staticmethod
     def _to_video_job(row):
         values = dict(row)

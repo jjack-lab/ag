@@ -5,8 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 const dashboard = {
-  monitored_cattle: 5,
-  high_risk_cattle: 1,
+  latest_cattle_track_count: 5,
+  latest_cattle_processed_at: "2026-10-14T10:01:00+08:00",
+  high_risk_alerts: 1,
   open_alerts: 2,
   model_status: "ready",
 };
@@ -99,10 +100,26 @@ describe("AgriNebula application", () => {
   it("renders dashboard metrics and alerts returned by the API", async () => {
     render(<App />);
 
-    expect(await screen.findByText("牛 7")).toBeInTheDocument();
+    expect(await screen.findByText("视频内 ID 7")).toBeInTheDocument();
     expect(screen.getByText("持续低活动")).toBeInTheDocument();
     expect(screen.getByTestId("monitored-cattle")).toHaveTextContent("5");
+    expect(screen.getByText("最近牛视频 Track ID 数")).toBeInTheDocument();
+    expect(screen.getByText(/处理时间：2026/)).toBeInTheDocument();
+    expect(screen.getByText("历史未处理规则提示")).toBeInTheDocument();
     expect(screen.getByTestId("open-alerts")).toHaveTextContent("2");
+  });
+
+  it("shows no record when no cattle video was processed", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/dashboard")) return response({
+        ...dashboard, latest_cattle_track_count: null, latest_cattle_processed_at: null,
+      });
+      if (url.startsWith("/api/alerts")) return response(alerts);
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    render(<App />);
+    expect(await screen.findByTestId("monitored-cattle")).toHaveTextContent("暂无记录");
   });
 
   it("creates and polls a video tracking job", async () => {
@@ -197,12 +214,13 @@ describe("AgriNebula application", () => {
 
     await user.click(screen.getByRole("button", { name: "牛只档案" }));
     expect(screen.getByRole("heading", { name: "牛只档案" })).toBeInTheDocument();
+    expect(screen.getByText(/视频内 Track ID 不能直接作为牛只档案编号/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "数据分析" }));
     expect(screen.getByRole("heading", { name: "数据分析" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "今日工作台" }));
-    expect(screen.getByRole("heading", { name: "今日牧场健康概览" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "视频任务与历史规则概览" })).toBeInTheDocument();
   });
 
   it("opens the full alerts view from 查看全部", async () => {
@@ -232,7 +250,7 @@ describe("AgriNebula application", () => {
     render(<App />);
 
     const alertButton = await screen.findByRole("button", {
-      name: /牛 7，持续低活动，中风险/,
+      name: /视频内 ID 7，持续低活动，中风险/,
     });
     await user.click(alertButton);
 

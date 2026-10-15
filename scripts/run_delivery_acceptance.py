@@ -121,7 +121,7 @@ def main():
             input_video["frame_count"] == output_video["frame_count"]
         ),
         "tracked_cattle_match_dashboard": (
-            result["tracked_cattle"] == dashboard["monitored_cattle"]
+            result["tracked_cattle"] == dashboard["latest_cattle_track_count"]
         ),
         "csv_alerts_match_database": alert_rows == len(api_alerts),
         "database_alerts_match_dashboard": (
