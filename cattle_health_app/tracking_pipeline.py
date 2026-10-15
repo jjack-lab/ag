@@ -28,6 +28,7 @@ from cattle_health_app.behavior.overlay import (
 from health_monitor import CattleHealthMonitor, DetectionObservation, HealthConfig
 from cattle_health_app.health_evidence import build_health_evidence
 from cattle_health_app.sheep_motion import summarize_sheep_motion
+from cattle_health_app.browser_video import ensure_browser_playable
 from inference_profile import build_track_kwargs
 
 LOGGER = logging.getLogger(__name__)
@@ -424,6 +425,8 @@ def process_tracked_video(
         video_writer.release()
         if processing_failed:
             video_path.unlink(missing_ok=True)
+
+    ensure_browser_playable(video_path)
 
     trajectory_csv = root / "{}_tracks.csv".format(source.stem)
     fields = [

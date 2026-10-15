@@ -10,7 +10,9 @@
 
 网页任务评测接口返回 99 个有标注帧、1,956 个真值框、TP 2、FP 0、FN 1,954；IoU≥0.5 时 Precision 100.00%（只匹配到两个框）、Recall 0.102%、F1 0.204%、匹配帧 ID 切换 0。与 [离线实跑记录](2026-10-14-icaerus-sheep-model-demo.md) 的默认模型结果一致。标注 CSV SHA-256：`ece519fcd065005223ab0d1dc47ec85c78eaf6c279c53512e3ce0d923ee170ed`。
 
-结果视频位于 `data/media/results/b6584849f10c403c8a1404e8f91748b8/a0f278c71b3c4aa4ab6acf5673d487de_tracked.mp4`，HTTP 返回 `200 OK`、`video/mp4`、`accept-ranges: bytes`、39,371,454 字节；本机 OpenCV 完整解码 99/99 帧（1440×1080、9 fps）。轨迹 CSV 地址也返回 `200 OK`。浏览器中已看到播放器与下载链接，但未成功观察播放器实际播放或在页面中显示新评测记录，这两项仍须复核。
+结果视频位于 `data/media/results/b6584849f10c403c8a1404e8f91748b8/a0f278c71b3c4aa4ab6acf5673d487de_tracked.mp4`。首次写入时为 OpenCV `mp4v`，HTTP 返回 `200 OK`、`video/mp4`、`accept-ranges: bytes`、39,371,454 字节，OpenCV 完整解码 99/99 帧，但 Chrome 实测报 `DEMUXER_ERROR_NO_SUPPORTED_STREAMS`，无法内嵌播放。2026-10-15 将原文件备份到被忽略的 `data/verification/sheep-web-original-mp4v.mp4` 后，使用本机 FFmpeg `libx264` 转成 H.264；新文件 20,311,146 字节，SHA-256 `d3b0ef7ba12991b62f77926174ecab654895a37d8c6171eb965f85ed94818728`，`ffprobe` 核对仍有 99 帧。此后 Chrome 实测 `readyState=4`、时长 11 秒，播放 5 秒后 `currentTime=4.9` 且未暂停。截图：`data/verification/sheep-browser-playback.png`。轨迹 CSV 地址仍返回 `200 OK`。
+
+同一 Chrome 会话切到“数据分析 → 公开数据评测中心”，页面确实显示该条 `development` 评测卡片：99 标注帧、1,956 真值框、TP 2 / FP 0 / FN 1,954、Precision 100.0%、Recall 0.1%、F1 0.2%、ID 切换 0；截图 `data/verification/sheep-browser-evaluation.png`。卡片数值经一位小数展示，精确值见上文 API 测量。播放器播放与卡片显示已复核，尚未在浏览器操作人工纠错或下载按钮。
 
 ## 产品判断
 

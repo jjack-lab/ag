@@ -112,7 +112,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start_delivery.ps1 -CheckO
 
 答辩时可以按“上传牧场视频 → 播放识别追踪结果 → 查看某个 Track ID 的证据链 → 下载报告并说明需现场复核”展示。当前的风险评分是规则型辅助筛查，不是某种疾病的概率，也不能预测发病时间。若要展示具体疾病名称，应先取得牧场确认病例、诊疗或检验结果及同一动物的多日视频，定义病例口径并完成独立验证；在此之前不要把现象直接命名为疾病。
 
-当前Windows环境使用OpenCV `mp4v`生成结果视频。若浏览器不能直接播放，请点击“下载结果视频”，使用本地播放器查看。要保证浏览器内H.264播放，需要另行安装并配置兼容的FFmpeg/OpenH264编码器。
+视频处理先使用 OpenCV 写入，再在找到 FFmpeg `libx264` 时自动转成浏览器可播放的 H.264 MP4；事件片段同理。转换失败会保留原 `mp4v` 文件并写日志，此时仍可下载后用本地播放器查看。本机 PyTorch 环境已带 FFmpeg；其他电脑须安装支持 `libx264` 的 FFmpeg 并加入 PATH，或放在 Python 环境的 `Library/bin/ffmpeg.exe`。
 
 视频为后台任务。浏览器会显示按已处理帧数计算的真实进度，任务失败时 API 会保存失败状态和错误信息。默认单个上传文件上限为512MB，可通过 `AGRINEBULA_MAX_UPLOAD_MB` 调整。
 

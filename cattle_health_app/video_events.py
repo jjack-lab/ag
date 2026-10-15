@@ -8,6 +8,8 @@ from uuid import uuid4
 
 import cv2
 
+from cattle_health_app.browser_video import ensure_browser_playable
+
 
 def result_file(result_root, job_id, relative_name):
     if not relative_name:
@@ -113,6 +115,7 @@ def create_event_clip(result_root, job_id, result, event):
             raise ValueError("Evidence clip contains no decodable frames")
         writer.release()
         writer = None
+        ensure_browser_playable(temporary)
         os.replace(temporary, destination)
         return destination
     finally:
