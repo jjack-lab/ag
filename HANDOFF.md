@@ -27,7 +27,7 @@
 
 ## 已完成
 
-- 2026-10-15：定位网页羊视频无法播放的根因：交付 OpenCV 结果为 MPEG-4 `mp4v`，Chrome 报 `DEMUXER_ERROR_NO_SUPPORTED_STREAMS`。新增结果视频和证据片段的 FFmpeg `libx264` 转换，成功时原子替换为 H.264，失败时保留原文件供下载。本机旧羊结果已备份并转码，`ffprobe` 确认 H.264 / 99 帧。Chrome 打开历史任务后 `readyState=4`、11 秒时长，播放 5 秒后进度到 4.9 秒且未暂停；页面截图在被忽略的 `data/verification/sheep-browser-playback.png`。同一浏览器“公开数据评测中心”卡片显示 `development`、1,956 GT、TP 2 / FN 1,954、Recall 0.1%、F1 0.2%，截图 `data/verification/sheep-browser-evaluation.png`。后端全量 648 passed / 4 skipped；服务已重启，代码 `51d4c21`。详细记录见 `docs/2026-10-15-web-sheep-acceptance.md`。
+- 2026-10-15：定位网页羊视频无法播放的根因：交付 OpenCV 结果为 MPEG-4 `mp4v`，Chrome 报 `DEMUXER_ERROR_NO_SUPPORTED_STREAMS`。新增结果视频和证据片段的 FFmpeg `libx264` 转换，成功时原子替换为 H.264，失败时保留原文件供下载。本机旧羊结果已备份并转码，`ffprobe` 确认 H.264 / 99 帧。Chrome 打开历史任务后 `readyState=4`、11 秒时长，播放 5 秒后进度到 4.9 秒且未暂停；页面截图在被忽略的 `data/verification/sheep-browser-playback.png`。同一浏览器“公开数据评测中心”卡片显示 `development`、1,956 GT、TP 2 / FN 1,954、Recall 0.1%、F1 0.2%，截图 `data/verification/sheep-browser-evaluation.png`。结果标题已从误导性的“已追踪 1 只羊”改为“视频内 Track ID：1 个”，前端 27 passed、构建成功，Chrome 重放成功。后端全量 648 passed / 4 skipped；服务已重启，代码 `51d4c21`、`6d2fec4`。详细记录见 `docs/2026-10-15-web-sheep-acceptance.md`。
 
 - 2026-10-15：管理看板口径修正：`/api/dashboard` 取最近一次已完成牛视频的 Track ID 数及处理时间，未找到牛视频返回 `null`（页面显示“暂无记录”），真实零轨迹仍显示 0；高风险与未处理规则提示按历史未处理记录条数计。首页告警明示“视频内 ID”，“牛只档案”不再按跨视频临时 ID 自动合并。交付验收脚本、README、API 与前端测试同步更新。后端全量 646 passed / 4 skipped，前端 27 passed，构建成功。交付服务用 `AGRINEBULA_PYTHON=F:\deepl\anaconda1\envs\pytorch\python.exe` 重启后，真实 API 返回最近牛视频 26 个 ID、处理时间 `2026-09-29T17:47:46+08:00`、历史未处理提示 84 条；网页 HTTP 200。浏览器实际点击仍未核对。
 
@@ -426,6 +426,7 @@
 ## 决策与坑（不要再踩）
 
 - 2026-10-15：`video/mp4`、HTTP 200 和 OpenCV 可解码不代表 Chrome 可播放；旧 `mp4v` 文件实测 DEMUXER 错误。新结果经 FFmpeg `libx264` 转 H.264，失败时保留原 `mp4v` 并写日志；其他电脑要有支持 `libx264` 的 FFmpeg。旧羊结果的转码前备份在 `data/verification/sheep-web-original-mp4v.mp4`，转码后 SHA-256 `d3b0ef7ba12991b62f77926174ecab654895a37d8c6171eb965f85ed94818728`。Chrome 播放和评测卡片已实测，但页面纠错、复核与下载尚未操作。截图只做 UI 证据，不提高默认模型的 0.102% 召回率。
+- 2026-10-15：羊视频中确有整群羊，但默认模型只产生 1 个视频内 ID；结果标题必须称“Track ID 个数”，不能称“1 只羊”。这也是不能用该模型做存栏盘点/防丢失的直接可见证据。
 
 - 2026-10-15：看板的牛视频数字只代表最新已完成牛视频内的 Track ID 数，不是今日存栏；历史规则提示按记录条数计，不按跨视频 ID 去重。旧任务未存 `species` 时沿用原系统默认牛类别。重启服务必须指定已装 OpenCV 的 PyTorch 环境（`AGRINEBULA_PYTHON`），系统 PATH 上的 Python 通过不了 preflight。Python 测试在受限沙箱会因中文路径乱码无法导入，需在允许的环境运行。现有服务在 8000/5173 运行；不要把 HTTP 200 当作浏览器实际播放验证。
 
@@ -467,7 +468,7 @@
 
 ## 中断记录
 
-- 2026-10-15 本轮新增停点：提交 `51d4c21` 修复浏览器视频编码，交付服务已以 PyTorch 环境重启。Chrome 无头真实打开羊任务，视频播放进度从 0 到 4.9 秒，评测卡片也显示同源 `development` 指标；截图在 `data/verification/sheep-browser-{playback,evaluation}.png`。下一步在浏览器操作人工纠错、复核保存与下载链接，然后依用户回复设计防丢失核对。其他实验与模型权重未改动。
+- 2026-10-15 本轮新增停点：提交 `51d4c21` 修复浏览器视频编码、`6d2fec4` 修正 Track ID 标题，交付服务已以 PyTorch 环境重启。Chrome 无头真实打开羊任务，视频播放进度从 0 到 4.9 秒，评测卡片也显示同源 `development` 指标；最新截图在 `data/verification/sheep-browser-{playback,evaluation}.png`。下一步在浏览器操作人工纠错、复核保存与下载链接，然后依用户回复设计防丢失核对。其他实验与模型权重未改动。
 
 - 2026-10-15 本轮停点：看板 API/前端修正、README、测试及实施记录已完成并验证；交付服务已重启，新 API 在真实数据上返回 26 个最近牛视频 Track ID（2026-09-29 处理）及 84 条历史未处理提示。本机 Chrome 无头渲染 DOM 也出现新标签、处理时间及 26/84 数值；截图只拍到首屏，网页评测卡片、视频实际播放、人工纠错和下载操作尚未交互复核。下一步先复核这些浏览器交互；防丢失功能仍等用户对圈舍数/耳标方案的答复。预存未跟踪 `yolo26n.pt` 不得提交或清理。
 
