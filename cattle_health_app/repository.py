@@ -159,6 +159,9 @@ class SQLiteRepository:
                 "CREATE INDEX IF NOT EXISTS inventory_checks_pen_idx ON inventory_checks(pen_id, created_at)"
             )
             connection.execute(
+                "CREATE INDEX IF NOT EXISTS inventory_checks_job_idx ON inventory_checks(job_id, created_at, id)"
+            )
+            connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS inventory_rechecks (
                     id TEXT PRIMARY KEY,
@@ -205,6 +208,15 @@ class SQLiteRepository:
             rows = connection.execute(
                 "SELECT * FROM inventory_checks ORDER BY created_at DESC, id DESC LIMIT ?",
                 (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_inventory_checks_for_job(self, job_id: str):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM inventory_checks WHERE job_id = ? "
+                "ORDER BY created_at DESC, id DESC",
+                (job_id,),
             ).fetchall()
         return [dict(row) for row in rows]
 

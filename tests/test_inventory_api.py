@@ -162,3 +162,30 @@ def test_inventory_history_page_rejects_invalid_parameters(tmp_path):
     client = client_with_job(tmp_path)
     for query in ("limit=0", "limit=101", "offset=-1", "status=unknown"):
         assert client.get(f"/api/inventory-checks/page?{query}").status_code == 422
+
+
+def test_video_inventory_query_survives_more_than_hundred_newer_other_job_records(tmp_path):
+    client = client_with_job(tmp_path)
+    target = client.post("/api/inventory-checks", json=payload(pen_id="旧视频圈舍")).json()
+    repository = SQLiteRepository(tmp_path / "app.db")
+    repository.save_video_job(VideoJobRecord(
+        id="job-2", source_path="new.mp4", status="completed", progress=1.0,
+        created_at="2026-10-16T09:00:00+08:00",
+        updated_at="2026-10-16T09:01:00+08:00",
+        result={"species": "cattle", "tracked_cattle": 3},
+    ))
+    for index in range(101):
+        repository.save_inventory_check({
+            **payload(job_id="job-2", pen_id=f"新视频圈舍-{index:03}"),
+            "id": f"new-{index:03}", "species": "cattle",
+            "created_at": f"2026-10-17T10:{index // 60:02}:{index % 60:02}+08:00",
+        })
+
+    assert len(client.get("/api/inventory-checks").json()) == 100
+    assert target["id"] not in {row["id"] for row in client.get("/api/inventory-checks").json()}
+    scoped = client.get("/api/inventory-checks?job_id=job-1")
+    assert scoped.status_code == 200
+    assert [row["id"] for row in scoped.json()] == [target["id"]]
+    assert len(client.get("/api/inventory-checks?job_id=job-2").json()) == 101
+    assert client.get("/api/inventory-checks?job_id=missing").json() == []
+    assert client.get("/api/inventory-checks?job_id=").status_code == 422

@@ -761,9 +761,13 @@ def create_app(
         }
 
     @app.get("/api/inventory-checks")
-    def list_inventory_checks(limit: int = 100):
+    def list_inventory_checks(limit: int = 100, job_id: Optional[str] = None):
         if not 1 <= limit <= 100:
             raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
+        if job_id is not None:
+            if not job_id.strip():
+                raise HTTPException(status_code=422, detail="job_id 不能为空")
+            return [inventory_response(row) for row in repository.list_inventory_checks_for_job(job_id.strip())]
         return [inventory_response(row) for row in repository.list_inventory_checks(limit)]
 
     @app.get("/api/inventory-checks/page")
