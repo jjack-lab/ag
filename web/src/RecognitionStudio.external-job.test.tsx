@@ -37,7 +37,7 @@ it("opens an externally selected completed video job", async () => {
       url === "/api/jobs/job-1/events" ||
       url === "/api/jobs/job-1/corrections" ||
       url === "/api/jobs/job-1/animal-links" ||
-      url === "/api/inventory-checks"
+      url === "/api/inventory-checks?job_id=job-1"
     ) {
       return { ok: true, json: async () => [] } as Response;
     }

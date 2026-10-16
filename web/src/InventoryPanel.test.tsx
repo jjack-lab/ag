@@ -85,6 +85,25 @@ it("does not offer duplicate video navigation inside a selected video job", asyn
   expect(screen.queryByRole("button", { name: "打开视频证据" })).not.toBeInTheDocument();
 });
 
+it("loads the complete inventory history for the selected video job", async () => {
+  const fetched: string[] = [];
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const url = String(input);
+    fetched.push(url);
+    if (url !== "/api/inventory-checks?job_id=video-1") {
+      return { ok: false, json: async () => ({ detail: "wrong query" }) } as Response;
+    }
+    return { ok: true, json: async () => [historicalCheck] } as Response;
+  });
+
+  render(<InventoryPanel selectedJob={job} />);
+
+  expect(await screen.findByRole("heading", { name: "A-9 · 牛" })).toBeInTheDocument();
+  expect(fetched).toEqual(["/api/inventory-checks?job_id=video-1"]);
+  expect(screen.queryByLabelText("筛选圈舍编号")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "下一页" })).not.toBeInTheDocument();
+});
+
 it("records a coverage-limited count without calling video IDs livestock", async () => {
   const checks: InventoryCheck[] = [];
   const submitted: { value: Record<string, unknown> | null } = { value: null };

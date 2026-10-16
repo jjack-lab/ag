@@ -331,8 +331,10 @@ export function fetchVideoJobs(): Promise<VideoJob[]> {
   return request("/api/jobs/video");
 }
 
-export function fetchInventoryChecks(): Promise<InventoryCheck[]> {
-  return request("/api/inventory-checks");
+export function fetchInventoryChecks(jobId?: string): Promise<InventoryCheck[]> {
+  return request(jobId
+    ? `/api/inventory-checks?job_id=${encodeURIComponent(jobId)}`
+    : "/api/inventory-checks");
 }
 
 export type InventoryPage = {

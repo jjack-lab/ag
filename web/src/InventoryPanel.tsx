@@ -60,7 +60,7 @@ export default function InventoryPanel({
     setError("");
     setLoading(true);
     const request = selectedJob
-      ? fetchInventoryChecks().then((rows) => {
+      ? fetchInventoryChecks(selectedJob.id).then((rows) => {
           if (!Array.isArray(rows)) throw new Error("盘点记录响应格式无效");
           return { items: rows, total: rows.length };
         })
