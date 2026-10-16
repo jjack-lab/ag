@@ -14,25 +14,25 @@
 
 **Files:** `cattle_health_app/repository.py`, `cattle_health_app/api.py`, `tests/test_inventory_api.py`.
 
-- [ ] Write a failing API test with one older target record and 101 newer records from another video; require `?job_id=job-1` to return only the target.
-- [ ] Run the focused test and confirm RED.
-- [ ] Add parameterized, unbounded per-job repository query and optional API parameter. Keep no-argument `limit=100` behavior.
-- [ ] Run focused tests and commit `fix: query inventory records by video job`.
+- [x] Write a failing API test with one older target record and 101 newer records from another video; require `?job_id=job-1` to return only the target.
+- [x] Run the focused test and confirm RED.
+- [x] Add parameterized, unbounded per-job repository query and optional API parameter. Keep no-argument `limit=100` behavior.
+- [x] Run focused tests and commit `fix: query inventory records by video job`.
 
 ### Task 2: Embedded panel
 
 **Files:** `web/src/api.ts`, `web/src/InventoryPanel.tsx`, `web/src/InventoryPanel.test.tsx`, related mocked fetches.
 
-- [ ] Write a failing test showing that a selected video sends its job ID and displays only returned records.
-- [ ] Run the focused test and confirm RED.
-- [ ] Pass job ID to the fetch helper from the embedded panel. Keep the global page request and its controls unchanged.
-- [ ] Run focused and full frontend tests, build, and commit `fix: scope embedded inventory to video job`.
+- [x] Write a failing test showing that a selected video sends its job ID and displays only returned records.
+- [x] Run the focused test and confirm RED.
+- [x] Pass job ID to the fetch helper from the embedded panel. Keep the global page request and its controls unchanged.
+- [x] Run focused and full frontend tests, build, and commit `fix: scope embedded inventory to video job`.
 
 ### Task 3: Verify and hand off
 
 **Files:** `README.md`, `docs/2026-10-16-video-inventory-scope-acceptance.md`, `HANDOFF.md`.
 
-- [ ] Run complete backend and frontend tests plus production build.
-- [ ] Use isolated SQLite and a browser to verify an old video's inventory record remains visible beyond the global 100-record window.
-- [ ] Document results and commit usage and acceptance docs.
-- [ ] Update all six HANDOFF sections and commit separately.
+- [x] Run complete backend and frontend tests plus production build.
+- [x] Use isolated SQLite and a browser to verify an old video's inventory record remains visible beyond the global 100-record window.
+- [x] Document results and commit usage and acceptance docs.
+- [x] Update all six HANDOFF sections and commit separately.
