@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
-import { createInventoryCheck, createInventoryRecheck, fetchInventoryChecks,
+import { createInventoryCheck, createInventoryRecheck, fetchInventoryChecks, fetchInventoryPage,
   type InventoryCheck, type InventoryRecheck, type VideoJob } from "./api";
+
+const pageSize = 20;
 
 const statusLabel: Record<InventoryCheck["status"], string> = {
   coverage_needed: "覆盖不足：先补拍并重新盘点",
@@ -27,6 +29,12 @@ export default function InventoryPanel({
   videoOpenError,
 }: Props) {
   const [checks, setChecks] = useState<InventoryCheck[]>([]);
+  const [penFilter, setPenFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [pen, setPen] = useState("");
@@ -47,13 +55,25 @@ export default function InventoryPanel({
 
   useEffect(() => {
     let active = true;
-    fetchInventoryChecks().then((rows) => {
-      if (!Array.isArray(rows)) throw new Error("盘点记录响应格式无效");
-      if (active) setChecks(rows);
-    })
-      .catch((cause) => { if (active) setError(String(cause)); });
+    setChecks([]);
+    setTotal(0);
+    setError("");
+    setLoading(true);
+    const request = selectedJob
+      ? fetchInventoryChecks().then((rows) => {
+          if (!Array.isArray(rows)) throw new Error("盘点记录响应格式无效");
+          return { items: rows, total: rows.length };
+        })
+      : fetchInventoryPage({ limit: pageSize, offset, penId: penFilter.trim(), status: statusFilter });
+    request.then((page) => {
+      if (!Array.isArray(page.items) || !Number.isInteger(page.total) || page.total < 0) {
+        throw new Error("盘点记录响应格式无效");
+      }
+      if (active) { setChecks(page.items); setTotal(page.total); }
+    }).catch((cause) => { if (active) setError(String(cause)); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [selectedJob, penFilter, statusFilter, offset, refreshKey]);
 
   const selectedChecks = selectedJob
     ? checks.filter((row) => row.job_id === selectedJob.id)
@@ -88,7 +108,8 @@ export default function InventoryPanel({
         movement_records_checked: movement, field_search_complete: field,
         operator_name: rechecker.trim(), note: note.trim(),
       });
-      setChecks((old) => old.map((item) => item.id === row.id ? row : item));
+      if (selectedJob) setChecks((old) => old.map((item) => item.id === row.id ? row : item));
+      else setRefreshKey((value) => value + 1);
       setRecheckId(null); setCounted(""); setLost(""); setMovement(false); setField(false);
       setRechecker(""); setNote("");
     } catch (cause) { setError(String(cause)); }
@@ -117,8 +138,19 @@ export default function InventoryPanel({
     </form>}
     {!ready && <p>打开一段已完成的视频后可建立盘点记录。</p>}
     {videoOpenError && <p role="alert">{videoOpenError}</p>}
+    {!selectedJob && <div className="inventory-history-controls">
+      <label>筛选圈舍编号<input value={penFilter} onChange={(event) => {
+        setPenFilter(event.target.value); setOffset(0);
+      }} /></label>
+      <label>筛选盘点状态<select value={statusFilter} onChange={(event) => {
+        setStatusFilter(event.target.value); setOffset(0);
+      }}>
+        <option value="">全部状态</option>
+        {Object.entries(statusLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+      </select></label>
+    </div>}
     <div className="inventory-list">
-      {selectedChecks.length === 0 && <p>暂无盘点记录。</p>}
+      {!loading && !error && selectedChecks.length === 0 && <p>暂无盘点记录。</p>}
       {selectedChecks.map((row) => <article key={row.id}>
         <h4>{row.pen_id} · {row.species === "sheep" ? "羊" : "牛"}</h4>
         <p>登记 {row.expected_count}，人工清点 {row.current_count ?? "未填"}；视频内 Track ID {row.video_track_count ?? "未知"} 个（仅参考）。</p>
@@ -151,5 +183,10 @@ export default function InventoryPanel({
         </form>}
       </article>)}
     </div>
+    {!selectedJob && <div className="inventory-history-pagination">
+      <p>{`第 ${Math.floor(offset / pageSize) + 1} / ${Math.max(1, Math.ceil(total / pageSize))} 页 · 共 ${total} 条`}</p>
+      <button type="button" disabled={loading || offset === 0} onClick={() => setOffset((value) => value - pageSize)}>上一页</button>
+      <button type="button" disabled={loading || offset + pageSize >= total} onClick={() => setOffset((value) => value + pageSize)}>下一页</button>
+    </div>}
   </section>;
 }

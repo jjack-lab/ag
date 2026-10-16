@@ -278,6 +278,7 @@ describe("AgriNebula application", () => {
       const url = String(input);
       if (url.startsWith("/api/dashboard")) return response(dashboard);
       if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url.startsWith("/api/inventory-checks/page?")) return response({ items: inventoryChecks, total: inventoryChecks.length, limit: 20, offset: 0 });
       if (url === "/api/inventory-checks") return response(inventoryChecks);
       if (url === "/api/jobs/video-1") return response(completedInventoryJob);
       if (
@@ -308,6 +309,7 @@ describe("AgriNebula application", () => {
       const url = String(input);
       if (url.startsWith("/api/dashboard")) return response(dashboard);
       if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url.startsWith("/api/inventory-checks/page?")) return response({ items: inventoryChecks, total: inventoryChecks.length, limit: 20, offset: 0 });
       if (url === "/api/inventory-checks") return response(inventoryChecks);
       if (url === "/api/jobs/video-1") return response(completedInventoryJob);
       if (
@@ -338,6 +340,7 @@ describe("AgriNebula application", () => {
       const url = String(input);
       if (url.startsWith("/api/dashboard")) return response(dashboard);
       if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url.startsWith("/api/inventory-checks/page?")) return response({ items: inventoryChecks, total: inventoryChecks.length, limit: 20, offset: 0 });
       if (url === "/api/inventory-checks") return response(inventoryChecks);
       if (url === "/api/jobs/video-1") {
         return response({ id: "video-1", status: "failed", progress: 1, result: null });
@@ -368,6 +371,7 @@ describe("AgriNebula application", () => {
       const url = String(input);
       if (url.startsWith("/api/dashboard")) return response(dashboard);
       if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url.startsWith("/api/inventory-checks/page?")) return response({ items: inventoryChecks, total: inventoryChecks.length, limit: 20, offset: 0 });
       if (url === "/api/inventory-checks") return response(inventoryChecks);
       if (url === "/api/jobs/video-1") return response(payload);
       throw new Error(`Unexpected request: ${url}`);
@@ -392,6 +396,7 @@ describe("AgriNebula application", () => {
       const url = String(input);
       if (url.startsWith("/api/dashboard")) return response(dashboard);
       if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url.startsWith("/api/inventory-checks/page?")) return response({ items: inventoryChecks, total: inventoryChecks.length, limit: 20, offset: 0 });
       if (url === "/api/inventory-checks") return response(inventoryChecks);
       if (url === "/api/jobs/video-1") return pendingJob;
       throw new Error(`Unexpected request: ${url}`);
@@ -422,6 +427,7 @@ describe("AgriNebula application", () => {
       const url = String(input);
       if (url.startsWith("/api/dashboard")) return response(dashboard);
       if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url.startsWith("/api/inventory-checks/page?")) return response({ items: [...inventoryChecks, secondCheck], total: 2, limit: 20, offset: 0 });
       if (url === "/api/inventory-checks") return response([...inventoryChecks, secondCheck]);
       if (url === "/api/jobs/video-1") return firstJob;
       if (url === "/api/jobs/video-2") return secondJob;

@@ -17,9 +17,9 @@ const historicalCheck = { id: "check-history", job_id: "video-1", species: "catt
   verification_status: "user_recorded" } as InventoryCheck;
 
 it("reports the bound video job when opening evidence from the global inventory list", async () => {
-  vi.spyOn(globalThis, "fetch").mockResolvedValue({
-    ok: true, json: async () => [historicalCheck],
-  } as Response);
+  vi.spyOn(globalThis, "fetch").mockImplementation(async () => ({
+    ok: true, json: async () => ({ items: [historicalCheck], total: 1, limit: 20, offset: 0 }),
+  } as Response));
   const onOpenVideo = vi.fn();
   const user = userEvent.setup();
 
@@ -27,6 +27,51 @@ it("reports the bound video job when opening evidence from the global inventory 
 
   await user.click(await screen.findByRole("button", { name: "打开视频证据" }));
   expect(onOpenVideo).toHaveBeenCalledWith("video-1");
+});
+
+it("pages global history and resets to the first page when filters change", async () => {
+  const requests: string[] = [];
+  const older = { ...historicalCheck, id: "older", pen_id: "B-2", job_id: "video-2", status: "verified_match" } as InventoryCheck;
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const url = String(input);
+    requests.push(url);
+    const query = new URLSearchParams(url.split("?")[1]);
+    const filtered = query.get("status") === "verified_match" || query.get("pen_id") === "B";
+    return { ok: true, json: async () => ({
+      items: filtered || query.get("offset") === "20" ? [older] : [historicalCheck],
+      total: filtered ? 1 : 21, limit: 20, offset: Number(query.get("offset")),
+    }) } as Response;
+  });
+  const user = userEvent.setup();
+  render(<InventoryPanel onOpenVideo={vi.fn()} />);
+
+  expect(await screen.findByText("第 1 / 2 页 · 共 21 条")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "下一页" }));
+  expect(await screen.findByText("第 2 / 2 页 · 共 21 条")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "B-2 · 牛" })).toBeInTheDocument();
+  await user.selectOptions(screen.getByLabelText("筛选盘点状态"), "verified_match");
+  expect(await screen.findByText("第 1 / 1 页 · 共 1 条")).toBeInTheDocument();
+  expect(requests.some((url) => url.includes("status=verified_match") && url.includes("offset=0"))).toBe(true);
+  await user.type(screen.getByLabelText("筛选圈舍编号"), "B");
+  await waitFor(() => expect(requests.some((url) => url.includes("pen_id=B"))).toBe(true));
+});
+
+it("shows an empty filtered result without retaining rows from an older request", async () => {
+  let resolveOld!: (value: Response) => void;
+  const oldRequest = new Promise<Response>((resolve) => { resolveOld = resolve; });
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const url = String(input);
+    if (url.includes("status=coverage_needed")) {
+      return { ok: true, json: async () => ({ items: [], total: 0, limit: 20, offset: 0 }) } as Response;
+    }
+    return oldRequest;
+  });
+  const user = userEvent.setup();
+  render(<InventoryPanel onOpenVideo={vi.fn()} />);
+  await user.selectOptions(screen.getByLabelText("筛选盘点状态"), "coverage_needed");
+  expect(await screen.findByText("暂无盘点记录。")).toBeInTheDocument();
+  resolveOld({ ok: true, json: async () => ({ items: [historicalCheck], total: 1, limit: 20, offset: 0 }) } as Response);
+  await waitFor(() => expect(screen.queryByRole("heading", { name: "A-9 · 牛" })).not.toBeInTheDocument());
 });
 
 it("does not offer duplicate video navigation inside a selected video job", async () => {

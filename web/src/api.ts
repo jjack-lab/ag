@@ -335,6 +335,23 @@ export function fetchInventoryChecks(): Promise<InventoryCheck[]> {
   return request("/api/inventory-checks");
 }
 
+export type InventoryPage = {
+  items: InventoryCheck[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export function fetchInventoryPage(options: {
+  limit: number; offset: number; penId: string; status: string;
+}): Promise<InventoryPage> {
+  const query = new URLSearchParams({
+    limit: String(options.limit), offset: String(options.offset),
+    pen_id: options.penId, status: options.status,
+  });
+  return request(`/api/inventory-checks/page?${query}`);
+}
+
 export function createInventoryCheck(values: NewInventoryCheck): Promise<InventoryCheck> {
   return request("/api/inventory-checks", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
