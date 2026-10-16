@@ -303,6 +303,36 @@ describe("AgriNebula application", () => {
     );
   });
 
+  it("opens the default recognition workspace after leaving inventory evidence", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/dashboard")) return response(dashboard);
+      if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url === "/api/inventory-checks") return response(inventoryChecks);
+      if (url === "/api/jobs/video-1") return response(completedInventoryJob);
+      if (
+        url === "/api/jobs/video" ||
+        url === "/api/jobs/video-1/reviews" ||
+        url === "/api/jobs/video-1/events" ||
+        url === "/api/jobs/video-1/corrections" ||
+        url === "/api/jobs/video-1/animal-links"
+      ) return response([]);
+      if (url === "/api/experiments/cross-domain-behavior") return response({ status: "not_run" });
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "圈舍盘点" }));
+    await user.click(await screen.findByRole("button", { name: "打开视频证据" }));
+    expect(await screen.findByLabelText("牛只视频追踪结果")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "健康告警" }));
+    await user.click(screen.getByRole("button", { name: "实时监控" }));
+
+    expect(screen.getByLabelText("选择牛只图片")).toBeInTheDocument();
+    expect(screen.queryByLabelText("牛只视频追踪结果")).not.toBeInTheDocument();
+  });
+
   it("keeps the inventory view open when its video task is unavailable", async () => {
     vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
       const url = String(input);
@@ -345,8 +375,10 @@ describe("AgriNebula application", () => {
     await user.click(screen.getByRole("button", { name: "健康告警" }));
     resolveJob(response(completedInventoryJob));
 
-    await waitFor(() => expect(jobResolved).toBe(true));
-    expect(screen.getByRole("heading", { name: "全部健康告警" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(jobResolved).toBe(true);
+      expect(screen.getByRole("heading", { name: "全部健康告警" })).toBeInTheDocument();
+    });
   });
 
   it("keeps the last inventory evidence click when requests finish out of order", async () => {
@@ -393,10 +425,12 @@ describe("AgriNebula application", () => {
       "src", "/media/results/video-2/cattle_tracked.mp4",
     );
     resolveFirst(response(completedInventoryJob));
-    await waitFor(() => expect(firstResolved).toBe(true));
-    expect(screen.getByLabelText("牛只视频追踪结果")).toHaveAttribute(
-      "src", "/media/results/video-2/cattle_tracked.mp4",
-    );
+    await waitFor(() => {
+      expect(firstResolved).toBe(true);
+      expect(screen.getByLabelText("牛只视频追踪结果")).toHaveAttribute(
+        "src", "/media/results/video-2/cattle_tracked.mp4",
+      );
+    });
   });
 
   it("toggles actionable alert details", async () => {

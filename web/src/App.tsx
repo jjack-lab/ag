@@ -123,6 +123,7 @@ export default function App() {
     inventoryOpenToken.current += 1;
     setOpeningInventoryJobId(null);
     setInventoryVideoError("");
+    setRequestedVideoJob(null);
     showView(view, target);
   }
 
