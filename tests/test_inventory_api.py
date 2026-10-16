@@ -114,3 +114,45 @@ def test_incomplete_job_unknown_job_and_invalid_counts_are_rejected(tmp_path):
     zero = complete.post("/api/inventory-checks", json=payload(observed_count=0))
     assert zero.status_code == 201
     assert zero.json()["difference"] == 20
+
+
+def test_inventory_history_pages_beyond_first_hundred_and_filters_latest_state(tmp_path):
+    client = client_with_job(tmp_path)
+    for index in range(105):
+        result = client.post("/api/inventory-checks", json=payload(
+            pen_id=f"A-{index:03}",
+            observed_count=20 if index % 2 == 0 else 18,
+            observed_at=f"2026-10-15T10:{index // 60:02}:{index % 60:02}+08:00",
+        ))
+        assert result.status_code == 201
+
+    first = client.get("/api/inventory-checks/page?limit=20&offset=0")
+    assert first.status_code == 200
+    assert first.json()["total"] == 105
+    assert len(first.json()["items"]) == 20
+    second = client.get("/api/inventory-checks/page?limit=20&offset=100")
+    assert second.json()["total"] == 105
+    assert len(second.json()["items"]) == 5
+    assert set(item["id"] for item in first.json()["items"]).isdisjoint(
+        item["id"] for item in second.json()["items"]
+    )
+
+    specific = client.get("/api/inventory-checks/page?pen_id=A-001")
+    assert specific.json()["total"] == 1
+    check = specific.json()["items"][0]
+    assert check["status"] == "discrepancy_pending"
+    saved = client.post(f"/api/inventory-checks/{check['id']}/rechecks", json=review_payload(
+        counted_count=20, outcome="resolved", lost_count=None,
+        movement_records_checked=False, field_search_complete=False,
+    ))
+    assert saved.status_code == 201
+    matched = client.get("/api/inventory-checks/page?pen_id=A-001&status=verified_match")
+    assert matched.json()["total"] == 1
+    assert matched.json()["items"][0]["id"] == check["id"]
+    assert client.get("/api/inventory-checks/page?pen_id=A-001&status=discrepancy_pending").json()["total"] == 0
+
+
+def test_inventory_history_page_rejects_invalid_parameters(tmp_path):
+    client = client_with_job(tmp_path)
+    for query in ("limit=0", "limit=101", "offset=-1", "status=unknown"):
+        assert client.get(f"/api/inventory-checks/page?{query}").status_code == 422

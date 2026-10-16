@@ -766,6 +766,23 @@ def create_app(
             raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
         return [inventory_response(row) for row in repository.list_inventory_checks(limit)]
 
+    @app.get("/api/inventory-checks/page")
+    def page_inventory_checks(
+        limit: int = 20, offset: int = 0, pen_id: str = "", status: str = "",
+    ):
+        allowed_statuses = {
+            "", "coverage_needed", "count_needed", "preliminary_match",
+            "discrepancy_pending", "verified_match", "shortfall_pending",
+            "surplus_pending", "loss_user_recorded",
+        }
+        if not 1 <= limit <= 100 or offset < 0 or status not in allowed_statuses:
+            raise HTTPException(status_code=422, detail="盘点分页参数无效")
+        rows, total = repository.page_inventory_checks(
+            limit=limit, offset=offset, pen_id=pen_id.strip(), status=status,
+        )
+        return {"items": [inventory_response(row) for row in rows],
+                "total": total, "limit": limit, "offset": offset}
+
     @app.post("/api/inventory-checks", status_code=201)
     def create_inventory_check(request: InventoryCheckRequest):
         try:

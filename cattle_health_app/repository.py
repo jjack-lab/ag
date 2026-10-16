@@ -208,6 +208,47 @@ class SQLiteRepository:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def page_inventory_checks(
+        self, *, limit: int = 20, offset: int = 0,
+        pen_id: str = "", status: str = "",
+    ):
+        scoped = """
+            WITH latest AS (
+                SELECT check_id, outcome,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY check_id ORDER BY created_at DESC, rowid DESC
+                    ) AS rank
+                FROM inventory_rechecks
+            ), scoped AS (
+                SELECT c.*,
+                    CASE
+                        WHEN c.coverage != 'complete' THEN 'coverage_needed'
+                        WHEN latest.outcome = 'resolved' THEN 'verified_match'
+                        WHEN latest.outcome = 'shortfall_pending' THEN 'shortfall_pending'
+                        WHEN latest.outcome = 'surplus_pending' THEN 'surplus_pending'
+                        WHEN latest.outcome = 'loss_user_recorded' THEN 'loss_user_recorded'
+                        WHEN c.observed_count IS NULL THEN 'count_needed'
+                        WHEN c.expected_count = c.observed_count THEN 'preliminary_match'
+                        ELSE 'discrepancy_pending'
+                    END AS computed_status
+                FROM inventory_checks AS c
+                LEFT JOIN latest ON latest.check_id = c.id AND latest.rank = 1
+                WHERE instr(lower(c.pen_id), lower(?)) > 0
+            )
+        """
+        params = (pen_id, status, status)
+        where = "WHERE (? = '' OR computed_status = ?)"
+        with self._connection() as connection:
+            total = connection.execute(
+                scoped + "SELECT COUNT(*) FROM scoped " + where, params,
+            ).fetchone()[0]
+            rows = connection.execute(
+                scoped + "SELECT * FROM scoped " + where +
+                " ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?",
+                (*params, limit, offset),
+            ).fetchall()
+        return [dict(row) for row in rows], total
+
     def save_inventory_recheck(self, recheck: dict):
         with self._connection() as connection:
             connection.execute(
