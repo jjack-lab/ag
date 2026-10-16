@@ -16,7 +16,7 @@
 - Modify: `web/src/RecognitionStudio.tsx`
 - Create: `web/src/RecognitionStudio.external-job.test.tsx`
 
-- [ ] **Step 1: Write the failing external-job test**
+- [x] **Step 1: Write the failing external-job test**
 
 Create a completed `VideoJob`, render `<RecognitionStudio requestedJob={job} />`, and assert that the component enters video mode and renders the existing result player:
 
@@ -32,7 +32,7 @@ it("renders a completed video job selected by its parent", async () => {
 
 Mock `/api/jobs/video`, `/api/jobs/job-1/reviews`, `/api/jobs/job-1/events`, `/api/jobs/job-1/corrections`, `/api/jobs/job-1/animal-links`, and `/api/inventory-checks` with empty arrays so the test exercises the real component tree.
 
-- [ ] **Step 2: Run the test and confirm RED**
+- [x] **Step 2: Run the test and confirm RED**
 
 Run:
 
@@ -43,7 +43,7 @@ npm test -- --run src/RecognitionStudio.external-job.test.tsx --maxWorkers=1
 
 Expected: TypeScript/Vitest failure because `RecognitionStudio` has no `requestedJob` prop and does not render the supplied task.
 
-- [ ] **Step 3: Implement the controlled entry point**
+- [x] **Step 3: Implement the controlled entry point**
 
 Add the prop and synchronize it through the existing result state:
 
@@ -65,7 +65,7 @@ export default function RecognitionStudio({ requestedJob = null }: Props) {
 
 Keep all existing result, review, correction, event, health graph, and inventory rendering paths unchanged.
 
-- [ ] **Step 4: Run the focused test and commit**
+- [x] **Step 4: Run the focused test and commit**
 
 Expected: the new test passes.
 
@@ -82,7 +82,7 @@ git commit -m "feat: open externally selected video jobs"
 - Modify: `web/src/App.tsx`
 - Modify: `web/src/App.test.tsx`
 
-- [ ] **Step 1: Write failing inventory callback tests**
+- [x] **Step 1: Write failing inventory callback tests**
 
 Extend the inventory component test with a global-view record and callback:
 
@@ -95,7 +95,7 @@ expect(onOpenVideo).toHaveBeenCalledWith("video-1");
 
 Also render `<InventoryPanel selectedJob={job} onOpenVideo={onOpenVideo} />` and assert that the button is absent, so the embedded panel does not offer navigation to its current task.
 
-- [ ] **Step 2: Write the failing application navigation tests**
+- [x] **Step 2: Write the failing application navigation tests**
 
 In `App.test.tsx`, mock one inventory row, then mock `GET /api/jobs/video-1` with a completed task. Click “圈舍盘点” then “打开视频证据” and assert:
 
@@ -108,7 +108,7 @@ expect(screen.getByLabelText("牛只视频追踪结果")).toHaveAttribute(
 
 Add a second test returning a failed or incomplete task and assert that the inventory view remains active and displays “视频任务尚未完成，暂不能打开证据”.
 
-- [ ] **Step 3: Run both tests and confirm RED**
+- [x] **Step 3: Run both tests and confirm RED**
 
 Run:
 
@@ -119,7 +119,7 @@ npm test -- --run src/InventoryPanel.test.tsx src/App.test.tsx --maxWorkers=1
 
 Expected: failures because inventory cards have no evidence button and `App` does not load a job from inventory.
 
-- [ ] **Step 4: Add the inventory navigation interface**
+- [x] **Step 4: Add the inventory navigation interface**
 
 Use explicit props:
 
@@ -143,7 +143,7 @@ Render the error near the list and render this button only in the global view:
 )}
 ```
 
-- [ ] **Step 5: Add application orchestration**
+- [x] **Step 5: Add application orchestration**
 
 In `App`, add `requestedVideoJob`, `openingInventoryJobId`, `inventoryVideoError`, and an `inventoryOpenToken` ref so a slower earlier request cannot overwrite the last click. Implement:
 
@@ -172,7 +172,7 @@ async function openInventoryVideo(jobId: string) {
 
 Pass these values to the global `InventoryPanel`, and render `<RecognitionStudio requestedJob={requestedVideoJob} />` in the monitor view. Keep the overview studio independent so a navigation request does not duplicate the selected result.
 
-- [ ] **Step 6: Run focused tests and commit**
+- [x] **Step 6: Run focused tests and commit**
 
 Expected: inventory callback, successful navigation, and failed navigation tests pass.
 
@@ -188,7 +188,7 @@ git commit -m "feat: open inventory video evidence"
 - Create: `docs/2026-10-16-inventory-video-navigation-acceptance.md`
 - Modify: `HANDOFF.md`
 
-- [ ] **Step 1: Run complete verification**
+- [x] **Step 1: Run complete verification**
 
 Run:
 
@@ -202,7 +202,7 @@ npm run build
 
 Expected: all backend and frontend tests pass, and Vite production build exits 0.
 
-- [ ] **Step 2: Restart the delivery services and perform read-only browser acceptance**
+- [x] **Step 2: Restart the delivery services and perform read-only browser acceptance**
 
 Restart with `AGRINEBULA_PYTHON=F:\deepl\anaconda1\envs\pytorch\python.exe`. Because the formal inventory list is currently empty, use an isolated SQLite backup containing one test inventory row bound to an existing completed cattle job. In Chrome, open “圈舍盘点”, click “打开视频证据”, and verify:
 
@@ -211,7 +211,7 @@ Restart with `AGRINEBULA_PYTHON=F:\deepl\anaconda1\envs\pytorch\python.exe`. Bec
 - the video, review, correction, event, and inventory requests correspond to the same `job_id`;
 - the formal database still has zero inventory rows.
 
-- [ ] **Step 3: Document and commit acceptance**
+- [x] **Step 3: Document and commit acceptance**
 
 Record the tested job ID, isolated-data boundary, screenshot path, test totals, and remaining pagination limitation. Update README usage text. Commit:
 
@@ -220,7 +220,7 @@ git add README.md docs/2026-10-16-inventory-video-navigation-acceptance.md
 git commit -m "docs: verify inventory video navigation"
 ```
 
-- [ ] **Step 4: Update and commit handoff separately**
+- [x] **Step 4: Update and commit handoff separately**
 
 Update all six relevant `HANDOFF.md` sections: current stage, completed, in progress, next step, decisions/pitfalls, and interruption point. Commit:
 
