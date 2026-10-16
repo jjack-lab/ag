@@ -4,7 +4,7 @@
 
 - 代码：`b7a1ea8` 后端 API、`d7faddf` 网页入口。
 - 页面：新建盘点同时出现在已完成视频下方与左侧“圈舍盘点”导航。
-- 数据：将正式 `data/agrinebula.db` 通过 SQLite backup 复制为被 Git 忽略的 `data/verification/browser-acceptance.db`，只在本地 8001 服务提交验收记录。正式数据库没有 `inventory_checks` 表；隔离副本有 2 条浏览器验收记录。
+- 数据：将正式 `data/agrinebula.db` 通过 SQLite backup 复制为被 Git 忽略的 `data/verification/browser-acceptance.db`，只在本地 8001 服务提交验收记录。浏览器验收结束时正式数据库尚无 `inventory_checks` 表，隔离副本有 2 条记录；随后启动新版交付服务时正式库按迁移逻辑创建空表，正式接口回读 0 条记录。
 
 ## 实际操作和结果
 
