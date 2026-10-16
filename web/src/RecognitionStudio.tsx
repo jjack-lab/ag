@@ -27,6 +27,7 @@ type RecognitionMode = "image" | "video";
 type StudioResult =
   | { kind: "image"; data: ImageRecognitionResult; classId: number }
   | { kind: "video"; data: VideoJob };
+type Props = { requestedJob?: VideoJob | null };
 
 const DEFAULT_MESSAGE = "选择文件后，系统会自动使用牧业专用模型识别。";
 
@@ -34,7 +35,7 @@ function delay(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
-export default function RecognitionStudio() {
+export default function RecognitionStudio({ requestedJob }: Props) {
   const [mode, setMode] = useState<RecognitionMode>("image");
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<StudioResult | null>(null);
@@ -56,6 +57,16 @@ export default function RecognitionStudio() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!requestedJob) return;
+    runToken.current += 1;
+    setMode("video");
+    setFile(null);
+    setResult({ kind: "video", data: requestedJob });
+    setStatus("idle");
+    setMessage("已打开该盘点绑定的视频证据。");
+  }, [requestedJob]);
 
   function resetRun() {
     runToken.current += 1;
