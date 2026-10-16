@@ -356,9 +356,13 @@ describe("AgriNebula application", () => {
 
   it.each([
     ["null", null],
-    ["missing id", { status: "completed", result: completedInventoryJob.result }],
-    ["missing status", { id: "video-1", result: completedInventoryJob.result }],
-    ["completed without a result object", { id: "video-1", status: "completed", result: null }],
+    ["missing id", { status: "completed", progress: 1, result: completedInventoryJob.result }],
+    ["missing status", { id: "video-1", progress: 1, result: completedInventoryJob.result }],
+    ["unknown status", { id: "video-1", status: "unknown", progress: 1, result: null }],
+    ["missing progress", { id: "video-1", status: "failed", result: null }],
+    ["non-finite progress", { id: "video-1", status: "failed", progress: Number.NaN, result: null }],
+    ["completed without a result object", { id: "video-1", status: "completed", progress: 1, result: null }],
+    ["completed with an empty result", { id: "video-1", status: "completed", progress: 1, result: {} }],
   ])("keeps inventory open for malformed video evidence: %s", async (_label, payload) => {
     vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
       const url = String(input);

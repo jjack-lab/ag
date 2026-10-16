@@ -60,11 +60,29 @@ function isVideoJobResponse(value: unknown): value is VideoJob {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const candidate = value as Record<string, unknown>;
   if (typeof candidate.id !== "string" || candidate.id.trim() === "") return false;
-  if (typeof candidate.status !== "string") return false;
   if (
-    candidate.status === "completed" &&
-    (typeof candidate.result !== "object" || candidate.result === null || Array.isArray(candidate.result))
+    typeof candidate.status !== "string" ||
+    !["queued", "running", "completed", "failed"].includes(candidate.status)
   ) return false;
+  if (typeof candidate.progress !== "number" || !Number.isFinite(candidate.progress)) return false;
+  if (candidate.status === "completed") {
+    if (typeof candidate.result !== "object" || candidate.result === null || Array.isArray(candidate.result)) {
+      return false;
+    }
+    const result = candidate.result as Record<string, unknown>;
+    const pathFields = [
+      "video_path",
+      "trajectory_csv",
+      "alert_csv",
+      "health_summary_csv",
+      "health_report_html",
+    ];
+    if (!pathFields.every((field) => typeof result[field] === "string")) return false;
+    const countFields = ["frame_count", "tracked_cattle", "alert_count"];
+    if (!countFields.every((field) => typeof result[field] === "number" && Number.isFinite(result[field]))) {
+      return false;
+    }
+  }
   return true;
 }
 
