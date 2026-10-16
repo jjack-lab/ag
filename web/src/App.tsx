@@ -11,8 +11,8 @@ import {
   ScanSearch,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { AlertRecord, Dashboard, fetchAlerts, fetchDashboard } from "./api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertRecord, Dashboard, fetchAlerts, fetchDashboard, fetchVideoJob, type VideoJob } from "./api";
 import RecognitionStudio from "./RecognitionStudio";
 import DatasetEvaluationCenter from "./DatasetEvaluationCenter";
 import InventoryPanel from "./InventoryPanel";
@@ -63,6 +63,10 @@ export default function App() {
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [dataError, setDataError] = useState(false);
+  const [requestedVideoJob, setRequestedVideoJob] = useState<VideoJob | null>(null);
+  const [openingInventoryJobId, setOpeningInventoryJobId] = useState<string | null>(null);
+  const [inventoryVideoError, setInventoryVideoError] = useState("");
+  const inventoryOpenToken = useRef(0);
   const reduceMotion = useReducedMotion();
   const entrance = reduceMotion
     ? { initial: false as const, animate: {} }
@@ -109,10 +113,38 @@ export default function App() {
     }, 0);
   }
 
-  function openView(view: WorkspaceView, target = "workspace") {
+  function showView(view: WorkspaceView, target = "workspace") {
     setWorkspaceVisible(true);
     setActiveView(view);
     scrollToElement(target);
+  }
+
+  function openView(view: WorkspaceView, target = "workspace") {
+    inventoryOpenToken.current += 1;
+    setOpeningInventoryJobId(null);
+    setInventoryVideoError("");
+    showView(view, target);
+  }
+
+  async function openInventoryVideo(jobId: string) {
+    const token = inventoryOpenToken.current + 1;
+    inventoryOpenToken.current = token;
+    setOpeningInventoryJobId(jobId);
+    setInventoryVideoError("");
+    try {
+      const job = await fetchVideoJob(jobId);
+      if (inventoryOpenToken.current !== token) return;
+      if (job.status !== "completed" || !job.result) {
+        throw new Error("视频任务尚未完成，暂不能打开证据");
+      }
+      setRequestedVideoJob(job);
+      showView("monitor", "recognition-studio");
+    } catch (error) {
+      if (inventoryOpenToken.current !== token) return;
+      setInventoryVideoError(error instanceof Error ? error.message : "视频证据加载失败");
+    } finally {
+      if (inventoryOpenToken.current === token) setOpeningInventoryJobId(null);
+    }
   }
 
   const modelReady = dashboard?.model_status === "ready";
@@ -299,7 +331,7 @@ export default function App() {
           {activeView === "monitor" && (
             <section className="focused-view" aria-label="实时监控功能区">
               <div className="view-intro"><ScanSearch /><div><h3>识别与追踪工作区</h3><p>上传图片或视频进行识别；摄像头硬件接入将在后续配置。</p></div></div>
-              <RecognitionStudio />
+              <RecognitionStudio requestedJob={requestedVideoJob} />
             </section>
           )}
 
@@ -329,7 +361,11 @@ export default function App() {
               <DatasetEvaluationCenter />
             </section>
           )}
-          {activeView === "inventory" && <InventoryPanel />}
+          {activeView === "inventory" && <InventoryPanel
+            onOpenVideo={openInventoryVideo}
+            openingJobId={openingInventoryJobId}
+            videoOpenError={inventoryVideoError}
+          />}
         </div>
       </section>
     </main>

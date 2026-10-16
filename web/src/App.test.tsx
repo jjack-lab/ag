@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -25,6 +25,34 @@ const alerts = [
     status: "open",
   },
 ];
+
+const completedInventoryJob = {
+  id: "video-1",
+  status: "completed",
+  progress: 1,
+  result: {
+    video_path: "video-1/cattle_tracked.mp4",
+    trajectory_csv: "video-1/cattle_tracks.csv",
+    alert_csv: "video-1/cattle_alerts.csv",
+    health_summary_csv: "video-1/cattle_health.csv",
+    health_report_html: "video-1/cattle_health.html",
+    frame_count: 30,
+    tracked_cattle: 3,
+    alert_count: 0,
+    species: "cattle",
+    track_ids: [1, 2, 3],
+    health_evidence: [],
+  },
+};
+
+const inventoryChecks = [{
+  id: "check-1", job_id: "video-1", species: "cattle", pen_id: "A-1",
+  expected_count: 3, observed_count: 3, current_count: 3, difference: 0,
+  baseline_source: "台账", coverage: "complete", coverage_note: "完整覆盖",
+  operator_name: "张三", observed_at: "2026-10-16T08:00:00+08:00",
+  created_at: "2026-10-16T08:00:00+08:00", status: "preliminary_match",
+  rechecks: [], lost_count: null, video_track_count: 3, verification_status: "user_recorded",
+}];
 
 function response(payload: unknown, ok = true) {
   return {
@@ -243,6 +271,132 @@ describe("AgriNebula application", () => {
     await user.click(screen.getByRole("button", { name: "开始视频识别" }));
 
     expect(screen.getByRole("heading", { name: "实时监控" })).toBeInTheDocument();
+  });
+
+  it("opens completed video evidence from the global inventory list", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/dashboard")) return response(dashboard);
+      if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url === "/api/inventory-checks") return response(inventoryChecks);
+      if (url === "/api/jobs/video-1") return response(completedInventoryJob);
+      if (
+        url === "/api/jobs/video" ||
+        url === "/api/jobs/video-1/reviews" ||
+        url === "/api/jobs/video-1/events" ||
+        url === "/api/jobs/video-1/corrections" ||
+        url === "/api/jobs/video-1/animal-links"
+      ) return response([]);
+      if (url === "/api/experiments/cross-domain-behavior") return response({ status: "not_run" });
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "圈舍盘点" }));
+    await user.click(await screen.findByRole("button", { name: "打开视频证据" }));
+
+    expect(await screen.findByRole("heading", { name: "实时监控" })).toBeInTheDocument();
+    expect(await screen.findByLabelText("牛只视频追踪结果")).toHaveAttribute(
+      "src",
+      "/media/results/video-1/cattle_tracked.mp4",
+    );
+  });
+
+  it("keeps the inventory view open when its video task is unavailable", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/dashboard")) return response(dashboard);
+      if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url === "/api/inventory-checks") return response(inventoryChecks);
+      if (url === "/api/jobs/video-1") {
+        return response({ id: "video-1", status: "failed", progress: 1, result: null });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "圈舍盘点" }));
+    await user.click(await screen.findByRole("button", { name: "打开视频证据" }));
+
+    expect(await screen.findByText("视频任务尚未完成，暂不能打开证据")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "圈舍存栏核对" })).toBeInTheDocument();
+  });
+
+  it("does not let a pending evidence request override newer workspace navigation", async () => {
+    let resolveJob!: (value: Response) => void;
+    let jobResolved = false;
+    const pendingJob = new Promise<Response>((resolve) => { resolveJob = resolve; });
+    pendingJob.then(() => { jobResolved = true; });
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/dashboard")) return response(dashboard);
+      if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url === "/api/inventory-checks") return response(inventoryChecks);
+      if (url === "/api/jobs/video-1") return pendingJob;
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "圈舍盘点" }));
+    await user.click(await screen.findByRole("button", { name: "打开视频证据" }));
+    await user.click(screen.getByRole("button", { name: "健康告警" }));
+    resolveJob(response(completedInventoryJob));
+
+    await waitFor(() => expect(jobResolved).toBe(true));
+    expect(screen.getByRole("heading", { name: "全部健康告警" })).toBeInTheDocument();
+  });
+
+  it("keeps the last inventory evidence click when requests finish out of order", async () => {
+    let resolveFirst!: (value: Response) => void;
+    let resolveSecond!: (value: Response) => void;
+    let firstResolved = false;
+    const firstJob = new Promise<Response>((resolve) => { resolveFirst = resolve; });
+    const secondJob = new Promise<Response>((resolve) => { resolveSecond = resolve; });
+    firstJob.then(() => { firstResolved = true; });
+    const secondCheck = { ...inventoryChecks[0], id: "check-2", job_id: "video-2", pen_id: "A-2" };
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/dashboard")) return response(dashboard);
+      if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url === "/api/inventory-checks") return response([...inventoryChecks, secondCheck]);
+      if (url === "/api/jobs/video-1") return firstJob;
+      if (url === "/api/jobs/video-2") return secondJob;
+      if (
+        url === "/api/jobs/video" ||
+        url === "/api/jobs/video-2/reviews" ||
+        url === "/api/jobs/video-2/events" ||
+        url === "/api/jobs/video-2/corrections" ||
+        url === "/api/jobs/video-2/animal-links"
+      ) return response([]);
+      if (url === "/api/experiments/cross-domain-behavior") return response({ status: "not_run" });
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "圈舍盘点" }));
+    const firstCard = (await screen.findByRole("heading", { name: "A-1 · 牛" })).closest("article");
+    const secondCard = screen.getByRole("heading", { name: "A-2 · 牛" }).closest("article");
+    if (!firstCard || !secondCard) throw new Error("Inventory cards were not rendered");
+    await user.click(within(firstCard).getByRole("button", { name: "打开视频证据" }));
+    await user.click(within(secondCard).getByRole("button", { name: "打开视频证据" }));
+    resolveSecond(response({
+      ...completedInventoryJob,
+      id: "video-2",
+      result: { ...completedInventoryJob.result, video_path: "video-2/cattle_tracked.mp4" },
+    }));
+
+    expect(await screen.findByLabelText("牛只视频追踪结果")).toHaveAttribute(
+      "src", "/media/results/video-2/cattle_tracked.mp4",
+    );
+    resolveFirst(response(completedInventoryJob));
+    await waitFor(() => expect(firstResolved).toBe(true));
+    expect(screen.getByLabelText("牛只视频追踪结果")).toHaveAttribute(
+      "src", "/media/results/video-2/cattle_tracked.mp4",
+    );
   });
 
   it("toggles actionable alert details", async () => {

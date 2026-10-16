@@ -9,6 +9,37 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const job = { id: "video-1", status: "completed", progress: 1,
   result: { species: "cattle", tracked_cattle: 7 } } as VideoJob;
 
+const historicalCheck = { id: "check-history", job_id: "video-1", species: "cattle", pen_id: "A-9",
+  expected_count: 10, observed_count: 10, current_count: 10, difference: 0,
+  baseline_source: "台账", coverage: "complete", coverage_note: "完整覆盖",
+  operator_name: "张三", observed_at: new Date().toISOString(), created_at: new Date().toISOString(),
+  status: "preliminary_match", rechecks: [], lost_count: null, video_track_count: 7,
+  verification_status: "user_recorded" } as InventoryCheck;
+
+it("reports the bound video job when opening evidence from the global inventory list", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true, json: async () => [historicalCheck],
+  } as Response);
+  const onOpenVideo = vi.fn();
+  const user = userEvent.setup();
+
+  render(<InventoryPanel onOpenVideo={onOpenVideo} />);
+
+  await user.click(await screen.findByRole("button", { name: "打开视频证据" }));
+  expect(onOpenVideo).toHaveBeenCalledWith("video-1");
+});
+
+it("does not offer duplicate video navigation inside a selected video job", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true, json: async () => [historicalCheck],
+  } as Response);
+
+  render(<InventoryPanel selectedJob={job} onOpenVideo={vi.fn()} />);
+
+  expect(await screen.findByText(/数量初步相符/)).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "打开视频证据" })).not.toBeInTheDocument();
+});
+
 it("records a coverage-limited count without calling video IDs livestock", async () => {
   const checks: InventoryCheck[] = [];
   const submitted: { value: Record<string, unknown> | null } = { value: null };

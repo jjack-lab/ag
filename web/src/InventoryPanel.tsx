@@ -13,7 +13,19 @@ const statusLabel: Record<InventoryCheck["status"], string> = {
   loss_user_recorded: "人工登记丢失",
 };
 
-export default function InventoryPanel({ selectedJob }: { selectedJob?: VideoJob | null }) {
+type Props = {
+  selectedJob?: VideoJob | null;
+  onOpenVideo?: (jobId: string) => void;
+  openingJobId?: string | null;
+  videoOpenError?: string;
+};
+
+export default function InventoryPanel({
+  selectedJob,
+  onOpenVideo,
+  openingJobId,
+  videoOpenError,
+}: Props) {
   const [checks, setChecks] = useState<InventoryCheck[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -104,6 +116,7 @@ export default function InventoryPanel({ selectedJob }: { selectedJob?: VideoJob
       <button disabled={busy}>保存盘点</button>
     </form>}
     {!ready && <p>打开一段已完成的视频后可建立盘点记录。</p>}
+    {videoOpenError && <p role="alert">{videoOpenError}</p>}
     <div className="inventory-list">
       {selectedChecks.length === 0 && <p>暂无盘点记录。</p>}
       {selectedChecks.map((row) => <article key={row.id}>
@@ -114,6 +127,10 @@ export default function InventoryPanel({ selectedJob }: { selectedJob?: VideoJob
         {row.status === "loss_user_recorded" && <p>人工登记丢失 {row.lost_count}；记录人和核查过程见复核记录。</p>}
         <small>登记来源：{row.baseline_source}；覆盖：{row.coverage_note}；操作人：{row.operator_name}</small>
         {row.rechecks.map((item) => <small key={item.id}>复核：{item.operator_name}，{item.note}</small>)}
+        {onOpenVideo && !selectedJob && <button type="button"
+          disabled={openingJobId === row.job_id} onClick={() => onOpenVideo(row.job_id)}>
+          {openingJobId === row.job_id ? "正在打开…" : "打开视频证据"}
+        </button>}
         {row.coverage === "complete" && row.observed_count !== null && <button type="button" onClick={() => setRecheckId(recheckId === row.id ? null : row.id)}>填写人工复核</button>}
         {recheckId === row.id && <form onSubmit={saveRecheck}>
           <label>复点数量<input type="number" min="0" required value={counted} onChange={(e) => setCounted(e.target.value)} /></label>
