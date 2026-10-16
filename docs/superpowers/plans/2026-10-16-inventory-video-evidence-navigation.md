@@ -160,7 +160,7 @@ async function openInventoryVideo(jobId: string) {
       throw new Error("视频任务尚未完成，暂不能打开证据");
     }
     setRequestedVideoJob(job);
-    openView("monitor", "recognition-studio");
+    showView("monitor", "recognition-studio");
   } catch (error) {
     if (inventoryOpenToken.current !== token) return;
     setInventoryVideoError(error instanceof Error ? error.message : "视频证据加载失败");
@@ -169,6 +169,8 @@ async function openInventoryVideo(jobId: string) {
   }
 }
 ```
+
+The evidence-success path uses `showView` so the newly selected job is preserved. Ordinary navigation uses `openView`, which invalidates pending evidence requests and clears `requestedVideoJob` so an old result cannot reopen later.
 
 Pass these values to the global `InventoryPanel`, and render `<RecognitionStudio requestedJob={requestedVideoJob} />` in the monitor view. Keep the overview studio independent so a navigation request does not duplicate the selected result.
 

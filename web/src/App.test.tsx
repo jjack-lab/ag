@@ -354,6 +354,31 @@ describe("AgriNebula application", () => {
     expect(screen.getByRole("heading", { level: 2, name: "圈舍存栏核对" })).toBeInTheDocument();
   });
 
+  it.each([
+    ["null", null],
+    ["missing id", { status: "completed", result: completedInventoryJob.result }],
+    ["missing status", { id: "video-1", result: completedInventoryJob.result }],
+    ["completed without a result object", { id: "video-1", status: "completed", result: null }],
+  ])("keeps inventory open for malformed video evidence: %s", async (_label, payload) => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/dashboard")) return response(dashboard);
+      if (url.startsWith("/api/alerts")) return response(alerts);
+      if (url === "/api/inventory-checks") return response(inventoryChecks);
+      if (url === "/api/jobs/video-1") return response(payload);
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "圈舍盘点" }));
+    await user.click(await screen.findByRole("button", { name: "打开视频证据" }));
+
+    expect(await screen.findByText("视频证据加载失败")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "圈舍存栏核对" })).toBeInTheDocument();
+    expect(screen.queryByText("视频任务尚未完成，暂不能打开证据")).not.toBeInTheDocument();
+  });
+
   it("does not let a pending evidence request override newer workspace navigation", async () => {
     let resolveJob!: (value: Response) => void;
     let jobResolved = false;

@@ -56,6 +56,18 @@ const viewTitle: Record<WorkspaceView, string> = {
   inventory: "圈舍存栏核对",
 };
 
+function isVideoJobResponse(value: unknown): value is VideoJob {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.id !== "string" || candidate.id.trim() === "") return false;
+  if (typeof candidate.status !== "string") return false;
+  if (
+    candidate.status === "completed" &&
+    (typeof candidate.result !== "object" || candidate.result === null || Array.isArray(candidate.result))
+  ) return false;
+  return true;
+}
+
 export default function App() {
   const [workspaceVisible, setWorkspaceVisible] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("overview");
@@ -133,8 +145,12 @@ export default function App() {
     setOpeningInventoryJobId(jobId);
     setInventoryVideoError("");
     try {
-      const job = await fetchVideoJob(jobId);
+      const response: unknown = await fetchVideoJob(jobId);
       if (inventoryOpenToken.current !== token) return;
+      if (!isVideoJobResponse(response)) {
+        throw new Error("视频证据加载失败");
+      }
+      const job = response;
       if (job.status !== "completed" || !job.result) {
         throw new Error("视频任务尚未完成，暂不能打开证据");
       }
