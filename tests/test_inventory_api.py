@@ -130,15 +130,21 @@ def test_inventory_history_pages_beyond_first_hundred_and_filters_latest_state(t
     assert first.status_code == 200
     assert first.json()["total"] == 105
     assert len(first.json()["items"]) == 20
+    first_keys = [(item["created_at"], item["id"]) for item in first.json()["items"]]
+    assert first_keys == sorted(first_keys, reverse=True)
     second = client.get("/api/inventory-checks/page?limit=20&offset=100")
     assert second.json()["total"] == 105
     assert len(second.json()["items"]) == 5
+    second_keys = [(item["created_at"], item["id"]) for item in second.json()["items"]]
+    assert second_keys == sorted(second_keys, reverse=True)
     assert set(item["id"] for item in first.json()["items"]).isdisjoint(
         item["id"] for item in second.json()["items"]
     )
 
     specific = client.get("/api/inventory-checks/page?pen_id=A-001")
     assert specific.json()["total"] == 1
+    assert client.get("/api/inventory-checks/page?pen_id=%25").json()["total"] == 0
+    assert client.get("/api/inventory-checks/page?pen_id=_").json()["total"] == 0
     check = specific.json()["items"][0]
     assert check["status"] == "discrepancy_pending"
     saved = client.post(f"/api/inventory-checks/{check['id']}/rechecks", json=review_payload(
