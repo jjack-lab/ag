@@ -73,3 +73,18 @@ it("shows a pending shortfall and requires human field evidence for loss registr
   await waitFor(() => expect(recheck?.lost_count).toBe(1));
   expect(screen.getByText(/人工登记丢失 1/)).toBeInTheDocument();
 });
+
+it("does not offer a recheck before the initial human count exists", async () => {
+  const row = { id: "check-3", job_id: "video-1", species: "cattle", pen_id: "A-3",
+    expected_count: 10, observed_count: null, current_count: null, difference: null,
+    baseline_source: "台账", coverage: "complete", coverage_note: "四角覆盖",
+    operator_name: "张三", observed_at: new Date().toISOString(), created_at: new Date().toISOString(),
+    status: "count_needed", rechecks: [], lost_count: null, video_track_count: 7,
+    verification_status: "user_recorded" } as InventoryCheck;
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true, json: async () => [row],
+  } as Response);
+  render(<InventoryPanel selectedJob={job} />);
+  expect(await screen.findByText("覆盖完整，待人工清点")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "填写人工复核" })).not.toBeInTheDocument();
+});

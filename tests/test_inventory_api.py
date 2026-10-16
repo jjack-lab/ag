@@ -59,6 +59,19 @@ def test_partial_coverage_prevents_loss_review(tmp_path):
     assert response.status_code == 422
 
 
+def test_missing_initial_count_prevents_any_recheck(tmp_path):
+    client = client_with_job(tmp_path)
+    row = client.post(
+        "/api/inventory-checks", json=payload(observed_count=None)
+    ).json()
+    assert row["status"] == "count_needed"
+    response = client.post(
+        f"/api/inventory-checks/{row['id']}/rechecks", json=review_payload()
+    )
+    assert response.status_code == 422
+    assert "首次人工清点" in response.json()["detail"]
+
+
 def test_loss_review_requires_recount_and_field_evidence(tmp_path):
     client = client_with_job(tmp_path)
     check = client.post("/api/inventory-checks", json=payload()).json()

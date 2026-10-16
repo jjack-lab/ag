@@ -32,6 +32,8 @@ def inventory_state(check: dict, latest_recheck: dict | None) -> dict:
 def validate_recheck(check: dict, recheck: dict) -> None:
     if check["coverage"] != "complete":
         raise ValueError("拍摄覆盖不完整，需先补拍并建立新盘点")
+    if check["observed_count"] is None:
+        raise ValueError("需先完成首次人工清点，之后才能提交复核")
     difference = check["expected_count"] - recheck["counted_count"]
     outcome = recheck["outcome"]
     lost_count = recheck.get("lost_count")

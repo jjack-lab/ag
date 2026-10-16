@@ -114,7 +114,7 @@ export default function InventoryPanel({ selectedJob }: { selectedJob?: VideoJob
         {row.status === "loss_user_recorded" && <p>人工登记丢失 {row.lost_count}；记录人和核查过程见复核记录。</p>}
         <small>登记来源：{row.baseline_source}；覆盖：{row.coverage_note}；操作人：{row.operator_name}</small>
         {row.rechecks.map((item) => <small key={item.id}>复核：{item.operator_name}，{item.note}</small>)}
-        {row.coverage === "complete" && <button type="button" onClick={() => setRecheckId(recheckId === row.id ? null : row.id)}>填写人工复核</button>}
+        {row.coverage === "complete" && row.observed_count !== null && <button type="button" onClick={() => setRecheckId(recheckId === row.id ? null : row.id)}>填写人工复核</button>}
         {recheckId === row.id && <form onSubmit={saveRecheck}>
           <label>复点数量<input type="number" min="0" required value={counted} onChange={(e) => setCounted(e.target.value)} /></label>
           <label>复核结论<select value={outcome} onChange={(e) => setOutcome(e.target.value as InventoryRecheck["outcome"])}>
