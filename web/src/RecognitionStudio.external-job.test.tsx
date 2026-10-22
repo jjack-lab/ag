@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 
 import type { VideoJob } from "./api";
@@ -53,5 +54,33 @@ it("opens an externally selected completed video job", async () => {
   expect(screen.getByLabelText("牛只视频追踪结果")).toHaveAttribute(
     "src",
     "/media/results/job-1/cattle_tracked.mp4",
+  );
+});
+
+it("opens the filmed cattle development demo with clear provenance", async () => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const url = String(input);
+    if (url === "/api/jobs/202d89f9aaad433480d8570bd90c3d41") {
+      return { ok: true, json: async () => completedJob } as Response;
+    }
+    if (
+      url === "/api/jobs/video" ||
+      url === "/api/jobs/job-1/reviews" ||
+      url === "/api/jobs/job-1/events" ||
+      url === "/api/jobs/job-1/corrections" ||
+      url === "/api/jobs/job-1/animal-links" ||
+      url === "/api/inventory-checks?job_id=job-1"
+    ) return { ok: true, json: async () => [] } as Response;
+    if (url === "/api/experiments/cross-domain-behavior") {
+      return { ok: true, json: async () => ({ status: "not_run" }) } as Response;
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  });
+
+  render(<RecognitionStudio />);
+  expect(screen.getByText(/素材参与过开发，不代表新牧场独立验收/)).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "打开演示视频" }));
+  expect(await screen.findByLabelText("牛只视频追踪结果")).toHaveAttribute(
+    "src", "/media/results/job-1/cattle_tracked.mp4",
   );
 });

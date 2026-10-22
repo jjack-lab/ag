@@ -45,6 +45,11 @@
 .health-evidence-limit { margin: 0; font-size: .85rem; }
 @media (max-width: 900px) { .health-evidence-chain { grid-template-columns: 1fr; } .health-evidence-node + .health-evidence-node::before { display: none; } }
 .video-review-workspace { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(255,255,255,.04); }
+.cattle-demo-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 16px 0; padding: 16px; border: 1px solid rgba(163,230,53,.28); border-radius: 14px; background: rgba(163,230,53,.07); }
+.cattle-demo-card p { margin: 6px 0 0; color: var(--muted, #9ca3af); font-size: .9rem; line-height: 1.55; }
+.cattle-demo-card button { flex: 0 0 auto; padding: 10px 14px; border: 0; border-radius: 9px; background: #a3e635; color: #17210a; font-weight: 700; cursor: pointer; }
+.cattle-demo-card button:disabled { opacity: .55; cursor: default; }
+@media (max-width: 650px) { .cattle-demo-card { flex-direction: column; align-items: stretch; } }
 .video-event-timeline { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(163,230,53,.2); border-radius: 18px; background: rgba(163,230,53,.035); }
 .video-event-timeline header { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .video-event-timeline small, .video-event-timeline p { color: var(--muted, #9ca3af); }
