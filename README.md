@@ -85,6 +85,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start_delivery.ps1 -CheckO
 
 ### 视频检测与健康风险提示
 
+首页识别工作台现有“真实拍摄牛视频 · 开发素材演示”入口。点击“打开演示视频”即可播放本机已经处理的 21 秒牛视频，查看检测框、视频内 Track ID、行为摘要、规则证据、事件片段与人工画区入口。原视频为 `data/verification/input/waid_cattle_static_acceptance.avi`，SHA-256 为 `8a7c40a3cf8c2996bb1b4085ef222b3d39695a1d7d56b05d773861a55bfba68c`；它曾用于开发，不能当作新牧场独立验收。此快捷入口绑定当前本机任务 `202d89f9aaad433480d8570bd90c3d41`；迁移到新电脑或重建任务数据库后，需重新上传原视频并更新 `web/src/RecognitionStudio.tsx` 中的演示任务 ID。演示核对见 [牛训练视频网页演示记录](docs/2026-10-22-cattle-training-video-demo.md)。
+
 1. 切换到视频识别。
 2. 上传 MP4、AVI、MOV 或 MKV。
 3. 选择 ByteTrack 或 BoT-SORT。
