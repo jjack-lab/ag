@@ -151,3 +151,17 @@
 .capture-guidance strong { color: #a5f3fc; }
 .capture-guidance p { margin: 7px 0; }
 .capture-guidance small { display: block; color: #cbd5e1; }
+.inspection-summary-section { margin: 16px 0; }
+.inspection-summary { margin-top: 14px; padding: 20px; border: 1px solid rgba(255,255,255,.2); border-radius: 14px; background: rgba(8, 29, 33, .75); }
+.inspection-summary header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.inspection-summary h4 { margin: 4px 0 12px; font-size: 22px; }
+.inspection-summary h5 { margin: 18px 0 6px; font-size: 15px; }
+.inspection-summary p { margin: 7px 0; }
+.inspection-summary footer { margin-top: 20px; font-size: 12px; color: #cbd5e1; }
+@media print {
+  body * { visibility: hidden !important; }
+  .inspection-summary, .inspection-summary * { visibility: visible !important; }
+  .inspection-summary { position: absolute; inset: 0 auto auto 0; width: 100%; color: #111; background: white; border: 0; box-shadow: none; }
+  .inspection-summary button { display: none; }
+  .inspection-summary footer { color: #333; }
+}
