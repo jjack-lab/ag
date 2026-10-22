@@ -14,18 +14,18 @@
 
 **Files:** `web/src/App.test.tsx`, `web/src/App.tsx`
 
-- [ ] 在 `App.test.tsx` 增加断言：首页有“进入健康控制中心”入口，点击后切换到今日工作台并定位工作区；同时“查看识别能力”和“查看健康分析与报告”仍存在。
-- [ ] 在 `web/` 运行 `npm test -- --run src/App.test.tsx`，确认新断言先失败。
-- [ ] 在 `App.tsx` 使主入口触发约 550 毫秒的进场状态，随后调用现有 `openView("overview")`；减少动态效果时直接调用。保留其它入口。
-- [ ] 再运行聚焦测试，确认通过。
+- [x] 在 `App.test.tsx` 增加断言：首页有“进入健康控制中心”入口，点击后切换到今日工作台并定位工作区；同时“查看识别能力”和“查看健康分析与报告”仍存在。
+- [x] 在 `web/` 运行 `npm test -- --run src/App.test.tsx`，确认新断言先失败。
+- [x] 在 `App.tsx` 使主入口触发约 550 毫秒的进场状态，随后调用现有 `openView("overview")`；减少动态效果时直接调用。保留其它入口。
+- [x] 再运行聚焦测试，确认通过。
 
 ### Task 2: 首屏视觉
 
-**Files:** `web/src/App.tsx`, `web/src/site-refresh.css`, `web/src/particle-field.css`, `web/public/hero-cattle.jpg`
+**Files:** `web/src/App.tsx`, `web/src/immersive-home.css`, `web/public/hero-cattle.jpg`
 
-- [ ] 将现有牛开发素材静帧复制为 `web/public/hero-cattle.jpg`，不做假证据处理。
-- [ ] 把双栏首屏改为全屏背景、巨型标题、中央主入口、少量场景说明及演示素材标签；工作台组件不变。
-- [ ] 在 CSS 中实现缓慢镜头感、粒子层、入口推进、手机适配与 `prefers-reduced-motion` 跳过动效。
-- [ ] 运行 `npm test -- --run` 和 `npm run build`。
-- [ ] 用浏览器检查首页、入口转场与工作台，并修复实际发现的问题。
+- [x] 从 `data/verification/input/waid_cattle_static_acceptance.avi` 第 70 帧提取 `web/public/hero-cattle.jpg`，不做假证据处理。
+- [x] 把双栏首屏改为全屏背景、巨型标题、中央主入口、少量场景说明及演示素材标签；工作台组件不变。
+- [x] 在 CSS 中实现缓慢镜头感、粒子层、入口推进、手机适配与 `prefers-reduced-motion` 跳过动效。
+- [x] 运行 `npm test -- --run` 和 `npm run build`。
+- [x] 用浏览器检查桌面首页、入口转场与工作台；移动宽度由响应式 CSS 覆盖，本轮未做手机浏览器截图。
 - [ ] 更新 `HANDOFF.md`，提交一个可验证的改动单元。
