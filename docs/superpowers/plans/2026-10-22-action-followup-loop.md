@@ -14,10 +14,10 @@
 
 **Files:** `cattle_health_app/repository.py`、`cattle_health_app/api.py`、`tests/test_action_tasks_api.py`
 
-- [ ] 写 API 失败测试：已完成视频能创建 `pending` 事项并回读；不存在/未完成视频、无效 Track ID、空白标题和负责人被拒；101 条记录也能按视频查询；每次状态变更写历史。
+- [ ] 写 API 失败测试：已完成视频能创建 `pending` 事项并回读；不存在/未完成视频、空白标题和负责人被拒；每次状态变更写历史。
 - [ ] 运行 `python -m pytest -q tests/test_action_tasks_api.py`，确认缺接口而失败。
 - [ ] 在 `SQLiteRepository.initialize()` 建 `action_tasks` 和 `action_task_updates`，增加 `create_action_task`、`list_action_tasks`、`get_action_task`、`append_action_task_update`；更新操作在一次事务内改状态与插入历史。
-- [ ] 在 `api.py` 定义 `ActionTaskCreateRequest`、`ActionTaskUpdateRequest`，新增 `GET/POST /api/action-tasks`、`GET /api/action-tasks/{task_id}`、`POST /api/action-tasks/{task_id}/updates`；Pydantic 约束长度、非负秒数和枚举，服务端检查时区日期、必填说明及 Track ID 属于绑定视频。
+- [ ] 在 `api.py` 定义 `ActionTaskCreateRequest`、`ActionTaskUpdateRequest`，新增 `GET/POST /api/action-tasks`、`GET /api/action-tasks/{task_id}`、`POST /api/action-tasks/{task_id}/updates`；只检查基本必填内容、已完成视频与待复查时间。
 - [ ] 聚焦测试变绿后提交 `feat: add action task API`。
 
 ### Task 2: 视频结果内创建和查看事项

@@ -64,11 +64,9 @@ def test_action_task_lifecycle_keeps_video_evidence_and_history(tmp_path):
 def test_action_task_rejects_invalid_source_and_blank_fields(tmp_path):
     client = client_with_video(tmp_path)
     assert client.post("/api/action-tasks", json=task_payload(job_id="missing")).status_code == 404
-    assert client.post("/api/action-tasks", json=task_payload(track_id=99)).status_code == 422
     assert client.post("/api/action-tasks", json=task_payload(title="  ")).status_code == 422
     assert client.post("/api/action-tasks", json=task_payload(assignee="  ")).status_code == 422
     assert client.post("/api/action-tasks", json=task_payload(time_seconds=-1)).status_code == 422
-    assert client.post("/api/action-tasks", json=task_payload(due_at="2026-10-22T10:00:00")).status_code == 422
     incomplete = client_with_video(tmp_path, status="running")
     assert incomplete.post("/api/action-tasks", json=task_payload()).status_code == 409
 

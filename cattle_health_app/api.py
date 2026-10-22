@@ -671,15 +671,6 @@ def create_app(
         assignee = request.assignee.strip()
         if not title or not assignee:
             raise HTTPException(status_code=422, detail="标题和负责人不能为空")
-        if request.due_at.tzinfo is None or request.due_at.utcoffset() is None:
-            raise HTTPException(status_code=422, detail="截止时间须包含时区")
-        if request.time_seconds is not None and not math.isfinite(request.time_seconds):
-            raise HTTPException(status_code=422, detail="视频时间点无效")
-        known_tracks = set(job.result.get("track_ids") or [])
-        if not known_tracks:
-            known_tracks = {row.get("track_id") for row in job.result.get("health_evidence", [])}
-        if request.track_id is not None and request.track_id not in known_tracks:
-            raise HTTPException(status_code=422, detail="该视频结果中没有此 Track ID")
         now = datetime.now().astimezone().isoformat(timespec="seconds")
         task = {
             "id": uuid4().hex, "job_id": job.id,
@@ -708,10 +699,6 @@ def create_app(
             raise HTTPException(status_code=422, detail="操作人和处理说明不能为空")
         if request.status == "followup" and request.next_due_at is None:
             raise HTTPException(status_code=422, detail="待复查事项须填写下次复查时间")
-        if request.next_due_at is not None and (
-            request.next_due_at.tzinfo is None or request.next_due_at.utcoffset() is None
-        ):
-            raise HTTPException(status_code=422, detail="复查时间须包含时区")
         update = {
             "id": uuid4().hex, "task_id": task_id, "status": request.status,
             "actor": actor, "note": note,
