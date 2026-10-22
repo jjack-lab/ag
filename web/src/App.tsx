@@ -296,6 +296,7 @@ export default function App() {
             <div className="hero-actions">
               <button type="button" className="primary-action" onClick={() => openView("overview")}>进入健康控制中心 <ArrowUpRight size={18} /></button>
               <button type="button" className="hero-report-link" onClick={() => openView("health")}>查看健康分析与报告 <ArrowUpRight size={17} /></button>
+              <a className="hero-report-link" href="#capabilities">查看识别能力 <ArrowUpRight size={17} /></a>
             </div>
             <div className="hero-pipeline"><span>01 视频识别</span><i /><span>02 行为与规则</span><i /><span>03 报告与复核</span></div>
           </div>
