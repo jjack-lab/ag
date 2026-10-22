@@ -28,6 +28,9 @@ it("shows real rule score with behavior context and switches the selected track"
   expect(screen.getByText("行走")).toBeInTheDocument();
   expect(screen.getByText(/仍被遮挡/)).toBeInTheDocument();
   expect(screen.getByText(/不能判断具体疾病/)).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "生成健康报告" }));
+  expect(screen.getByRole("dialog", { name: "牛只健康观察报告" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "关闭报告" }));
   await userEvent.click(screen.getByRole("button", { name: /Track ID 8/ }));
   expect(screen.getByText(/本次轨迹未形成规则告警/)).toBeInTheDocument();
 });

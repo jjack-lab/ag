@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Activity, ArrowUpRight, CircleHelp, HeartPulse, ScanLine, Sparkles } from "lucide-react";
 import { fetchHealthAssessment, fetchVideoJobs, type HealthAssessment, type VideoJob } from "./api";
+import HealthReport from "./HealthReport";
 import "./health-insights.css";
 
 const riskText: Record<string, string> = { normal: "未触发规则", low: "低风险提示", medium: "中风险提示", high: "高风险提示", unavailable: "暂无规则评分" };
@@ -17,6 +18,7 @@ export default function HealthInsights({ onOpenVideo }: { onOpenVideo?: (jobId: 
   const [assessment, setAssessment] = useState<HealthAssessment | null>(null);
   const [trackId, setTrackId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [reportGeneratedAt, setReportGeneratedAt] = useState("");
 
   useEffect(() => {
     fetchVideoJobs().then((rows) => {
@@ -43,6 +45,7 @@ export default function HealthInsights({ onOpenVideo }: { onOpenVideo?: (jobId: 
   const attention = assessment?.tracks.filter((row) => row.risk_level === "high" || row.risk_level === "medium") || [];
   const score = track?.risk_score;
   const ring = score === null || score === undefined ? 0 : Math.min(100, Math.max(0, score));
+  const selectedJob = jobs.find((row) => row.id === jobId);
 
   return <section className="health-insights" aria-label="健康模型分析">
     <div className="health-particles" aria-hidden="true">{particles.map((particle, index) =>
@@ -62,6 +65,7 @@ export default function HealthInsights({ onOpenVideo }: { onOpenVideo?: (jobId: 
           {jobs.map((job) => <option value={job.id} key={job.id}>{new Date(job.created_at || "").toLocaleString("zh-CN")} · {job.id.slice(0, 8)}</option>)}
         </select></label>
         {jobId && onOpenVideo && <button type="button" onClick={() => onOpenVideo(jobId)}>查看原视频 <ArrowUpRight size={16} /></button>}
+        {assessment && <button type="button" onClick={() => setReportGeneratedAt(new Date().toISOString())}>生成健康报告</button>}
       </div>
       {error && <p role="alert" className="health-insights-error">{error}</p>}
       {!jobId && !error && <p className="health-insights-empty">暂无已完成的牛视频。先在“实时监控”上传或打开演示视频。</p>}
@@ -106,5 +110,6 @@ export default function HealthInsights({ onOpenVideo }: { onOpenVideo?: (jobId: 
         <p className="health-insights-limit">该模型是规则型风险筛查，不能判断具体疾病或预测发病时间；开发素材上的分数未经独立牧场验证。</p>
       </>}
     </div>
+    {reportGeneratedAt && assessment && selectedJob && <HealthReport assessment={assessment} job={selectedJob} generatedAt={reportGeneratedAt} onClose={() => setReportGeneratedAt("")} />}
   </section>;
 }
