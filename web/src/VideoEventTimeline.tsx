@@ -10,7 +10,7 @@ function timestamp(seconds: number) {
 }
 
 const kindLabels: Record<VideoEvent["kind"], string> = {
-  alert: "规则提示", behavior: "行为切换", review: "人工复核", correction: "画面纠错", movement: "活动状态",
+  alert: "规则提示", behavior: "行为切换", review: "人工复核", correction: "画面纠错", movement: "活动状态", spatial: "空间核查提示",
 };
 
 export default function VideoEventTimeline({ jobId, refreshKey, onSeek, onCreateTask }: Props) {
@@ -43,7 +43,7 @@ export default function VideoEventTimeline({ jobId, refreshKey, onSeek, onCreate
         <span>{kindLabels[event.kind]}{event.track_id !== null ? ` · ID ${event.track_id}` : ""}</span>
         <strong>{event.label}</strong>
         {event.detail && <small>{event.detail}</small>}
-        {event.kind === "alert" && onCreateTask && <button type="button" onClick={() => onCreateTask(event)}>
+        {(event.kind === "alert" || event.kind === "spatial") && onCreateTask && <button type="button" onClick={() => onCreateTask(event)}>
           根据此提示创建核查事项
         </button>}
         <button type="button" onClick={() => setPreviewId(previewId === event.id ? null : event.id)}>

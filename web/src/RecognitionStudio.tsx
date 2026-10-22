@@ -22,6 +22,7 @@ import HealthEvidence from "./HealthEvidence";
 import VideoReviewWorkspace from "./VideoReviewWorkspace";
 import InventoryPanel from "./InventoryPanel";
 import VideoEventTimeline from "./VideoEventTimeline";
+import SpatialAnalysisPanel from "./SpatialAnalysisPanel";
 import VideoCorrectionEditor from "./VideoCorrectionEditor";
 import ActionTaskPanel from "./ActionTaskPanel";
 import VideoCaptureGuidance from "./VideoCaptureGuidance";
@@ -362,6 +363,8 @@ export default function RecognitionStudio({ requestedJob }: Props) {
           resultVideo.current.currentTime = seconds;
           resultVideo.current.scrollIntoView?.({ block: "center", behavior: "smooth" });
         }} />}
+        {tracking && videoJob && <SpatialAnalysisPanel key={videoJob.id} jobId={videoJob.id} videoPath={tracking.video_path}
+          onReportSaved={() => setReviewRevision((value) => value + 1)} />}
         {tracking && videoJob && <VideoCorrectionEditor key={videoJob.id} jobId={videoJob.id}
           videoPath={tracking.video_path} species={tracking.species || "cattle"}
           trackIds={tracking.track_ids || []}

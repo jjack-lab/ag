@@ -56,6 +56,23 @@
 .event-evidence img, .event-evidence video { width: 100%; max-height: 300px; object-fit: contain; border-radius: 8px; background: #10191c; }
 .event-evidence small { grid-column: 1 / -1; }
 @media (max-width: 650px) { .event-evidence { grid-template-columns: 1fr; } .event-evidence small { grid-column: 1; } }
+.spatial-panel { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(163,230,53,.2); border-radius: 18px; background: rgba(163,230,53,.035); }
+.spatial-panel h4 { margin: 0; }
+.spatial-panel small { color: var(--muted, #9ca3af); }
+.spatial-kind { display: flex; flex-wrap: wrap; gap: 8px; }
+.spatial-panel button { padding: 9px 12px; border: 1px solid rgba(163,230,53,.35); border-radius: 8px; background: rgba(163,230,53,.12); color: #d9f99d; cursor: pointer; }
+.spatial-kind button[aria-pressed="true"] { background: #a3e635; color: #17210a; }
+.spatial-stage { position: relative; width: min(100%, 720px); touch-action: none; cursor: crosshair; }
+.spatial-stage video { display: block; width: 100%; background: #10191c; }
+.spatial-stage svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.spatial-stage svg rect, .spatial-stage svg line { fill: rgba(163,230,53,.16); stroke: #a3e635; stroke-width: .7; vector-effect: non-scaling-stroke; }
+.spatial-panel form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.spatial-panel label { display: grid; gap: 5px; }
+.spatial-panel input { min-width: 0; padding: 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: #162226; color: white; }
+.spatial-reverse { display: flex !important; align-items: center; }
+.spatial-results { display: grid; gap: 5px; padding: 12px; border: 1px solid rgba(163,230,53,.2); border-radius: 10px; }
+.spatial-results p, .spatial-results ul { margin: 0; }
+@media (max-width: 650px) { .spatial-panel { padding: 14px; } .spatial-panel form { grid-template-columns: 1fr; } }
 .video-correction-editor { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(255,255,255,.14); border-radius: 18px; background: rgba(255,255,255,.035); }
 .video-correction-editor header, .correction-history { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .video-correction-editor p, .video-correction-editor small { color: var(--muted, #9ca3af); margin: 0; }

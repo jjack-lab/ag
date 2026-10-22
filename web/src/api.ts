@@ -155,11 +155,22 @@ export type NewActionTaskUpdate = Pick<ActionTaskUpdate, "status" | "actor" | "n
 
 export type VideoEvent = {
   id: number;
-  kind: "alert" | "behavior" | "review" | "correction" | "movement";
+  kind: "alert" | "behavior" | "review" | "correction" | "movement" | "spatial";
   time_seconds: number;
   track_id: number | null;
   label: string;
   detail: string;
+};
+
+export type SpatialReport = {
+  job_id: string; pen_id: string; camera_id: string; observed_at: string;
+  kind: "feeding" | "water" | "gate"; geometry: number[]; reverse: boolean;
+  duration_seconds: number;
+  alerts: { time_seconds: number; label: string; detail: string }[];
+  metrics: { entries?: number; dwell_seconds?: number;
+    hourly?: { hour: string; entries: number; dwell_seconds: number }[];
+    enter?: number; leave?: number;
+    events?: { track_id: number; time_seconds: number; direction: "enter" | "leave" }[] };
 };
 
 export type VideoCorrection = {
@@ -415,6 +426,21 @@ export function videoEventClipUrl(jobId: string, eventId: number): string {
 
 export function videoEventSnapshotUrl(jobId: string, eventId: number): string {
   return `/api/jobs/${encodeURIComponent(jobId)}/events/${eventId}/snapshot`;
+}
+
+export function fetchSpatialReports(jobId: string): Promise<SpatialReport[]> {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}/spatial-reports`);
+}
+
+export function createSpatialReport(jobId: string, values: Omit<SpatialReport, "job_id" | "metrics" | "duration_seconds" | "alerts">): Promise<SpatialReport> {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}/spatial-report`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
+  });
+}
+
+export function fetchSpatialHistory(penId: string, cameraId: string, kind: SpatialReport["kind"]): Promise<SpatialReport[]> {
+  const query = new URLSearchParams({ pen_id: penId, camera_id: cameraId, kind });
+  return request(`/api/spatial-reports/history?${query}`);
 }
 
 export function fetchVideoCorrections(jobId: string): Promise<VideoCorrection[]> {

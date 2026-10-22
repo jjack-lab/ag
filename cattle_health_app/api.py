@@ -9,7 +9,7 @@ import math
 import os
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -30,6 +30,7 @@ from cattle_health_app.model_registry import (
     resolve_detector_model,
 )
 from cattle_health_app.repository import SQLiteRepository
+from cattle_health_app.spatial_analysis import count_drop_alert, line_crossings, read_tracks, zone_activity, zone_detection_gap
 from cattle_health_app.video_events import create_event_clip, create_event_snapshot, result_file, video_events
 
 
@@ -226,6 +227,15 @@ class InventoryRecheckRequest(BaseModel):
     lost_count: Optional[int] = Field(default=None, ge=1)
     operator_name: str = Field(min_length=1, max_length=100)
     note: str = Field(min_length=1, max_length=1000)
+
+
+class SpatialReportRequest(BaseModel):
+    pen_id: str = Field(min_length=1, max_length=80)
+    camera_id: str = Field(min_length=1, max_length=80)
+    observed_at: datetime
+    kind: Literal["feeding", "water", "gate"]
+    geometry: List[float]
+    reverse: bool = False
 
 
 def create_app(
@@ -518,8 +528,13 @@ def create_app(
         if job.status != "completed" or job.result is None:
             raise HTTPException(status_code=409, detail="视频任务尚未完成")
         try:
+            spatial_alerts = []
+            for kind in ("feeding", "water", "gate"):
+                path = result_dir / job_id / f"spatial_{kind}.json"
+                if path.is_file():
+                    spatial_alerts.extend(json.loads(path.read_text(encoding="utf-8")).get("alerts", []))
             return video_events(job.result, repository.list_video_reviews(job_id), result_dir,
-                                job_id, repository.list_video_corrections(job_id))
+                                job_id, repository.list_video_corrections(job_id), spatial_alerts)
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
 
@@ -550,6 +565,68 @@ def create_app(
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         return FileResponse(snapshot, media_type="image/jpeg")
+
+    @app.post("/api/jobs/{job_id}/spatial-report")
+    def create_spatial_report(job_id: str, request: SpatialReportRequest):
+        job = completed_video_job(job_id)
+        geometry = request.geometry
+        if len(geometry) != 4 or any(not math.isfinite(value) or not 0 <= value <= 1 for value in geometry):
+            raise HTTPException(status_code=422, detail="画面位置应为四个 0 至 1 的坐标")
+        if request.kind == "gate":
+            if geometry[:2] == geometry[2:]:
+                raise HTTPException(status_code=422, detail="栏门线需要两个不同端点")
+        elif not (geometry[0] < geometry[2] and geometry[1] < geometry[3]):
+            raise HTTPException(status_code=422, detail="区域需要左上和右下两个角")
+        video_path = result_file(result_dir, job_id, job.result["video_path"])
+        track_path = result_file(result_dir, job_id, job.result["trajectory_csv"])
+        capture = cv2.VideoCapture(str(video_path))
+        try:
+            width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps = capture.get(cv2.CAP_PROP_FPS)
+            frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        finally:
+            capture.release()
+        if width <= 0 or height <= 0 or fps <= 0:
+            raise HTTPException(status_code=422, detail="结果视频尺寸或帧率不可用")
+        tracks = read_tracks(track_path, width, height)
+        observed_at = request.observed_at.isoformat(timespec="seconds")
+        metrics = (line_crossings(tracks, geometry) if request.kind == "gate"
+                   else zone_activity(tracks, geometry, fps, observed_at))
+        if request.kind == "gate" and request.reverse:
+            metrics["enter"], metrics["leave"] = metrics["leave"], metrics["enter"]
+            for event in metrics["events"]:
+                event["direction"] = "leave" if event["direction"] == "enter" else "enter"
+        duration_seconds = frame_count / fps
+        hint = (count_drop_alert(tracks, frame_count, fps) if request.kind == "gate" else
+                zone_detection_gap(tracks, geometry, duration_seconds))
+        report = {"job_id": job_id, "pen_id": request.pen_id.strip(),
+                  "camera_id": request.camera_id.strip(), "observed_at": observed_at,
+                  "kind": request.kind, "geometry": geometry, "reverse": request.reverse,
+                  "duration_seconds": round(duration_seconds, 2), "metrics": metrics,
+                  "alerts": [hint] if hint else []}
+        target = result_dir / job_id / f"spatial_{request.kind}.json"
+        target.write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
+        return report
+
+    @app.get("/api/jobs/{job_id}/spatial-reports")
+    def list_spatial_reports(job_id: str):
+        completed_video_job(job_id)
+        reports = []
+        for kind in ("feeding", "water", "gate"):
+            path = result_dir / job_id / f"spatial_{kind}.json"
+            if path.is_file():
+                reports.append(json.loads(path.read_text(encoding="utf-8")))
+        return reports
+
+    @app.get("/api/spatial-reports/history")
+    def spatial_report_history(pen_id: str, camera_id: str, kind: Literal["feeding", "water", "gate"]):
+        reports = []
+        for path in result_dir.glob(f"*/spatial_{kind}.json"):
+            report = json.loads(path.read_text(encoding="utf-8"))
+            if report["pen_id"] == pen_id and report["camera_id"] == camera_id:
+                reports.append(report)
+        return sorted(reports, key=lambda row: row["observed_at"], reverse=True)
 
     def completed_video_job(job_id):
         try:

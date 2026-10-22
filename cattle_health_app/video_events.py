@@ -1,6 +1,7 @@
 """Timestamped evidence from a completed video job and short review clips."""
 
 import csv
+import hashlib
 import math
 import os
 from pathlib import Path
@@ -25,7 +26,7 @@ def result_file(result_root, job_id, relative_name):
     return path
 
 
-def video_events(result, reviews, result_root, job_id, corrections=()):
+def video_events(result, reviews, result_root, job_id, corrections=(), spatial_alerts=()):
     events = []
     for profile in result.get("health_evidence") or []:
         for observation in profile.get("observations") or []:
@@ -70,6 +71,9 @@ def video_events(result, reviews, result_root, job_id, corrections=()):
         events.append({"kind": "movement", "time_seconds": movement["time_seconds"],
                        "track_id": movement["track_id"], "label": movement["label"],
                        "detail": movement["detail"]})
+    for hint in spatial_alerts:
+        events.append({"kind": "spatial", "time_seconds": hint["time_seconds"],
+                       "track_id": None, "label": hint["label"], "detail": hint["detail"]})
     events.sort(key=lambda item: (item["time_seconds"], item["kind"], item["track_id"] or -1))
     return [{**item, "id": index} for index, item in enumerate(events)]
 
@@ -80,7 +84,9 @@ def create_event_clip(result_root, job_id, result, event):
         raise FileNotFoundError("Result video is unavailable")
     clip_dir = Path(result_root) / job_id / "clips"
     clip_dir.mkdir(parents=True, exist_ok=True)
-    destination = clip_dir / f"event_{event['id']}.mp4"
+    event_key = hashlib.sha256(repr((event["kind"], event["time_seconds"],
+                                    event["track_id"], event["label"])).encode()).hexdigest()[:16]
+    destination = clip_dir / f"event_{event_key}.mp4"
     if destination.is_file() and destination.stat().st_size > 0:
         return destination
     capture = cv2.VideoCapture(str(source))
@@ -131,7 +137,9 @@ def create_event_snapshot(result_root, job_id, result, event):
         raise FileNotFoundError("Result video is unavailable")
     image_dir = Path(result_root) / job_id / "snapshots"
     image_dir.mkdir(parents=True, exist_ok=True)
-    destination = image_dir / f"event_{event['id']}.jpg"
+    event_key = hashlib.sha256(repr((event["kind"], event["time_seconds"],
+                                    event["track_id"], event["label"])).encode()).hexdigest()[:16]
+    destination = image_dir / f"event_{event_key}.jpg"
     if destination.is_file():
         return destination
     capture = cv2.VideoCapture(str(source))
