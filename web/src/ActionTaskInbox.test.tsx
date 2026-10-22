@@ -39,3 +39,24 @@ it("shows overdue tasks, opens their video, and records followup history", async
   expect(await screen.findByText(/王五：已现场查看，明天复查/)).toBeInTheDocument();
   expect(bodies[0]).toMatchObject({ status: "followup", actor: "王五" });
 });
+
+it("prefills a false alert conclusion for phone handling", async () => {
+  const bodies: Record<string, unknown>[] = [];
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+    if (init?.method === "POST") {
+      const body = JSON.parse(String(init.body));
+      bodies.push(body);
+      return { ok: true, json: async () => ({ ...task, status: body.status, updates: [] }) } as Response;
+    }
+    return { ok: true, json: async () => [task] } as Response;
+  });
+  const user = userEvent.setup();
+  render(<ActionTaskInbox onOpenVideo={vi.fn()} />);
+  await screen.findByText("核查低活动");
+  await user.click(screen.getByRole("button", { name: "误报" }));
+  expect(screen.getByLabelText("处理状态")).toHaveValue("closed");
+  expect(screen.getByLabelText("处理记录")).toHaveValue("人工核查：误报");
+  await user.type(screen.getByLabelText("操作人"), "李四");
+  await user.click(screen.getByRole("button", { name: "保存处理记录" }));
+  expect(bodies[0]).toMatchObject({ status: "closed", actor: "李四", note: "人工核查：误报" });
+});

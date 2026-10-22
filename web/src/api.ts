@@ -413,6 +413,10 @@ export function videoEventClipUrl(jobId: string, eventId: number): string {
   return `/api/jobs/${encodeURIComponent(jobId)}/events/${eventId}/clip`;
 }
 
+export function videoEventSnapshotUrl(jobId: string, eventId: number): string {
+  return `/api/jobs/${encodeURIComponent(jobId)}/events/${eventId}/snapshot`;
+}
+
 export function fetchVideoCorrections(jobId: string): Promise<VideoCorrection[]> {
   return request(`/api/jobs/${encodeURIComponent(jobId)}/corrections`);
 }

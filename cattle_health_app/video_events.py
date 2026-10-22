@@ -123,3 +123,25 @@ def create_event_clip(result_root, job_id, result, event):
         if writer is not None:
             writer.release()
         temporary.unlink(missing_ok=True)
+
+
+def create_event_snapshot(result_root, job_id, result, event):
+    source = result_file(result_root, job_id, result.get("video_path"))
+    if source is None or not source.is_file():
+        raise FileNotFoundError("Result video is unavailable")
+    image_dir = Path(result_root) / job_id / "snapshots"
+    image_dir.mkdir(parents=True, exist_ok=True)
+    destination = image_dir / f"event_{event['id']}.jpg"
+    if destination.is_file():
+        return destination
+    capture = cv2.VideoCapture(str(source))
+    try:
+        fps = capture.get(cv2.CAP_PROP_FPS)
+        capture.set(cv2.CAP_PROP_POS_FRAMES, max(0, round(event["time_seconds"] * fps)))
+        ok, frame = capture.read()
+        if not ok:
+            raise ValueError("Cannot read evidence frame")
+        cv2.imwrite(str(destination), frame)
+        return destination
+    finally:
+        capture.release()

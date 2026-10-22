@@ -36,11 +36,11 @@ export default function ActionTaskInbox({ onOpenVideo, openingJobId, videoOpenEr
     (!assigneeFilter || task.assignee.includes(assigneeFilter.trim()))
   ), [tasks, statusFilter, assigneeFilter]);
 
-  function edit(task: ActionTask) {
+  function edit(task: ActionTask, action?: "viewed" | "false_alert" | "handled") {
     setEditingId(task.id);
-    setNextStatus(task.status === "pending" ? "in_progress" : task.status);
+    setNextStatus(action === "false_alert" || action === "handled" ? "closed" : task.status === "pending" ? "in_progress" : task.status);
     setActor("");
-    setNote("");
+    setNote(action === "viewed" ? "已查看视频证据，待现场核查" : action === "false_alert" ? "人工核查：误报" : action === "handled" ? "已完成现场处理" : "");
     setNextDue("");
     setError("");
   }
@@ -82,6 +82,9 @@ export default function ActionTaskInbox({ onOpenVideo, openingJobId, videoOpenEr
       <small>{task.track_id === null ? "整段视频" : `视频内 ID ${task.track_id}`}{task.time_seconds === null ? "" : ` · ${task.time_seconds} 秒`}</small>
       <div className="action-task-actions">
         <button type="button" onClick={() => onOpenVideo(task.job_id)} disabled={openingJobId === task.job_id}>{openingJobId === task.job_id ? "打开中…" : "打开视频证据"}</button>
+        <button type="button" onClick={() => edit(task, "viewed")}>已查看</button>
+        <button type="button" onClick={() => edit(task, "false_alert")}>误报</button>
+        <button type="button" onClick={() => edit(task, "handled")}>已处理</button>
         <button type="button" onClick={() => edit(task)}>记录处理</button>
       </div>
       {task.updates.map((update) => <small key={update.id}>{new Date(update.created_at).toLocaleString("zh-CN")} · {update.actor}：{update.note}（{labels[update.status]}）</small>)}

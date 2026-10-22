@@ -74,6 +74,10 @@ def test_clip_download_is_bounded_to_event_and_result_video(tmp_path):
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("video/mp4")
     assert len(response.content) > 0
+    image = client.get("/api/jobs/job-1/events/0/snapshot")
+    assert image.status_code == 200
+    assert image.headers["content-type"].startswith("image/jpeg")
+    assert cv2.imdecode(np.frombuffer(image.content, dtype=np.uint8), cv2.IMREAD_COLOR).shape[:2] == (24, 32)
     assert client.get("/api/jobs/job-1/events/1/clip").status_code == 404
     assert client.get("/api/jobs/../events/0/clip").status_code != 200
 

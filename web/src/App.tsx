@@ -223,6 +223,10 @@ export default function App() {
                 <strong>处置建议：{alert.suggestion}</strong>
                 <span>发生时间：{new Date(alert.occurred_at).toLocaleString("zh-CN")}</span>
                 <span>置信度 {Math.round(alert.confidence * 100)}%</span>
+                {alert.id.includes(":") && <button type="button" onClick={() => openInventoryVideo(alert.id.split(":")[0])}>
+                  打开对应视频证据
+                </button>}
+                {inventoryVideoError && <small role="alert">{inventoryVideoError}</small>}
                 <small>该结果用于健康风险筛查，不替代兽医诊断。</small>
               </div>
             )}

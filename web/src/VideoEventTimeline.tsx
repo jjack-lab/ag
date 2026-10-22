@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchVideoEvents, VideoEvent, videoEventClipUrl } from "./api";
+import { fetchVideoEvents, VideoEvent, videoEventClipUrl, videoEventSnapshotUrl } from "./api";
 
 type Props = { jobId: string; refreshKey?: number; onSeek: (seconds: number) => void;
   onCreateTask?: (event: VideoEvent) => void };
@@ -17,10 +17,12 @@ export default function VideoEventTimeline({ jobId, refreshKey, onSeek, onCreate
   const [events, setEvents] = useState<VideoEvent[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [previewId, setPreviewId] = useState<number | null>(null);
   useEffect(() => {
     let active = true;
     setLoading(true);
     setEvents([]);
+    setPreviewId(null);
     fetchVideoEvents(jobId)
       .then((rows) => { if (active) { setEvents(rows); setError(""); } })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "事件加载失败"); })
@@ -44,6 +46,14 @@ export default function VideoEventTimeline({ jobId, refreshKey, onSeek, onCreate
         {event.kind === "alert" && onCreateTask && <button type="button" onClick={() => onCreateTask(event)}>
           根据此提示创建核查事项
         </button>}
+        <button type="button" onClick={() => setPreviewId(previewId === event.id ? null : event.id)}>
+          {previewId === event.id ? "收起证据" : "查看截图与前后片段"}
+        </button>
+        {previewId === event.id && <div className="event-evidence">
+          <img src={videoEventSnapshotUrl(jobId, event.id)} alt={`${event.label}发生时的识别画面`} />
+          <video controls preload="metadata" src={videoEventClipUrl(jobId, event.id)} />
+          <small>视频片段约为提示前后各 3 秒，供人工核查。</small>
+        </div>}
         <a href={videoEventClipUrl(jobId, event.id)} download>下载证据片段</a>
       </li>)}
     </ol>}

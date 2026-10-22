@@ -30,7 +30,7 @@ from cattle_health_app.model_registry import (
     resolve_detector_model,
 )
 from cattle_health_app.repository import SQLiteRepository
-from cattle_health_app.video_events import create_event_clip, result_file, video_events
+from cattle_health_app.video_events import create_event_clip, create_event_snapshot, result_file, video_events
 
 
 MAX_UPLOAD_BYTES = int(os.environ.get("AGRINEBULA_MAX_UPLOAD_MB", "512")) * 1024 * 1024
@@ -536,6 +536,20 @@ def create_app(
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         return FileResponse(clip, media_type="video/mp4", filename=f"{job_id}-event-{event_id}.mp4")
+
+    @app.get("/api/jobs/{job_id}/events/{event_id}/snapshot")
+    def event_snapshot(job_id: str, event_id: int):
+        events = list_video_events(job_id)
+        if event_id < 0 or event_id >= len(events):
+            raise HTTPException(status_code=404, detail="Event not found")
+        job = repository.get_video_job(job_id)
+        try:
+            snapshot = create_event_snapshot(result_dir, job_id, job.result, events[event_id])
+        except FileNotFoundError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        return FileResponse(snapshot, media_type="image/jpeg")
 
     def completed_video_job(job_id):
         try:
