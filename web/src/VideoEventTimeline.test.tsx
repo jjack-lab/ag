@@ -14,10 +14,15 @@ it("shows timestamped evidence, seeks the result video and links a clip", async 
     }],
   } as Response);
   const onSeek = vi.fn();
+  const onCreateTask = vi.fn();
   const user = userEvent.setup();
-  render(<VideoEventTimeline jobId="job-1" onSeek={onSeek} />);
+  render(<VideoEventTimeline jobId="job-1" onSeek={onSeek} onCreateTask={onCreateTask} />);
   await user.click(await screen.findByRole("button", { name: "跳转到 00:12 持续低活动" }));
   expect(onSeek).toHaveBeenCalledWith(12.5);
+  await user.click(screen.getByRole("button", { name: "根据此提示创建核查事项" }));
+  expect(onCreateTask).toHaveBeenCalledWith(expect.objectContaining({
+    label: "持续低活动", track_id: 7, time_seconds: 12.5,
+  }));
   expect(screen.getByRole("link", { name: "下载证据片段" })).toHaveAttribute(
     "href", "/api/jobs/job-1/events/0/clip",
   );

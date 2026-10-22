@@ -15,6 +15,7 @@ import {
   recognizeImage,
   resultMediaUrl,
   VideoJob,
+  VideoEvent,
 } from "./api";
 import CrossDomainResults from "./CrossDomainResults";
 import HealthEvidence from "./HealthEvidence";
@@ -49,6 +50,7 @@ export default function RecognitionStudio({ requestedJob }: Props) {
     "bytetrack.yaml",
   );
   const [reviewRevision, setReviewRevision] = useState(0);
+  const [selectedTaskEvent, setSelectedTaskEvent] = useState<VideoEvent | null>(null);
   const runToken = useRef(0);
   const resultVideo = useRef<HTMLVideoElement>(null);
 
@@ -65,6 +67,7 @@ export default function RecognitionStudio({ requestedJob }: Props) {
     setMode("video");
     setFile(null);
     setResult({ kind: "video", data: requestedJob });
+    setSelectedTaskEvent(null);
     setStatus("idle");
     setMessage("已打开该盘点绑定的视频证据。");
   }, [requestedJob]);
@@ -73,6 +76,7 @@ export default function RecognitionStudio({ requestedJob }: Props) {
     runToken.current += 1;
     setFile(null);
     setResult(null);
+    setSelectedTaskEvent(null);
     setStatus("idle");
     setMessage(DEFAULT_MESSAGE);
   }
@@ -349,7 +353,7 @@ export default function RecognitionStudio({ requestedJob }: Props) {
             <small>若浏览器无法直接播放结果视频，请使用“下载结果视频”。</small>
           </div>
         )}
-        {tracking && videoJob && <VideoEventTimeline jobId={videoJob.id} refreshKey={reviewRevision} onSeek={(seconds) => {
+        {tracking && videoJob && <VideoEventTimeline jobId={videoJob.id} refreshKey={reviewRevision} onCreateTask={setSelectedTaskEvent} onSeek={(seconds) => {
           if (!resultVideo.current) return;
           resultVideo.current.currentTime = seconds;
           resultVideo.current.scrollIntoView?.({ block: "center", behavior: "smooth" });
@@ -495,12 +499,13 @@ export default function RecognitionStudio({ requestedJob }: Props) {
           onSelectJob={(job) => {
             runToken.current += 1;
             setResult({ kind: "video", data: job });
+            setSelectedTaskEvent(null);
             setStatus("idle");
             setMessage("已打开历史视频结果和人工复核记录。");
           }}
         />}
         {!isImage && <InventoryPanel selectedJob={videoJob} />}
-        {tracking && videoJob && <ActionTaskPanel job={videoJob} />}
+        {tracking && videoJob && <ActionTaskPanel key={videoJob.id} job={videoJob} selectedEvent={selectedTaskEvent} />}
       </div>
       <CrossDomainResults />
     </section>

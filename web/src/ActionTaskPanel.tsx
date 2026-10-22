@@ -1,9 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ActionTask, createActionTask, fetchActionTasks, VideoJob } from "./api";
+import { ActionTask, createActionTask, fetchActionTasks, VideoEvent, VideoJob } from "./api";
 
 const labels = { pending: "待核查", in_progress: "处理中", followup: "待复查", closed: "已关闭" };
 
-export default function ActionTaskPanel({ job }: { job: VideoJob }) {
+export default function ActionTaskPanel({ job, selectedEvent }: { job: VideoJob; selectedEvent?: VideoEvent | null }) {
   const [tasks, setTasks] = useState<ActionTask[]>([]);
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState("");
@@ -14,12 +14,19 @@ export default function ActionTaskPanel({ job }: { job: VideoJob }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!selectedEvent) return;
+    setTitle(`核查视频内 ID ${selectedEvent.track_id ?? "未知"}：${selectedEvent.label}`);
+    setTrackId(selectedEvent.track_id === null ? "" : String(selectedEvent.track_id));
+    setTimeSeconds(String(selectedEvent.time_seconds));
+    document.querySelector(".action-task-panel")?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  }, [selectedEvent]);
+
+  useEffect(() => {
     let active = true;
     setTasks([]);
     setError("");
     fetchActionTasks({ jobId: job.id })
       .then((rows) => {
-        if (!Array.isArray(rows)) throw new Error("事项列表响应格式错误");
         if (active) setTasks(rows);
       })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "事项加载失败"); });
@@ -54,7 +61,7 @@ export default function ActionTaskPanel({ job }: { job: VideoJob }) {
       <label>完成时间<input required type="datetime-local" value={dueAt} onChange={(event) => setDueAt(event.target.value)} /></label>
       <label>视频内 ID（可选）<select value={trackId} onChange={(event) => setTrackId(event.target.value)}>
         <option value="">整段视频</option>
-        {(job.result?.track_ids || []).map((id) => <option key={id} value={id}>{id}</option>)}
+        {Array.from(new Set([...(job.result?.track_ids || []), ...(trackId ? [Number(trackId)] : [])])).map((id) => <option key={id} value={id}>{id}</option>)}
       </select></label>
       <label>证据时间点，秒（可选）<input type="number" min="0" step="0.1" value={timeSeconds} onChange={(event) => setTimeSeconds(event.target.value)} /></label>
       <button type="submit" disabled={saving}>{saving ? "保存中…" : "创建核查事项"}</button>

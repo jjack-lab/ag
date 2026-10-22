@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { fetchVideoEvents, VideoEvent, videoEventClipUrl } from "./api";
 
-type Props = { jobId: string; refreshKey?: number; onSeek: (seconds: number) => void };
+type Props = { jobId: string; refreshKey?: number; onSeek: (seconds: number) => void;
+  onCreateTask?: (event: VideoEvent) => void };
 
 function timestamp(seconds: number) {
   const whole = Math.floor(seconds);
@@ -12,7 +13,7 @@ const kindLabels: Record<VideoEvent["kind"], string> = {
   alert: "规则提示", behavior: "行为切换", review: "人工复核", correction: "画面纠错", movement: "活动状态",
 };
 
-export default function VideoEventTimeline({ jobId, refreshKey, onSeek }: Props) {
+export default function VideoEventTimeline({ jobId, refreshKey, onSeek, onCreateTask }: Props) {
   const [events, setEvents] = useState<VideoEvent[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,9 @@ export default function VideoEventTimeline({ jobId, refreshKey, onSeek }: Props)
         <span>{kindLabels[event.kind]}{event.track_id !== null ? ` · ID ${event.track_id}` : ""}</span>
         <strong>{event.label}</strong>
         {event.detail && <small>{event.detail}</small>}
+        {event.kind === "alert" && onCreateTask && <button type="button" onClick={() => onCreateTask(event)}>
+          根据此提示创建核查事项
+        </button>}
         <a href={videoEventClipUrl(jobId, event.id)} download>下载证据片段</a>
       </li>)}
     </ol>}

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import ActionTaskPanel from "./ActionTaskPanel";
 import type { VideoJob } from "./api";
+import type { VideoEvent } from "./api";
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
@@ -31,4 +32,14 @@ it("creates a followup task bound to the selected video", async () => {
   expect(await screen.findByText("检查活动情况 · 待核查")).toBeInTheDocument();
   expect(requests[0]).toMatchObject({ job_id: "job-1", title: "检查活动情况",
     assignee: "李四", track_id: 7 });
+});
+
+it("prefills a task from a selected video alert", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: true, json: async () => [] } as Response);
+  const alert = { id: 2, kind: "alert", label: "持续低活动", detail: "请人工核查",
+    track_id: 7, time_seconds: 12.5 } as VideoEvent;
+  render(<ActionTaskPanel job={job} selectedEvent={alert} />);
+  expect(await screen.findByDisplayValue("核查视频内 ID 7：持续低活动")).toBeInTheDocument();
+  expect(screen.getByLabelText("视频内 ID（可选）")).toHaveValue("7");
+  expect(screen.getByLabelText("证据时间点，秒（可选）")).toHaveValue(12.5);
 });
