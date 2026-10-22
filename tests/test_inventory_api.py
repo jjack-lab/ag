@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from fastapi.testclient import TestClient
 
 from cattle_health_app.api import create_app
@@ -167,6 +169,7 @@ def test_inventory_history_page_rejects_invalid_parameters(tmp_path):
 def test_video_inventory_query_survives_more_than_hundred_newer_other_job_records(tmp_path):
     client = client_with_job(tmp_path)
     target = client.post("/api/inventory-checks", json=payload(pen_id="旧视频圈舍")).json()
+    newer_start = datetime.fromisoformat(target["created_at"]) + timedelta(minutes=1)
     repository = SQLiteRepository(tmp_path / "app.db")
     repository.save_video_job(VideoJobRecord(
         id="job-2", source_path="new.mp4", status="completed", progress=1.0,
@@ -178,7 +181,7 @@ def test_video_inventory_query_survives_more_than_hundred_newer_other_job_record
         repository.save_inventory_check({
             **payload(job_id="job-2", pen_id=f"新视频圈舍-{index:03}"),
             "id": f"new-{index:03}", "species": "cattle",
-            "created_at": f"2026-10-17T10:{index // 60:02}:{index % 60:02}+08:00",
+            "created_at": (newer_start + timedelta(seconds=index)).isoformat(),
         })
 
     assert len(client.get("/api/inventory-checks").json()) == 100
