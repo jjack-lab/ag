@@ -27,6 +27,7 @@ export default function ActionTaskPanel({ job, selectedEvent }: { job: VideoJob;
     setError("");
     fetchActionTasks({ jobId: job.id })
       .then((rows) => {
+        if (!Array.isArray(rows)) throw new Error("事项列表响应格式错误");
         if (active) setTasks(rows);
       })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "事项加载失败"); });

@@ -22,6 +22,7 @@ export default function ActionTaskInbox({ onOpenVideo, openingJobId, videoOpenEr
   useEffect(() => {
     let active = true;
     fetchActionTasks().then((rows) => {
+      if (!Array.isArray(rows)) throw new Error("事项列表响应格式错误");
       if (active) setTasks(rows);
     }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "事项加载失败"); });
     return () => { active = false; };
