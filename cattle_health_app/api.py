@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 import cv2
 
 from cattle_health_app.domain import AlertLevel
+from cattle_health_app.health_assessment import build_health_assessment
 from cattle_health_app.dataset_evaluation import evaluate_annotations
 from cattle_health_app.jobs import VideoJobService
 from cattle_health_app.inventory import inventory_state, validate_recheck
@@ -435,6 +436,18 @@ def create_app(
         if not 1 <= limit <= 100:
             raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
         return [job.to_dict() for job in repository.list_video_jobs(limit)]
+
+    @app.get("/api/jobs/{job_id}/health-assessment")
+    def health_assessment(job_id: str):
+        try:
+            job = repository.get_video_job(job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        if job.status != "completed" or not job.result:
+            raise HTTPException(status_code=409, detail="视频任务尚未完成")
+        if job.result.get("species", "cattle") != "cattle":
+            raise HTTPException(status_code=422, detail="羊健康模型尚未验证")
+        return build_health_assessment(job_id, job.result, repository.list_video_reviews(job_id))
 
     @app.get("/api/jobs/{job_id}/inspection-frame")
     def inspection_frame(job_id: str, track_id: int, time_seconds: float, crop: bool = False):

@@ -50,6 +50,25 @@ export type HealthEvidenceProfile = {
   }[];
 };
 
+export type HealthAssessment = {
+  job_id: string;
+  model: {
+    type: "rule_based";
+    name: string;
+    behavior_model_status: string;
+    behavior_model_version: string | null;
+    score_basis: string;
+  };
+  summary: { track_count: number; attention_count: number; review_count: number };
+  tracks: Array<Omit<HealthEvidenceProfile, "risk_score"> & {
+    risk_score: number | null;
+    behaviors: BehaviorSummaryRow[];
+    uncertain_duration_seconds: number;
+    analysis: string;
+    reviews: Array<{ id: string; verdict: string; note: string; time_seconds: number | null; created_at: string }>;
+  }>;
+};
+
 export type TrackingResult = {
   video_path: string;
   trajectory_csv: string;
@@ -362,6 +381,10 @@ export function inspectionFrameUrl(jobId: string, trackId: number, timeSeconds: 
 
 export function fetchVideoJobs(): Promise<VideoJob[]> {
   return request("/api/jobs/video");
+}
+
+export function fetchHealthAssessment(jobId: string): Promise<HealthAssessment> {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}/health-assessment`);
 }
 
 export function fetchInventoryChecks(jobId?: string): Promise<InventoryCheck[]> {

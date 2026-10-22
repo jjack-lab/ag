@@ -18,9 +18,10 @@ import RecognitionStudio from "./RecognitionStudio";
 import DatasetEvaluationCenter from "./DatasetEvaluationCenter";
 import InventoryPanel from "./InventoryPanel";
 import ActionTaskInbox from "./ActionTaskInbox";
+import HealthInsights from "./HealthInsights";
 import "./workspace-interactions.css";
 
-type WorkspaceView = "overview" | "monitor" | "alerts" | "tasks" | "cattle" | "analytics" | "inventory";
+type WorkspaceView = "overview" | "monitor" | "alerts" | "tasks" | "cattle" | "analytics" | "inventory" | "health";
 
 const capabilities = [
   {
@@ -57,6 +58,7 @@ const viewTitle: Record<WorkspaceView, string> = {
   cattle: "牛只档案",
   analytics: "数据分析",
   inventory: "圈舍存栏核对",
+  health: "健康模型分析",
 };
 
 function isVideoJobResponse(value: unknown): value is VideoJob {
@@ -328,6 +330,7 @@ export default function App() {
           <div className="mini-brand"><span className="brand-mark"><CircleDot size={18} /></span> AgriNebula</div>
           <button type="button" className={activeView === "overview" ? "active" : ""} aria-current={activeView === "overview" ? "page" : undefined} onClick={() => openView("overview")}><Activity size={18} /> 今日工作台</button>
           <button type="button" className={activeView === "monitor" ? "active" : ""} aria-current={activeView === "monitor" ? "page" : undefined} onClick={() => openView("monitor")}><ScanSearch size={18} /> 实时监控</button>
+          <button type="button" className={activeView === "health" ? "active" : ""} aria-current={activeView === "health" ? "page" : undefined} onClick={() => openView("health")}><HeartPulse size={18} /> 健康模型分析</button>
           <button type="button" aria-label="健康告警" className={activeView === "alerts" ? "active" : ""} aria-current={activeView === "alerts" ? "page" : undefined} onClick={() => openView("alerts")}>
             <BellRing size={18} /> 健康告警 {!!dashboard?.open_alerts && <b>{dashboard.open_alerts}</b>}
           </button>
@@ -377,6 +380,8 @@ export default function App() {
               <RecognitionStudio requestedJob={requestedVideoJob} />
             </section>
           )}
+
+          {activeView === "health" && <HealthInsights onOpenVideo={openInventoryVideo} />}
 
           {activeView === "alerts" && (
             <section className="focused-view alert-panel" id="alerts">
