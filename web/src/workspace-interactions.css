@@ -1,4 +1,14 @@
 .workspace-nav button { transition: background-color .2s ease, color .2s ease, transform .2s ease; }
+.action-task-panel, .action-task-inbox { display: grid; gap: 14px; padding: 22px; border: 1px solid rgba(163,230,53,.22); border-radius: 18px; background: rgba(163,230,53,.035); }
+.action-task-panel header h4, .action-task-inbox h3 { margin: 0; }
+.action-task-panel small, .action-task-inbox small { color: var(--muted, #9ca3af); }
+.action-task-panel form, .action-task-update-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.action-task-panel label, .action-task-inbox label { display: grid; gap: 6px; }
+.action-task-panel input, .action-task-panel select, .action-task-inbox input, .action-task-inbox select, .action-task-inbox textarea { min-width: 0; padding: 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: #162226; color: #fff; font: inherit; }
+.action-task-panel button, .action-task-inbox button { padding: 9px 12px; border: 1px solid rgba(163,230,53,.35); border-radius: 8px; background: rgba(163,230,53,.12); color: #d9f99d; cursor: pointer; }
+.action-task-panel button:disabled, .action-task-inbox button:disabled { opacity: .5; cursor: default; }
+.action-task-panel article, .action-task-inbox article { display: grid; gap: 7px; padding: 13px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; }
+@media (max-width: 650px) { .action-task-panel form, .action-task-update-form { grid-template-columns: 1fr; } }
 .workspace-nav button:hover { transform: translateX(3px); }
 .workspace-nav button:focus-visible,
 .panel-title button:focus-visible,

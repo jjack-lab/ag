@@ -22,6 +22,7 @@ import VideoReviewWorkspace from "./VideoReviewWorkspace";
 import InventoryPanel from "./InventoryPanel";
 import VideoEventTimeline from "./VideoEventTimeline";
 import VideoCorrectionEditor from "./VideoCorrectionEditor";
+import ActionTaskPanel from "./ActionTaskPanel";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
@@ -499,6 +500,7 @@ export default function RecognitionStudio({ requestedJob }: Props) {
           }}
         />}
         {!isImage && <InventoryPanel selectedJob={videoJob} />}
+        {tracking && videoJob && <ActionTaskPanel job={videoJob} />}
       </div>
       <CrossDomainResults />
     </section>

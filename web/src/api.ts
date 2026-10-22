@@ -138,6 +138,21 @@ export type VideoReview = {
   created_at: string;
 };
 
+export type ActionTaskStatus = "pending" | "in_progress" | "followup" | "closed";
+export type ActionTaskUpdate = {
+  id: string; task_id: string; status: ActionTaskStatus; actor: string;
+  note: string; next_due_at: string | null; created_at: string;
+};
+export type ActionTask = {
+  id: string; job_id: string; species: "cattle" | "sheep"; title: string;
+  track_id: number | null; time_seconds: number | null; assignee: string;
+  due_at: string; status: ActionTaskStatus; created_at: string;
+  updated_at: string; updates: ActionTaskUpdate[];
+};
+export type NewActionTask = Pick<ActionTask, "job_id" | "title" | "track_id" |
+  "time_seconds" | "assignee" | "due_at">;
+export type NewActionTaskUpdate = Pick<ActionTaskUpdate, "status" | "actor" | "note" | "next_due_at">;
+
 export type VideoEvent = {
   id: number;
   kind: "alert" | "behavior" | "review" | "correction" | "movement";
@@ -368,6 +383,26 @@ export function createInventoryRecheck(checkId: string, values: NewInventoryRech
 
 export function fetchVideoReviews(jobId: string): Promise<VideoReview[]> {
   return request(`/api/jobs/${jobId}/reviews`);
+}
+
+export function fetchActionTasks(filters: { jobId?: string; status?: string; assignee?: string } = {}): Promise<ActionTask[]> {
+  const query = new URLSearchParams();
+  if (filters.jobId) query.set("job_id", filters.jobId);
+  if (filters.status) query.set("status", filters.status);
+  if (filters.assignee) query.set("assignee", filters.assignee);
+  return request(`/api/action-tasks${query.size ? `?${query}` : ""}`);
+}
+
+export function createActionTask(values: NewActionTask): Promise<ActionTask> {
+  return request("/api/action-tasks", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
+  });
+}
+
+export function updateActionTask(id: string, values: NewActionTaskUpdate): Promise<ActionTask> {
+  return request(`/api/action-tasks/${encodeURIComponent(id)}/updates`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
+  });
 }
 
 export function fetchVideoEvents(jobId: string): Promise<VideoEvent[]> {
