@@ -154,6 +154,25 @@ class VideoReviewRequest(BaseModel):
     note: str = Field(min_length=1, max_length=1000)
 
 
+ActionStatus = Literal["pending", "in_progress", "followup", "closed"]
+
+
+class ActionTaskCreateRequest(BaseModel):
+    job_id: str = Field(min_length=1)
+    title: str = Field(min_length=1, max_length=200)
+    track_id: Optional[int] = Field(default=None, ge=0)
+    time_seconds: Optional[float] = Field(default=None, ge=0)
+    assignee: str = Field(min_length=1, max_length=100)
+    due_at: datetime
+
+
+class ActionTaskUpdateRequest(BaseModel):
+    status: ActionStatus
+    actor: str = Field(min_length=1, max_length=100)
+    note: str = Field(min_length=1, max_length=1000)
+    next_due_at: Optional[datetime] = None
+
+
 class CorrectionBox(BaseModel):
     x: float = Field(ge=0, lt=1)
     y: float = Field(ge=0, lt=1)
@@ -634,6 +653,73 @@ def create_app(
             raise HTTPException(status_code=422, detail="复核说明不能为空")
         repository.save_video_review(review)
         return review
+
+    @app.get("/api/action-tasks")
+    def list_action_tasks(job_id: Optional[str] = None, status: Optional[ActionStatus] = None,
+                          assignee: Optional[str] = None):
+        return repository.list_action_tasks(job_id=job_id, status=status, assignee=assignee)
+
+    @app.post("/api/action-tasks", status_code=201)
+    def create_action_task(request: ActionTaskCreateRequest):
+        try:
+            job = repository.get_video_job(request.job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        if job.status != "completed" or job.result is None:
+            raise HTTPException(status_code=409, detail="只能为已完成的视频创建核查事项")
+        title = request.title.strip()
+        assignee = request.assignee.strip()
+        if not title or not assignee:
+            raise HTTPException(status_code=422, detail="标题和负责人不能为空")
+        if request.due_at.tzinfo is None or request.due_at.utcoffset() is None:
+            raise HTTPException(status_code=422, detail="截止时间须包含时区")
+        if request.time_seconds is not None and not math.isfinite(request.time_seconds):
+            raise HTTPException(status_code=422, detail="视频时间点无效")
+        known_tracks = set(job.result.get("track_ids") or [])
+        if not known_tracks:
+            known_tracks = {row.get("track_id") for row in job.result.get("health_evidence", [])}
+        if request.track_id is not None and request.track_id not in known_tracks:
+            raise HTTPException(status_code=422, detail="该视频结果中没有此 Track ID")
+        now = datetime.now().astimezone().isoformat(timespec="seconds")
+        task = {
+            "id": uuid4().hex, "job_id": job.id,
+            "species": job.result.get("species", "cattle"),
+            "title": title, "track_id": request.track_id,
+            "time_seconds": request.time_seconds, "assignee": assignee,
+            "due_at": request.due_at.isoformat(), "status": "pending",
+            "created_at": now, "updated_at": now,
+        }
+        repository.create_action_task(task)
+        return repository.get_action_task(task["id"])
+
+    @app.get("/api/action-tasks/{task_id}")
+    def get_action_task(task_id: str):
+        try:
+            return repository.get_action_task(task_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="核查事项不存在") from error
+
+    @app.post("/api/action-tasks/{task_id}/updates", status_code=201)
+    def update_action_task(task_id: str, request: ActionTaskUpdateRequest):
+        get_action_task(task_id)
+        actor = request.actor.strip()
+        note = request.note.strip()
+        if not actor or not note:
+            raise HTTPException(status_code=422, detail="操作人和处理说明不能为空")
+        if request.status == "followup" and request.next_due_at is None:
+            raise HTTPException(status_code=422, detail="待复查事项须填写下次复查时间")
+        if request.next_due_at is not None and (
+            request.next_due_at.tzinfo is None or request.next_due_at.utcoffset() is None
+        ):
+            raise HTTPException(status_code=422, detail="复查时间须包含时区")
+        update = {
+            "id": uuid4().hex, "task_id": task_id, "status": request.status,
+            "actor": actor, "note": note,
+            "next_due_at": request.next_due_at.isoformat() if request.next_due_at else None,
+            "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        }
+        repository.append_action_task_update(task_id, update)
+        return repository.get_action_task(task_id)
 
     @app.get("/api/jobs/{job_id}/animal-links")
     def list_job_animal_links(job_id: str):

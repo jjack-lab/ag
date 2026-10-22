@@ -68,6 +68,45 @@ class SQLiteRepository:
             )
             connection.execute(
                 """
+                CREATE TABLE IF NOT EXISTS action_tasks (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT NOT NULL REFERENCES video_jobs(id),
+                    species TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    track_id INTEGER,
+                    time_seconds REAL,
+                    assignee TEXT NOT NULL,
+                    due_at TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS action_tasks_job_idx ON action_tasks(job_id, created_at, id)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS action_tasks_status_idx ON action_tasks(status, due_at)"
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS action_task_updates (
+                    id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL REFERENCES action_tasks(id),
+                    status TEXT NOT NULL,
+                    actor TEXT NOT NULL,
+                    note TEXT NOT NULL,
+                    next_due_at TEXT,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS action_task_updates_task_idx ON action_task_updates(task_id, created_at, id)"
+            )
+            connection.execute(
+                """
                 CREATE TABLE IF NOT EXISTS video_corrections (
                     id TEXT PRIMARY KEY,
                     job_id TEXT NOT NULL REFERENCES video_jobs(id),
@@ -385,6 +424,60 @@ class SQLiteRepository:
                 (job_id,),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def create_action_task(self, task: dict):
+        with self._connection() as connection:
+            connection.execute(
+                """INSERT INTO action_tasks
+                (id, job_id, species, title, track_id, time_seconds, assignee,
+                 due_at, status, created_at, updated_at)
+                VALUES (:id, :job_id, :species, :title, :track_id, :time_seconds,
+                        :assignee, :due_at, :status, :created_at, :updated_at)""",
+                task,
+            )
+
+    def get_action_task(self, task_id: str):
+        with self._connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM action_tasks WHERE id = ?", (task_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError(task_id)
+            updates = connection.execute(
+                "SELECT * FROM action_task_updates WHERE task_id = ? ORDER BY rowid",
+                (task_id,),
+            ).fetchall()
+        return {**dict(row), "updates": [dict(item) for item in updates]}
+
+    def list_action_tasks(self, *, job_id=None, status=None, assignee=None):
+        conditions = []
+        values = []
+        for column, value in (("job_id", job_id), ("status", status), ("assignee", assignee)):
+            if value is not None:
+                conditions.append(f"{column} = ?")
+                values.append(value)
+        where = " WHERE " + " AND ".join(conditions) if conditions else ""
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT id FROM action_tasks" + where + " ORDER BY created_at DESC, id DESC",
+                values,
+            ).fetchall()
+        return [self.get_action_task(row["id"]) for row in rows]
+
+    def append_action_task_update(self, task_id: str, update: dict):
+        with self._connection() as connection:
+            cursor = connection.execute(
+                "UPDATE action_tasks SET status = ?, due_at = COALESCE(?, due_at), updated_at = ? WHERE id = ?",
+                (update["status"], update["next_due_at"], update["created_at"], task_id),
+            )
+            if cursor.rowcount == 0:
+                raise KeyError(task_id)
+            connection.execute(
+                """INSERT INTO action_task_updates
+                (id, task_id, status, actor, note, next_due_at, created_at)
+                VALUES (:id, :task_id, :status, :actor, :note, :next_due_at, :created_at)""",
+                update,
+            )
 
     def save_video_correction(self, correction: dict):
         values = {**correction, "box_json": json.dumps(correction["box"]) if correction["box"] else None}
