@@ -24,6 +24,7 @@ import InventoryPanel from "./InventoryPanel";
 import VideoEventTimeline from "./VideoEventTimeline";
 import VideoCorrectionEditor from "./VideoCorrectionEditor";
 import ActionTaskPanel from "./ActionTaskPanel";
+import VideoCaptureGuidance from "./VideoCaptureGuidance";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
@@ -214,6 +215,8 @@ export default function RecognitionStudio({ requestedJob }: Props) {
               {isImage ? "支持 JPG、PNG、BMP" : "支持 MP4、AVI、MOV、MKV"}
             </small>
           </label>
+
+          {!isImage && file && <VideoCaptureGuidance file={file} />}
 
           <div className="recognition-parameters" aria-label="识别参数">
             <label>

@@ -147,3 +147,7 @@
 @media (max-width: 650px) { .inventory-panel form { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .inventory-history-controls { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .animal-identity-panel form { grid-template-columns: 1fr; } }
+.capture-guidance { margin: 12px 0; padding: 14px 16px; border: 1px solid rgba(103, 232, 249, .25); border-radius: 12px; background: rgba(8, 47, 73, .25); }
+.capture-guidance strong { color: #a5f3fc; }
+.capture-guidance p { margin: 7px 0; }
+.capture-guidance small { display: block; color: #cbd5e1; }
