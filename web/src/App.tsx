@@ -8,7 +8,6 @@ import {
   CircleDot,
   Eye,
   HeartPulse,
-  Play,
   ScanSearch,
   ShieldCheck,
 } from "lucide-react";
@@ -19,7 +18,9 @@ import DatasetEvaluationCenter from "./DatasetEvaluationCenter";
 import InventoryPanel from "./InventoryPanel";
 import ActionTaskInbox from "./ActionTaskInbox";
 import HealthInsights from "./HealthInsights";
+import ParticleField from "./ParticleField";
 import "./workspace-interactions.css";
+import "./site-refresh.css";
 
 type WorkspaceView = "overview" | "monitor" | "alerts" | "tasks" | "cattle" | "analytics" | "inventory" | "health";
 
@@ -270,8 +271,7 @@ export default function App() {
   return (
     <main className="app-shell" id="top">
       <section className="hero" aria-label="星牧智控欢迎页">
-        <div className="hero-media" />
-        <div className="hero-grid" />
+        <ParticleField />
         <nav className="floating-nav liquid-glass">
           <a className="brand" href="#top" aria-label="星牧智控首页">
             <span className="brand-mark"><CircleDot size={20} /></span>
@@ -280,6 +280,7 @@ export default function App() {
           <div className="nav-links">
             <a href="#workspace" onClick={() => openView("overview")}>今日工作台</a>
             <a href="#capabilities">识别能力</a>
+            <a href="#workspace" onClick={() => openView("health")}>健康报告</a>
             <a href="#workspace" onClick={() => openView("alerts")}>健康告警</a>
           </div>
           <span className={`local-status ${modelReady ? "" : "offline"}`}>
@@ -288,14 +289,20 @@ export default function App() {
         </nav>
 
         <motion.div className="hero-content" {...entrance} transition={{ duration: 0.8, ease: "easeOut" }}>
-          <p className="eyebrow"><Eye size={15} /> AI 视觉驱动的牛群健康管理</p>
-          <h1>看见每一头牛的变化</h1>
-          <p className="hero-copy">让健康风险更早被发现。识别、追踪、分析与处置，在一个离线可用的牧场控制中心完成。</p>
-          <div className="hero-actions">
-            <button type="button" className="primary-action" onClick={() => openView("overview")}>
-              进入健康控制中心 <ArrowUpRight size={18} />
-            </button>
-            <a className="secondary-action" href="#capabilities"><Play size={15} fill="currentColor" /> 查看识别能力</a>
+          <div className="hero-story">
+            <p className="eyebrow"><Eye size={15} /> AI 视觉驱动的牛群健康管理 <span className="hero-signal-dot" /></p>
+            <h1>看见每一头牛的变化</h1>
+            <p className="hero-copy">从每一帧视频到每一条健康线索。识别、追踪、行为分析与人工复核，在同一个牧场控制中心清晰呈现。</p>
+            <div className="hero-actions">
+              <button type="button" className="primary-action" onClick={() => openView("overview")}>进入健康控制中心 <ArrowUpRight size={18} /></button>
+              <button type="button" className="hero-report-link" onClick={() => openView("health")}>查看健康分析与报告 <ArrowUpRight size={17} /></button>
+            </div>
+            <div className="hero-pipeline"><span>01 视频识别</span><i /><span>02 行为与规则</span><i /><span>03 报告与复核</span></div>
+          </div>
+          <div className="hero-visual" aria-label="健康分析工作流展示">
+            <div className="hero-visual-top"><span><i /> LOCAL ANALYSIS ENGINE</span><small>VIDEO → EVIDENCE</small></div>
+            <div className="hero-hologram"><span className="hero-hologram-ring one" /><span className="hero-hologram-ring two" /><span className="hero-hologram-core"><HeartPulse size={54} /></span><i className="hero-hologram-node node-one" /><i className="hero-hologram-node node-two" /><i className="hero-hologram-node node-three" /></div>
+            <div className="hero-visual-bottom"><div><small>最近牛视频</small><strong>{dashboard?.latest_cattle_track_count ?? "—"}</strong><span>视频内 Track ID</span></div><div><small>分析链路</small><strong>03</strong><span>识别 / 分析 / 复核</span></div></div>
           </div>
         </motion.div>
 
