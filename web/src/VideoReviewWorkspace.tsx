@@ -28,9 +28,10 @@ type Props = {
   selectedJob: VideoJob | null;
   onSelectJob: (job: VideoJob) => void;
   onReviewSaved?: () => void;
+  refreshKey?: number;
 };
 
-export default function VideoReviewWorkspace({ selectedJob, onSelectJob, onReviewSaved }: Props) {
+export default function VideoReviewWorkspace({ selectedJob, onSelectJob, onReviewSaved, refreshKey = 0 }: Props) {
   const [jobs, setJobs] = useState<VideoJob[]>([]);
   const [reviews, setReviews] = useState<VideoReview[]>([]);
   const [historyError, setHistoryError] = useState("");
@@ -66,7 +67,7 @@ export default function VideoReviewWorkspace({ selectedJob, onSelectJob, onRevie
         .catch((error) => { if (active) setReviewError(error instanceof Error ? error.message : "复核记录加载失败"); });
     }
     return () => { active = false; };
-  }, [selectedJob?.id, selectedJob?.status]);
+  }, [selectedJob?.id, selectedJob?.status, refreshKey]);
 
   async function submitReview(event: FormEvent) {
     event.preventDefault();

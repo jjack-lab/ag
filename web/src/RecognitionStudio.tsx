@@ -27,6 +27,7 @@ import VideoCorrectionEditor from "./VideoCorrectionEditor";
 import ActionTaskPanel from "./ActionTaskPanel";
 import VideoCaptureGuidance from "./VideoCaptureGuidance";
 import InspectionSummary from "./InspectionSummary";
+import BehaviorZoomReview from "./BehaviorZoomReview";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
@@ -54,6 +55,7 @@ export default function RecognitionStudio({ requestedJob }: Props) {
     "bytetrack.yaml",
   );
   const [reviewRevision, setReviewRevision] = useState(0);
+  const [zoomReviewRevision, setZoomReviewRevision] = useState(0);
   const [selectedTaskEvent, setSelectedTaskEvent] = useState<VideoEvent | null>(null);
   const runToken = useRef(0);
   const resultVideo = useRef<HTMLVideoElement>(null);
@@ -530,8 +532,13 @@ export default function RecognitionStudio({ requestedJob }: Props) {
             {tracking.behavior_model_error && ` ${tracking.behavior_model_error}`}
           </p>
         )}
+        {tracking && videoJob && tracking.species === "cattle" && tracking.behavior_model_status === "ready" &&
+          (tracking.track_ids || []).length > 0 && <BehaviorZoomReview key={`zoom-${videoJob.id}`} jobId={videoJob.id}
+            videoPath={tracking.video_path} trackIds={tracking.track_ids || []}
+            onReviewSaved={() => { setReviewRevision((value) => value + 1); setZoomReviewRevision((value) => value + 1); }} />}
         {!isImage && <VideoReviewWorkspace
           selectedJob={videoJob}
+          refreshKey={zoomReviewRevision}
           onReviewSaved={() => setReviewRevision((value) => value + 1)}
           onSelectJob={(job) => {
             runToken.current += 1;

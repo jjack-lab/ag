@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -435,6 +435,47 @@ def create_app(
         if not 1 <= limit <= 100:
             raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
         return [job.to_dict() for job in repository.list_video_jobs(limit)]
+
+    @app.get("/api/jobs/{job_id}/inspection-frame")
+    def inspection_frame(job_id: str, track_id: int, time_seconds: float, crop: bool = False):
+        try:
+            job = repository.get_video_job(job_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Video job not found") from error
+        if job.status != "completed" or not job.result:
+            raise HTTPException(status_code=409, detail="视频任务尚未完成")
+        source = Path(job.source_path)
+        if not source.is_file() or time_seconds < 0:
+            raise HTTPException(status_code=404, detail="原视频帧不可用")
+        capture = cv2.VideoCapture(str(source))
+        try:
+            fps = capture.get(cv2.CAP_PROP_FPS)
+            frame_index = round(time_seconds * fps)
+            capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+            ok, frame = capture.read()
+        finally:
+            capture.release()
+        if not ok:
+            raise HTTPException(status_code=404, detail="原视频帧不可用")
+        if crop:
+            tracks_path = result_file(result_dir, job_id, job.result.get("trajectory_csv"))
+            if tracks_path is None or not tracks_path.is_file():
+                raise HTTPException(status_code=404, detail="轨迹文件不可用")
+            with tracks_path.open(newline="", encoding="utf-8-sig") as stream:
+                track = next((row for row in csv.DictReader(stream)
+                              if int(row["frame_index"]) == frame_index and int(row["track_id"]) == track_id), None)
+            if track is None:
+                raise HTTPException(status_code=404, detail="此时刻没有该 Track ID 的检测框")
+            center_x, center_y = float(track["center_x"]), float(track["center_y"])
+            radius = max(float(track["width"]), float(track["height"]), 32) * 1.2
+            height, width = frame.shape[:2]
+            left, right = max(0, round(center_x - radius)), min(width, round(center_x + radius))
+            top, bottom = max(0, round(center_y - radius)), min(height, round(center_y + radius))
+            frame = frame[top:bottom, left:right]
+        encoded, data = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if not encoded:
+            raise HTTPException(status_code=500, detail="帧编码失败")
+        return Response(content=data.tobytes(), media_type="image/jpeg")
 
     @app.get("/api/evaluations")
     def list_dataset_evaluations():

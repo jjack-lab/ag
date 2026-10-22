@@ -353,6 +353,13 @@ export function fetchVideoJob(id: string): Promise<VideoJob> {
   return request(`/api/jobs/${id}`);
 }
 
+export function inspectionFrameUrl(jobId: string, trackId: number, timeSeconds: number, crop: boolean): string {
+  const query = new URLSearchParams({
+    track_id: String(trackId), time_seconds: String(timeSeconds), crop: String(crop),
+  });
+  return `/api/jobs/${encodeURIComponent(jobId)}/inspection-frame?${query}`;
+}
+
 export function fetchVideoJobs(): Promise<VideoJob[]> {
   return request("/api/jobs/video");
 }
