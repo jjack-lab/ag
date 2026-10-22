@@ -83,6 +83,18 @@ describe("AgriNebula application", () => {
     expect(screen.getByRole("button", { name: "进入健康控制中心" })).toBeInTheDocument();
   });
 
+  it("opens the workspace through the immersive cattle scene", async () => {
+    render(<App />);
+
+    expect(screen.getByText("开发视频演示素材")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /查看识别能力/ })).toHaveAttribute("href", "#capabilities");
+    expect(screen.getByRole("button", { name: /查看健康分析与报告/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /进入健康控制中心/ }));
+    expect(screen.getByRole("region", { name: "星牧智控欢迎页" })).toHaveClass("hero-entering");
+    await waitFor(() => expect(screen.getByRole("region", { name: "星牧智控欢迎页" })).not.toHaveClass("hero-entering"), { timeout: 1500 });
+  });
+
   it("keeps technical parameters out of the operator navigation", () => {
     render(<App />);
 
@@ -148,6 +160,7 @@ describe("AgriNebula application", () => {
     });
     render(<App />);
     expect(await screen.findByTestId("monitored-cattle")).toHaveTextContent("暂无记录");
+    expect(within(screen.getByRole("region", { name: "星牧智控欢迎页" })).getByText("暂无记录")).toBeInTheDocument();
   });
 
   it("creates and polls a video tracking job", async () => {

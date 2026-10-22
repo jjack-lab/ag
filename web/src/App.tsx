@@ -21,6 +21,7 @@ import HealthInsights from "./HealthInsights";
 import ParticleField from "./ParticleField";
 import "./workspace-interactions.css";
 import "./site-refresh.css";
+import "./immersive-home.css";
 
 type WorkspaceView = "overview" | "monitor" | "alerts" | "tasks" | "cattle" | "analytics" | "inventory" | "health";
 
@@ -94,6 +95,7 @@ function isVideoJobResponse(value: unknown): value is VideoJob {
 
 export default function App() {
   const [workspaceVisible, setWorkspaceVisible] = useState(false);
+  const [heroEntering, setHeroEntering] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("overview");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
@@ -161,6 +163,18 @@ export default function App() {
     setInventoryVideoError("");
     setRequestedVideoJob(null);
     showView(view, target);
+  }
+
+  function enterWorkspace() {
+    if (reduceMotion) {
+      openView("overview");
+      return;
+    }
+    setHeroEntering(true);
+    window.setTimeout(() => {
+      setHeroEntering(false);
+      openView("overview");
+    }, 550);
   }
 
   async function openInventoryVideo(jobId: string) {
@@ -270,7 +284,8 @@ export default function App() {
 
   return (
     <main className="app-shell" id="top">
-      <section className="hero" aria-label="星牧智控欢迎页">
+      <section className={`hero immersive-hero ${heroEntering ? "hero-entering" : ""}`} aria-label="星牧智控欢迎页">
+        <div className="immersive-scene" aria-hidden="true" />
         <ParticleField />
         <nav className="floating-nav liquid-glass">
           <a className="brand" href="#top" aria-label="星牧智控首页">
@@ -288,28 +303,22 @@ export default function App() {
           </span>
         </nav>
 
-        <motion.div className="hero-content" {...entrance} transition={{ duration: 0.8, ease: "easeOut" }}>
-          <div className="hero-story">
-            <p className="eyebrow"><Eye size={15} /> AI 视觉驱动的牛群健康管理 <span className="hero-signal-dot" /></p>
-            <h1>看见每一头牛的变化</h1>
-            <p className="hero-copy">从每一帧视频到每一条健康线索。识别、追踪、行为分析与人工复核，在同一个牧场控制中心清晰呈现。</p>
-            <div className="hero-actions">
-              <button type="button" className="primary-action" onClick={() => openView("overview")}>进入健康控制中心 <ArrowUpRight size={18} /></button>
-              <button type="button" className="hero-report-link" onClick={() => openView("health")}>查看健康分析与报告 <ArrowUpRight size={17} /></button>
-              <a className="hero-report-link" href="#capabilities">查看识别能力 <ArrowUpRight size={17} /></a>
-            </div>
-            <div className="hero-pipeline"><span>01 视频识别</span><i /><span>02 行为与规则</span><i /><span>03 报告与复核</span></div>
-          </div>
-          <div className="hero-visual" aria-label="健康分析工作流展示">
-            <div className="hero-visual-top"><span><i /> LOCAL ANALYSIS ENGINE</span><small>VIDEO → EVIDENCE</small></div>
-            <div className="hero-hologram"><span className="hero-hologram-ring one" /><span className="hero-hologram-ring two" /><span className="hero-hologram-core"><HeartPulse size={54} /></span><i className="hero-hologram-node node-one" /><i className="hero-hologram-node node-two" /><i className="hero-hologram-node node-three" /></div>
-            <div className="hero-visual-bottom"><div><small>最近牛视频</small><strong>{dashboard?.latest_cattle_track_count ?? "—"}</strong><span>视频内 Track ID</span></div><div><small>分析链路</small><strong>03</strong><span>识别 / 分析 / 复核</span></div></div>
+        <motion.div className="hero-content immersive-content" {...entrance} transition={{ duration: 0.8, ease: "easeOut" }}>
+          <div className="immersive-scene-label"><Eye size={14} /> FIELD 01 / CATTLE VISION <span>开发视频演示素材</span></div>
+          <button type="button" className="immersive-portal" onClick={enterWorkspace} aria-label="进入健康控制中心">
+            <span className="immersive-portal-image" />
+            <span className="immersive-portal-ring"><ArrowUpRight size={25} /></span>
+            <span className="immersive-portal-caption">进入健康控制中心</span>
+          </button>
+          <div className="immersive-headline"><span>AGRI / NEBULA</span><h1>看见每一头牛的变化</h1></div>
+          <div className="immersive-info">
+            <p className="hero-copy">从视频识别到行为线索，再到人工核查与健康报告。让每一次判断都能回到原始证据。</p>
+            <div className="immersive-links"><button type="button" className="hero-report-link" onClick={() => openView("health")}>查看健康分析与报告 <ArrowUpRight size={17} /></button><a className="hero-report-link" href="#capabilities">查看识别能力 <ArrowUpRight size={17} /></a></div>
+            <div className={`immersive-reading ${dashboard?.latest_cattle_track_count == null ? "is-empty" : ""}`}><small>最近牛视频</small><strong>{dashboard?.latest_cattle_track_count ?? "暂无记录"}</strong><span>视频内 Track ID · 非存栏总数</span></div>
           </div>
         </motion.div>
 
-        <div className="hero-foot">
-          <span>YOLO 视觉识别</span><span>持续目标追踪</span><span>行为风险分析</span><span>离线本地运行</span>
-        </div>
+        <div className="hero-foot immersive-foot"><span>01 视频识别</span><span>02 行为与规则</span><span>03 报告与复核</span><span>向下探索 ↓</span></div>
       </section>
 
       <section id="capabilities" className="capabilities section-pad">
