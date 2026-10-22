@@ -8,6 +8,9 @@
 .action-task-panel button, .action-task-inbox button { padding: 9px 12px; border: 1px solid rgba(163,230,53,.35); border-radius: 8px; background: rgba(163,230,53,.12); color: #d9f99d; cursor: pointer; }
 .action-task-panel button:disabled, .action-task-inbox button:disabled { opacity: .5; cursor: default; }
 .action-task-panel article, .action-task-inbox article { display: grid; gap: 7px; padding: 13px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; }
+.action-task-stats, .action-task-filters, .action-task-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.action-task-stats span { padding: 10px 14px; border: 1px solid rgba(163,230,53,.2); border-radius: 10px; }
+.action-task-inbox header p { margin: 5px 0 0; color: var(--muted, #9ca3af); }
 @media (max-width: 650px) { .action-task-panel form, .action-task-update-form { grid-template-columns: 1fr; } }
 .workspace-nav button:hover { transform: translateX(3px); }
 .workspace-nav button:focus-visible,

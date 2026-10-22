@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   BellRing,
   ChartNoAxesCombined,
+  ClipboardList,
   CircleDot,
   Eye,
   HeartPulse,
@@ -16,9 +17,10 @@ import { AlertRecord, Dashboard, fetchAlerts, fetchDashboard, fetchVideoJob, typ
 import RecognitionStudio from "./RecognitionStudio";
 import DatasetEvaluationCenter from "./DatasetEvaluationCenter";
 import InventoryPanel from "./InventoryPanel";
+import ActionTaskInbox from "./ActionTaskInbox";
 import "./workspace-interactions.css";
 
-type WorkspaceView = "overview" | "monitor" | "alerts" | "cattle" | "analytics" | "inventory";
+type WorkspaceView = "overview" | "monitor" | "alerts" | "tasks" | "cattle" | "analytics" | "inventory";
 
 const capabilities = [
   {
@@ -51,6 +53,7 @@ const viewTitle: Record<WorkspaceView, string> = {
   overview: "视频任务与历史规则概览",
   monitor: "实时监控",
   alerts: "全部健康告警",
+  tasks: "处置待办与复查",
   cattle: "牛只档案",
   analytics: "数据分析",
   inventory: "圈舍存栏核对",
@@ -324,6 +327,7 @@ export default function App() {
           <button type="button" aria-label="健康告警" className={activeView === "alerts" ? "active" : ""} aria-current={activeView === "alerts" ? "page" : undefined} onClick={() => openView("alerts")}>
             <BellRing size={18} /> 健康告警 {!!dashboard?.open_alerts && <b>{dashboard.open_alerts}</b>}
           </button>
+          <button type="button" className={activeView === "tasks" ? "active" : ""} aria-current={activeView === "tasks" ? "page" : undefined} onClick={() => openView("tasks")}><ClipboardList size={18} /> 处置待办</button>
           <button type="button" className={activeView === "cattle" ? "active" : ""} aria-current={activeView === "cattle" ? "page" : undefined} onClick={() => openView("cattle")}><ShieldCheck size={18} /> 牛只档案</button>
           <button type="button" className={activeView === "analytics" ? "active" : ""} aria-current={activeView === "analytics" ? "page" : undefined} onClick={() => openView("analytics")}><ChartNoAxesCombined size={18} /> 数据分析</button>
           <button type="button" className={activeView === "inventory" ? "active" : ""} aria-current={activeView === "inventory" ? "page" : undefined} onClick={() => openView("inventory")}><ShieldCheck size={18} /> 圈舍盘点</button>
@@ -376,6 +380,12 @@ export default function App() {
               {renderAlertList("当前没有健康告警。")}
             </section>
           )}
+
+          {activeView === "tasks" && <ActionTaskInbox
+            onOpenVideo={openInventoryVideo}
+            openingJobId={openingInventoryJobId}
+            videoOpenError={inventoryVideoError}
+          />}
 
           {activeView === "cattle" && (
             <section className="focused-view">
