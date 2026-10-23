@@ -14,28 +14,28 @@
 
 **Files:** `cattle_health_app/spatial_analysis.py`, `tests/test_spatial_analysis.py`.
 
-- [ ] Add a failing test that calls `zone_activity` with two tracks entering and leaving a rectangle, then checks `metrics.events` contains `track_id`, `time_seconds`, and `dwell_seconds` for each entry.
-- [ ] Run `python -m pytest -q tests/test_spatial_analysis.py::test_zone_entry_events_include_dwell`; confirm it fails because `events` is absent.
-- [ ] Extend `zone_activity` to open an event when an observed track enters, add observed frame durations while inside, and close the event on exit or end of track. Preserve existing total and hourly metrics.
-- [ ] Rerun `tests/test_spatial_analysis.py`; commit `feat: expose zone entry events for review`.
+- [x] Add a failing test that calls `zone_activity` with two tracks entering and leaving a rectangle, then checks `metrics.events` contains `track_id`, `time_seconds`, and `dwell_seconds` for each entry.
+- [x] Run `python -m pytest -q tests/test_spatial_analysis.py::test_zone_entry_events_include_dwell`; confirm it fails because `events` is absent.
+- [x] Extend `zone_activity` to open an event when an observed track enters, add observed frame durations while inside, and close the event on exit or end of track. Preserve existing total and hourly metrics.
+- [x] Rerun `tests/test_spatial_analysis.py`; commit `feat: expose zone entry events for review`.
 
 ### Task 2: Persist verdicts and missed events
 
 **Files:** `cattle_health_app/spatial_audit.py` (new), `cattle_health_app/api.py`, `tests/test_spatial_audit.py` (new).
 
-- [ ] Test that posting `correct`, `false_positive`, and `wrong_direction` verdicts by event index, and adding a missed event, yields the expected counts and a partial/full review flag. Test that regenerating the spatial report starts a new audit revision.
-- [ ] Run focused tests; confirm endpoint/logic failures.
-- [ ] Store audit data in `results/<job>/spatial_<kind>_audit.json` with report SHA-256, verdicts keyed by event index, missed events, reviewer, note and timestamp. `GET /api/jobs/{job_id}/spatial-reports/{kind}/audit` returns current report events and summary; `POST .../audit/verdicts` saves one event verdict; `POST .../audit/missed` adds one manually observed event. Resolve the report before audit access.
-- [ ] Rerun focused tests; commit `feat: record spatial event audit and error summary`.
+- [x] Test that posting `correct`, `false_positive`, and `wrong_direction` verdicts by event index, and adding a missed event, yields the expected counts and a partial/full review flag. Test that regenerating the spatial report starts a new audit revision.
+- [x] Run focused tests; confirm endpoint/logic failures.
+- [x] Store audit data in `results/<job>/spatial_<kind>_audit.json` with report SHA-256, verdicts keyed by event index, missed events, reviewer and note. `GET /api/jobs/{job_id}/spatial-reports/{kind}/audit` returns current report events and summary; `POST .../audit/verdicts` saves one event verdict; `POST .../audit/missed` adds one manually observed event. Resolve the report before audit access.
+- [x] Rerun focused tests; commit `feat: record spatial event audit and error summary`.
 
 ### Task 3: Review on the web
 
 **Files:** `web/src/api.ts`, `web/src/SpatialAnalysisPanel.tsx`, `web/src/SpatialAnalysisPanel.test.tsx`, spatial panel stylesheet.
 
-- [ ] Add a failing UI test that opens a gate report, marks a crossing correct, adds a missed crossing, and sees the summary change via mocked API responses.
-- [ ] Run `npm test -- --run SpatialAnalysisPanel.test.tsx`; confirm failure on missing controls.
-- [ ] Add typed audit API methods and a compact event list with video seek buttons, verdict controls, missed-event form, and progress/precision/recall only when the report is fully reviewed. Keep the current zone trends and gate totals labeled as automatic counts.
-- [ ] Rerun focused and full frontend tests, run `npm run build`; commit `feat: review spatial events in video panel`.
+- [x] Add a failing UI test that opens a gate report, marks a crossing correct, adds a missed crossing, and sees the summary change via mocked API responses.
+- [x] Run `npm test -- --run SpatialAnalysisPanel.test.tsx`; confirm failure on missing controls.
+- [x] Add typed audit API methods and a compact event list with video seek buttons, verdict controls, missed-event form, and progress/precision/recall only when the report is fully reviewed. Keep the current zone trends and gate totals labeled as automatic counts.
+- [x] Rerun focused and full frontend tests, run `npm run build`; commit `feat: review spatial events in video panel`.
 
 ### Task 4: Demonstrate and hand off
 
