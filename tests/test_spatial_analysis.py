@@ -87,3 +87,26 @@ def test_spatial_report_is_saved_and_found_for_same_camera(tmp_path):
     assert len(client.get("/api/spatial-reports/history", params={
         "pen_id": "A-01", "camera_id": "C-01", "kind": "feeding",
     }).json()) == 1
+    audit_url = "/api/jobs/job-1/spatial-reports/feeding/audit"
+    assert client.get(audit_url).json()["summary"]["automatic"] == 1
+    verdict = client.post(audit_url + "/verdicts", json={
+        "event_index": 0, "verdict": "correct", "reviewer": "张三", "note": "完整回看确认",
+    })
+    assert verdict.status_code == 200
+    assert verdict.json()["summary"]["reviewed"] == 1
+    missed = client.post(audit_url + "/missed", json={
+        "time_seconds": 2.0, "reviewer": "张三", "note": "漏掉一次靠近饲槽",
+    })
+    assert missed.status_code == 200
+    assert missed.json()["summary"]["missed"] == 1
+    completed = client.post(audit_url + "/complete", json={"reviewer": "张三"})
+    assert completed.json()["summary"]["complete"] is True
+    assert completed.json()["summary"]["recall"] == 0.5
+    changed = client.post("/api/jobs/job-1/spatial-report", json={
+        "pen_id": "A-01", "camera_id": "C-01", "observed_at": "2026-10-22T09:00:00+08:00",
+        "kind": "feeding", "geometry": [0.4, 0.4, 0.8, 0.8],
+    })
+    assert changed.status_code == 200
+    refreshed = client.get(audit_url).json()
+    assert refreshed["summary"]["reviewed"] == 0
+    assert refreshed["summary"]["missed"] == 0

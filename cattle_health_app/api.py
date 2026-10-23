@@ -32,6 +32,7 @@ from cattle_health_app.model_registry import (
 )
 from cattle_health_app.repository import SQLiteRepository
 from cattle_health_app.spatial_analysis import count_drop_alert, line_crossings, read_tracks, zone_activity, zone_detection_gap
+from cattle_health_app.spatial_audit import add_missed, audit_summary, new_audit, report_hash, set_verdict
 from cattle_health_app.video_events import create_event_clip, create_event_snapshot, result_file, video_events
 
 
@@ -237,6 +238,24 @@ class SpatialReportRequest(BaseModel):
     kind: Literal["feeding", "water", "gate"]
     geometry: List[float]
     reverse: bool = False
+
+
+class SpatialVerdictRequest(BaseModel):
+    event_index: int = Field(ge=0)
+    verdict: Literal["correct", "false_positive", "wrong_direction"]
+    reviewer: str = Field(min_length=1)
+    note: str = Field(min_length=1)
+
+
+class SpatialMissedRequest(BaseModel):
+    time_seconds: float = Field(ge=0)
+    direction: Optional[Literal["enter", "leave"]] = None
+    reviewer: str = Field(min_length=1)
+    note: str = Field(min_length=1)
+
+
+class SpatialAuditCompleteRequest(BaseModel):
+    reviewer: str = Field(min_length=1)
 
 
 def create_app(
@@ -672,6 +691,64 @@ def create_app(
             if path.is_file():
                 reports.append(json.loads(path.read_text(encoding="utf-8")))
         return reports
+
+    def spatial_audit_state(job_id, kind):
+        completed_video_job(job_id)
+        report_path = result_dir / job_id / f"spatial_{kind}.json"
+        if not report_path.is_file():
+            raise HTTPException(status_code=404, detail="空间报告不存在")
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        audit_path = result_dir / job_id / f"spatial_{kind}_audit.json"
+        audit = (json.loads(audit_path.read_text(encoding="utf-8"))
+                 if audit_path.is_file() else new_audit(report))
+        if audit["report_hash"] != report_hash(report):
+            audit = new_audit(report)
+        return report, audit, audit_path
+
+    def spatial_audit_response(report, audit):
+        return {"events": report["metrics"].get("events", []), "audit": audit,
+                "summary": audit_summary(audit, report)}
+
+    @app.get("/api/jobs/{job_id}/spatial-reports/{kind}/audit")
+    def get_spatial_audit(job_id: str, kind: Literal["feeding", "water", "gate"]):
+        report, audit, _path = spatial_audit_state(job_id, kind)
+        return spatial_audit_response(report, audit)
+
+    @app.post("/api/jobs/{job_id}/spatial-reports/{kind}/audit/verdicts")
+    def save_spatial_verdict(job_id: str, kind: Literal["feeding", "water", "gate"],
+                             request: SpatialVerdictRequest):
+        report, audit, path = spatial_audit_state(job_id, kind)
+        try:
+            set_verdict(audit, report, request.event_index, request.verdict,
+                        request.reviewer.strip(), request.note.strip())
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        path.write_text(json.dumps(audit, ensure_ascii=False), encoding="utf-8")
+        return spatial_audit_response(report, audit)
+
+    @app.post("/api/jobs/{job_id}/spatial-reports/{kind}/audit/missed")
+    def save_spatial_missed(job_id: str, kind: Literal["feeding", "water", "gate"],
+                            request: SpatialMissedRequest):
+        report, audit, path = spatial_audit_state(job_id, kind)
+        if request.time_seconds > report["duration_seconds"]:
+            raise HTTPException(status_code=422, detail="时间超出视频长度")
+        if kind == "gate" and request.direction is None:
+            raise HTTPException(status_code=422, detail="栏门漏计需填写方向")
+        add_missed(audit, report, request.time_seconds, request.direction,
+                   request.reviewer.strip(), request.note.strip())
+        path.write_text(json.dumps(audit, ensure_ascii=False), encoding="utf-8")
+        return spatial_audit_response(report, audit)
+
+    @app.post("/api/jobs/{job_id}/spatial-reports/{kind}/audit/complete")
+    def complete_spatial_audit(job_id: str, kind: Literal["feeding", "water", "gate"],
+                               request: SpatialAuditCompleteRequest):
+        report, audit, path = spatial_audit_state(job_id, kind)
+        if len(audit["verdicts"]) != len(report["metrics"].get("events", [])):
+            raise HTTPException(status_code=409, detail="请先核对全部自动事件")
+        audit["coverage_confirmed"] = True
+        audit["reviewer"] = request.reviewer.strip()
+        path.write_text(json.dumps(audit, ensure_ascii=False), encoding="utf-8")
+        return spatial_audit_response(report, audit)
 
     @app.get("/api/spatial-reports/history")
     def spatial_report_history(pen_id: str, camera_id: str, kind: Literal["feeding", "water", "gate"]):
