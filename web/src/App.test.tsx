@@ -63,6 +63,7 @@ function response(payload: unknown, ok = true) {
 
 describe("AgriNebula application", () => {
   beforeEach(() => {
+    window.location.hash = "#/module/overview";
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const url = String(input);
       if (url.startsWith("/api/dashboard")) return response(dashboard);
@@ -76,7 +77,20 @@ describe("AgriNebula application", () => {
     vi.restoreAllMocks();
   });
 
+  it("routes modules to separate addresses without rendering the whole workspace", async () => {
+    window.location.hash = "#/modules";
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "选择工作模块" })).toBeInTheDocument();
+    expect(screen.queryByText("上传文件，直接查看识别结果")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: /视频识别/ }));
+    expect(window.location.hash).toBe("#/module/monitor");
+    expect(await screen.findByRole("heading", { name: "实时监控" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "选择工作模块" })).not.toBeInTheDocument();
+  });
+
   it("presents a clear cattle-health entry", () => {
+    window.location.hash = "#/";
     render(<App />);
 
     expect(screen.getByText("看见每一头牛的变化")).toBeInTheDocument();
@@ -84,15 +98,16 @@ describe("AgriNebula application", () => {
   });
 
   it("opens the workspace through the immersive cattle scene", async () => {
+    window.location.hash = "#/";
     render(<App />);
 
     expect(screen.getByText("开发视频演示素材")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /查看识别能力/ })).toHaveAttribute("href", "#capabilities");
+    expect(screen.getByRole("link", { name: /查看识别能力/ })).toHaveAttribute("href", "#/module/monitor");
     expect(screen.getByRole("button", { name: /查看健康分析与报告/ })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /进入健康控制中心/ }));
     expect(screen.getByRole("region", { name: "星牧智控欢迎页" })).toHaveClass("hero-entering");
-    await waitFor(() => expect(screen.getByRole("region", { name: "星牧智控欢迎页" })).not.toHaveClass("hero-entering"), { timeout: 1500 });
+    await waitFor(() => expect(screen.getByRole("heading", { name: "选择工作模块" })).toBeInTheDocument(), { timeout: 1500 });
   });
 
   it("keeps technical parameters out of the operator navigation", () => {
@@ -120,6 +135,7 @@ describe("AgriNebula application", () => {
       throw new Error(`Unexpected request: ${url}`);
     });
     const user = userEvent.setup();
+    window.location.hash = "#/module/monitor";
     render(<App />);
 
     const file = new File(["cattle"], "cattle.jpg", { type: "image/jpeg" });
@@ -160,7 +176,7 @@ describe("AgriNebula application", () => {
     });
     render(<App />);
     expect(await screen.findByTestId("monitored-cattle")).toHaveTextContent("暂无记录");
-    expect(within(screen.getByRole("region", { name: "星牧智控欢迎页" })).getByText("暂无记录")).toBeInTheDocument();
+    expect(screen.queryByText("0 头牛")).not.toBeInTheDocument();
   });
 
   it("creates and polls a video tracking job", async () => {
@@ -195,6 +211,7 @@ describe("AgriNebula application", () => {
       throw new Error(`Unexpected request: ${url}`);
     });
     const user = userEvent.setup();
+    window.location.hash = "#/module/monitor";
     render(<App />);
 
     await user.click(screen.getByRole("button", { name: "视频识别" }));
@@ -223,6 +240,7 @@ describe("AgriNebula application", () => {
 
   it("clears the selected file when switching recognition modes", async () => {
     const user = userEvent.setup();
+    window.location.hash = "#/module/monitor";
     render(<App />);
     const file = new File(["cattle"], "cattle.jpg", { type: "image/jpeg" });
     const imageInput = screen.getByLabelText("选择牛只图片") as HTMLInputElement;

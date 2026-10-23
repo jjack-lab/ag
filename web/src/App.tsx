@@ -19,32 +19,13 @@ import InventoryPanel from "./InventoryPanel";
 import ActionTaskInbox from "./ActionTaskInbox";
 import HealthInsights from "./HealthInsights";
 import ParticleField from "./ParticleField";
+import { moduleHref, moduleNames, parseSiteRoute, type ModuleName } from "./moduleRoutes";
 import "./workspace-interactions.css";
 import "./site-refresh.css";
 import "./immersive-home.css";
+import "./module-navigation.css";
 
-type WorkspaceView = "overview" | "monitor" | "alerts" | "tasks" | "cattle" | "analytics" | "inventory" | "health";
-
-const capabilities = [
-  {
-    icon: ScanSearch,
-    title: "牛只识别与持续追踪",
-    text: "为视频内牛只分配 Track ID，记录位置、速度与活动轨迹。",
-    meta: "YOLO · TRACK ID",
-  },
-  {
-    icon: HeartPulse,
-    title: "健康风险提前预警",
-    text: "发现长时间不动、疑似倒地、离群与活动量下降。",
-    meta: "BEHAVIOR · ALERT",
-  },
-  {
-    icon: ChartNoAxesCombined,
-    title: "个体档案与群体趋势",
-    text: "把检测结果转化为牧场人员能够直接执行的健康任务。",
-    meta: "INSIGHT · ACTION",
-  },
-];
+type WorkspaceView = ModuleName;
 
 const riskLabel: Record<AlertRecord["level"], string> = {
   high: "高风险",
@@ -94,9 +75,11 @@ function isVideoJobResponse(value: unknown): value is VideoJob {
 }
 
 export default function App() {
-  const [workspaceVisible, setWorkspaceVisible] = useState(false);
+  const [route, setRoute] = useState(() => parseSiteRoute(window.location.hash));
+  const [introPercent, setIntroPercent] = useState(0);
+  const [introVisible, setIntroVisible] = useState(() => parseSiteRoute(window.location.hash).kind === "home");
   const [heroEntering, setHeroEntering] = useState(false);
-  const [activeView, setActiveView] = useState<WorkspaceView>("overview");
+  const activeView = route.kind === "module" ? route.name : "overview";
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
@@ -112,6 +95,30 @@ export default function App() {
         initial: { opacity: 0, y: 24, filter: "blur(10px)" },
         animate: { opacity: 1, y: 0, filter: "blur(0px)" },
       };
+
+  useEffect(() => {
+    const onHashChange = () => setRoute(parseSiteRoute(window.location.hash));
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (!introVisible) return;
+    if (reduceMotion) {
+      setIntroVisible(false);
+      return;
+    }
+    const started = Date.now();
+    const timer = window.setInterval(() => {
+      const progress = Math.min(100, Math.floor(((Date.now() - started) / 1100) * 100));
+      setIntroPercent(progress);
+      if (progress === 100) {
+        window.clearInterval(timer);
+        window.setTimeout(() => setIntroVisible(false), 260);
+      }
+    }, 30);
+    return () => window.clearInterval(timer);
+  }, [introVisible, reduceMotion]);
 
   useEffect(() => {
     let active = true;
@@ -151,10 +158,15 @@ export default function App() {
     }, 0);
   }
 
+  function navigate(hash: string) {
+    window.location.hash = hash;
+    setRoute(parseSiteRoute(hash));
+    window.scrollTo?.(0, 0);
+  }
+
   function showView(view: WorkspaceView, target = "workspace") {
-    setWorkspaceVisible(true);
-    setActiveView(view);
-    scrollToElement(target);
+    navigate(moduleHref(view));
+    if (target !== "workspace") scrollToElement(target);
   }
 
   function openView(view: WorkspaceView, target = "workspace") {
@@ -167,14 +179,14 @@ export default function App() {
 
   function enterWorkspace() {
     if (reduceMotion) {
-      openView("overview");
+      navigate("#/modules");
       return;
     }
     setHeroEntering(true);
     window.setTimeout(() => {
       setHeroEntering(false);
-      openView("overview");
-    }, 550);
+      navigate("#/modules");
+    }, 850);
   }
 
   async function openInventoryVideo(jobId: string) {
@@ -284,19 +296,21 @@ export default function App() {
 
   return (
     <main className="app-shell" id="top">
+      {route.kind === "home" && <>
+      {introVisible && <div className="intro-loader" aria-label="场景加载动画"><div className="intro-loader-brand">AGRI <span>/</span> NEBULA</div><div className="intro-loader-bottom"><span>牧场视觉健康系统</span><strong>{introPercent}%</strong></div><div className="intro-loader-track"><i style={{ width: `${introPercent}%` }} /></div></div>}
       <section className={`hero immersive-hero ${heroEntering ? "hero-entering" : ""}`} aria-label="星牧智控欢迎页">
         <div className="immersive-scene" aria-hidden="true" />
         <ParticleField />
         <nav className="floating-nav liquid-glass">
-          <a className="brand" href="#top" aria-label="星牧智控首页">
+          <a className="brand" href="#/" aria-label="星牧智控首页">
             <span className="brand-mark"><CircleDot size={20} /></span>
             <span>星牧智控 <small>AgriNebula</small></span>
           </a>
           <div className="nav-links">
-            <a href="#workspace" onClick={() => openView("overview")}>今日工作台</a>
-            <a href="#capabilities">识别能力</a>
-            <a href="#workspace" onClick={() => openView("health")}>健康报告</a>
-            <a href="#workspace" onClick={() => openView("alerts")}>健康告警</a>
+            <a href="#/modules">模块入口</a>
+            <a href={moduleHref("monitor")}>视频识别</a>
+            <a href={moduleHref("health")}>健康报告</a>
+            <a href={moduleHref("alerts")}>健康告警</a>
           </div>
           <span className={`local-status ${modelReady ? "" : "offline"}`}>
             <i /> {dataError ? "数据暂不可用" : modelReady ? "本地模型已就绪" : "正在连接本地服务"}
@@ -313,38 +327,41 @@ export default function App() {
           <div className="immersive-headline"><span>AGRI / NEBULA</span><h1>看见每一头牛的变化</h1></div>
           <div className="immersive-info">
             <p className="hero-copy">从视频识别到行为线索，再到人工核查与健康报告。让每一次判断都能回到原始证据。</p>
-            <div className="immersive-links"><button type="button" className="hero-report-link" onClick={() => openView("health")}>查看健康分析与报告 <ArrowUpRight size={17} /></button><a className="hero-report-link" href="#capabilities">查看识别能力 <ArrowUpRight size={17} /></a></div>
+            <div className="immersive-links"><button type="button" className="hero-report-link" onClick={() => openView("health")}>查看健康分析与报告 <ArrowUpRight size={17} /></button><a className="hero-report-link" href={moduleHref("monitor")}>查看识别能力 <ArrowUpRight size={17} /></a></div>
             <div className={`immersive-reading ${dashboard?.latest_cattle_track_count == null ? "is-empty" : ""}`}><small>最近牛视频</small><strong>{dashboard?.latest_cattle_track_count ?? "暂无记录"}</strong><span>视频内 Track ID · 非存栏总数</span></div>
           </div>
         </motion.div>
 
-        <div className="hero-foot immersive-foot"><span>01 视频识别</span><span>02 行为与规则</span><span>03 报告与复核</span><span>向下探索 ↓</span></div>
+        <div className="hero-foot immersive-foot"><span>01 视频识别</span><span>02 行为与规则</span><span>03 报告与复核</span><span>点击中央入口进入模块 →</span></div>
       </section>
+      </>}
 
-      <section id="capabilities" className="capabilities section-pad">
-        <header className="section-heading">
-          <p>从视频到行动建议</p>
-          <h2>识别不止于一个检测框</h2>
-        </header>
-        <div className="capability-grid">
-          {capabilities.map(({ icon: Icon, title, text, meta }, index) => (
-            <motion.article
-              className="capability-card liquid-glass"
-              key={title}
-              initial={reduceMotion ? false : { opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.45 }}
-            >
-              <div className="capability-top"><span className="icon-box"><Icon /></span><small>{meta}</small></div>
-              <div><h3>{title}</h3><p>{text}</p></div>
-            </motion.article>
-          ))}
+      {route.kind === "modules" && <section className="module-hub" aria-label="工作模块入口">
+        <ParticleField />
+        <div className="module-hub-inner">
+          <nav className="module-hub-nav"><a className="brand" href="#/" aria-label="星牧智控首页"><span className="brand-mark"><CircleDot size={20} /></span><span>星牧智控 <small>AgriNebula</small></span></a><span>FIELD SYSTEM / 08 MODULES</span></nav>
+          <header className="module-hub-heading"><span>SELECT YOUR WORKSPACE / 选择工作空间</span><h1>选择工作模块</h1><p>从一段视频出发，进入识别、健康分析、告警核查与圈舍盘点。每个模块都有独立网址，可直接访问。</p></header>
+          <div className="module-grid">{moduleNames.map((name, index) => {
+            const details: Record<ModuleName, [string, string, typeof Activity]> = {
+              overview: ["今日工作台", "最近任务与待核查提示", Activity],
+              monitor: ["视频识别", "上传视频，查看追踪与证据", ScanSearch],
+              health: ["健康模型", "健康数据、风险分析与报告", HeartPulse],
+              alerts: ["健康告警", "查看规则提示与视频线索", BellRing],
+              tasks: ["处置待办", "记录核查、误报与复查", ClipboardList],
+              cattle: ["牛只档案", "核对耳标并关联个体记录", ShieldCheck],
+              analytics: ["数据分析", "统计结果与模型评估", ChartNoAxesCombined],
+              inventory: ["圈舍盘点", "人工记录与视频结果核对", CircleDot],
+            };
+            const [title, description, Icon] = details[name];
+            return <a className="module-card" href={moduleHref(name)} onClick={() => navigate(moduleHref(name))} key={name}><span className="module-card-top"><small>{String(index + 1).padStart(2, "0")} / 08</small><ArrowUpRight size={19} /></span><Icon size={32} strokeWidth={1.5} /><span><strong>{title}</strong><small>{description}</small></span></a>;
+          })}</div>
         </div>
-      </section>
+      </section>}
 
-      <section id="workspace" className={`workspace section-pad ${workspaceVisible ? "workspace-focus" : ""}`}>
+      {route.kind === "module" && <section id="workspace" className="workspace section-pad workspace-focus module-workspace">
         <aside className="workspace-nav liquid-glass" aria-label="工作区导航">
           <div className="mini-brand"><span className="brand-mark"><CircleDot size={18} /></span> AgriNebula</div>
+          <a className="module-back-link" href="#/modules">← 返回模块入口</a>
           <button type="button" className={activeView === "overview" ? "active" : ""} aria-current={activeView === "overview" ? "page" : undefined} onClick={() => openView("overview")}><Activity size={18} /> 今日工作台</button>
           <button type="button" className={activeView === "monitor" ? "active" : ""} aria-current={activeView === "monitor" ? "page" : undefined} onClick={() => openView("monitor")}><ScanSearch size={18} /> 实时监控</button>
           <button type="button" className={activeView === "health" ? "active" : ""} aria-current={activeView === "health" ? "page" : undefined} onClick={() => openView("health")}><HeartPulse size={18} /> 健康模型分析</button>
@@ -374,15 +391,7 @@ export default function App() {
           {activeView === "overview" && (
             <>
               {metrics}
-              <RecognitionStudio />
               <div className="workspace-grid">
-                <article className="monitor-panel">
-                  <div className="panel-title"><div><p>一号牛舍</p><h3>实时识别画面</h3></div><span className="live"><i /> LIVE</span></div>
-                  <div className="monitor-visual">
-                    <div className="scan-line" />
-                    <div className="monitor-copy"><ScanSearch size={32} /><span>摄像头画面接入后将在此显示</span></div>
-                  </div>
-                </article>
                 <article id="alerts" className="alert-panel">
                   <div className="panel-title"><div><p>需要关注</p><h3>最新健康告警</h3></div><button type="button" onClick={() => openView("alerts")}>查看全部</button></div>
                   {renderAlertList("当前没有待处理健康告警。")}
@@ -438,7 +447,7 @@ export default function App() {
             videoOpenError={inventoryVideoError}
           />}
         </div>
-      </section>
+      </section>}
     </main>
   );
 }
