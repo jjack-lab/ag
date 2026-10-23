@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createSpatialReport, fetchSpatialHistory, fetchSpatialReports, resultMediaUrl, SpatialReport } from "./api";
+import { addSpatialMissed, completeSpatialAudit, createSpatialReport, fetchSpatialAudit, fetchSpatialHistory, fetchSpatialReports, resultMediaUrl, saveSpatialVerdict, SpatialAudit, SpatialReport } from "./api";
 
 type Kind = SpatialReport["kind"];
 type Props = { jobId: string; videoPath: string; onReportSaved?: () => void };
@@ -17,6 +17,12 @@ export default function SpatialAnalysisPanel({ jobId, videoPath, onReportSaved }
   const [history, setHistory] = useState<SpatialReport[]>([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [audit, setAudit] = useState<SpatialAudit | null>(null);
+  const [reviewer, setReviewer] = useState("");
+  const [reviewNote, setReviewNote] = useState("");
+  const [missedTime, setMissedTime] = useState("");
+  const [missedDirection, setMissedDirection] = useState<"enter" | "leave">("enter");
+  const [missedNote, setMissedNote] = useState("");
   const start = useRef<[number, number] | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
@@ -31,6 +37,38 @@ export default function SpatialAnalysisPanel({ jobId, videoPath, onReportSaved }
     if (saved) { setPenId(saved.pen_id); setCameraId(saved.camera_id); }
   }, [kind, reports]);
   const current = reports.find((report) => report.kind === kind);
+  useEffect(() => {
+    if (!reports.some((report) => report.kind === kind)) { setAudit(null); return; }
+    fetchSpatialAudit(jobId, kind).then(setAudit).catch(() => setAudit(null));
+  }, [jobId, kind, reports]);
+
+  function seek(seconds: number) {
+    if (!video.current) return;
+    video.current.currentTime = seconds;
+    video.current.play();
+  }
+
+  async function markEvent(index: number, verdict: "correct" | "false_positive" | "wrong_direction") {
+    try {
+      setAudit(await saveSpatialVerdict(jobId, kind, { event_index: index, verdict,
+        reviewer: reviewer.trim(), note: reviewNote.trim() }));
+      setError("");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "保存核对失败"); }
+  }
+
+  async function addMissed(event: React.FormEvent) {
+    event.preventDefault();
+    try {
+      setAudit(await addSpatialMissed(jobId, kind, { time_seconds: Number(missedTime),
+        ...(kind === "gate" ? { direction: missedDirection } : {}), reviewer: reviewer.trim(), note: missedNote.trim() }));
+      setMissedTime(""); setMissedNote(""); setError("");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "补录失败"); }
+  }
+
+  async function confirmCoverage() {
+    try { setAudit(await completeSpatialAudit(jobId, kind, reviewer.trim())); setError(""); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "完成核对失败"); }
+  }
 
   function point(event: React.PointerEvent<HTMLDivElement>): [number, number] {
     const box = stage.current!.getBoundingClientRect();
@@ -125,6 +163,32 @@ export default function SpatialAnalysisPanel({ jobId, videoPath, onReportSaved }
         </li>)}</ul></> :
         <><p>进入区域 {current.metrics.entries} 次，累计停留 {current.metrics.dwell_seconds} 秒。</p>
           <ul>{current.metrics.hourly?.map((row) => <li key={row.hour}>{row.hour}：进入 {row.entries} 次，停留 {row.dwell_seconds} 秒</li>)}</ul></>}
+      {audit && <div className="spatial-audit">
+        <h5>逐事件人工核对</h5>
+        <p>人工核对 {audit.summary.reviewed}/{audit.summary.automatic}；正确 {audit.summary.correct}，误报 {audit.summary.false_positive}，方向错误 {audit.summary.wrong_direction}，漏计 {audit.summary.missed}。</p>
+        <label>核对人<input value={reviewer} onChange={(event) => setReviewer(event.target.value)} /></label>
+        <label>核对备注<input value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} /></label>
+        <ol>{audit.events.map((row, index) => <li key={`${row.track_id}-${row.time_seconds}-${index}`}>
+          <button type="button" onClick={() => seek(row.time_seconds)}>回看 {row.time_seconds} 秒</button>
+          ID {row.track_id} {row.direction === "enter" ? "进入" : row.direction === "leave" ? "离开" : `停留 ${row.dwell_seconds ?? 0} 秒`}
+          <span> {audit.audit.verdicts[String(index)]?.verdict === "correct" ? "已确认" :
+            audit.audit.verdicts[String(index)]?.verdict === "false_positive" ? "误报" :
+            audit.audit.verdicts[String(index)]?.verdict === "wrong_direction" ? "方向错误" : "待核对"}</span>
+          <div className="spatial-audit-actions">
+            <button type="button" disabled={!reviewer.trim() || !reviewNote.trim()} onClick={() => markEvent(index, "correct")}>确认正确</button>
+            <button type="button" disabled={!reviewer.trim() || !reviewNote.trim()} onClick={() => markEvent(index, "false_positive")}>标记误报</button>
+            {kind === "gate" && <button type="button" disabled={!reviewer.trim() || !reviewNote.trim()} onClick={() => markEvent(index, "wrong_direction")}>方向错误</button>}
+          </div>
+        </li>)}</ol>
+        <form onSubmit={addMissed} className="spatial-audit-missed">
+          <label>漏计时间（秒）<input type="number" min="0" max={current.duration_seconds} step="0.1" required value={missedTime} onChange={(event) => setMissedTime(event.target.value)} /></label>
+          {kind === "gate" && <label>实际方向<select value={missedDirection} onChange={(event) => setMissedDirection(event.target.value as "enter" | "leave")}><option value="enter">进入</option><option value="leave">离开</option></select></label>}
+          <label>漏计备注<input required value={missedNote} onChange={(event) => setMissedNote(event.target.value)} /></label>
+          <button type="submit" disabled={!reviewer.trim()}>补录漏计</button>
+        </form>
+        <button type="button" disabled={!reviewer.trim() || audit.summary.reviewed !== audit.summary.automatic} onClick={confirmCoverage}>确认已回看完整视频</button>
+        <p>{audit.summary.complete ? `事件级 Precision ${(audit.summary.precision! * 100).toFixed(1)}%，Recall ${(audit.summary.recall! * 100).toFixed(1)}%（本视频人工核对）` : "尚未完成全段核对，不显示完整精度。"}</p>
+      </div>}
       <button type="button" onClick={showHistory}>{kind === "gate" ? "查看同日栏门汇总" : "与过去 7 天相同机位比较"}</button>
       {history.length > 0 && (kind === "gate" ? <p>同日 {sameDay.length} 段视频辅助汇总：进入 {sameDay.reduce((sum, row) => sum + (row.metrics.enter || 0), 0)} 次，离开 {sameDay.reduce((sum, row) => sum + (row.metrics.leave || 0), 0)} 次。交接班请以人工台账核对。</p> :
         <p>{average === null || currentRate === null ? "趋势比较需本段和历史视频均至少 10 分钟，且使用同机位、同画区；当前尚无可比数据。" :

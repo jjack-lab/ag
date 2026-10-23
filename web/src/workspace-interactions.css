@@ -92,6 +92,13 @@
 .spatial-reverse { display: flex !important; align-items: center; }
 .spatial-results { display: grid; gap: 5px; padding: 12px; border: 1px solid rgba(163,230,53,.2); border-radius: 10px; }
 .spatial-results p, .spatial-results ul { margin: 0; }
+.spatial-audit { display: grid; gap: 10px; padding: 14px; border: 1px solid rgba(163,230,53,.25); border-radius: 10px; }
+.spatial-audit h5 { margin: 0; font-size: 1rem; }
+.spatial-audit ol { display: grid; gap: 10px; padding-left: 22px; }
+.spatial-audit li { line-height: 1.8; }
+.spatial-audit-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.spatial-audit select { min-height: 40px; padding: 8px; background: #162226; color: white; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; }
+.spatial-audit button:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 650px) { .spatial-panel { padding: 14px; } .spatial-panel form { grid-template-columns: 1fr; } }
 .video-correction-editor { display: grid; gap: 12px; padding: 20px; border: 1px solid rgba(255,255,255,.14); border-radius: 18px; background: rgba(255,255,255,.035); }
 .video-correction-editor header, .correction-history { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }

@@ -189,7 +189,16 @@ export type SpatialReport = {
   metrics: { entries?: number; dwell_seconds?: number;
     hourly?: { hour: string; entries: number; dwell_seconds: number }[];
     enter?: number; leave?: number;
-    events?: { track_id: number; time_seconds: number; direction: "enter" | "leave" }[] };
+    events?: { track_id: number; time_seconds: number; direction?: "enter" | "leave"; dwell_seconds?: number }[] };
+};
+
+export type SpatialAudit = {
+  events: NonNullable<SpatialReport["metrics"]["events"]>;
+  audit: { verdicts: Record<string, { verdict: "correct" | "false_positive" | "wrong_direction"; reviewer: string; note: string }>;
+    missed: { time_seconds: number; direction?: "enter" | "leave"; reviewer: string; note: string }[];
+    coverage_confirmed: boolean };
+  summary: { automatic: number; reviewed: number; correct: number; false_positive: number;
+    wrong_direction: number; missed: number; complete: boolean; precision: number | null; recall: number | null };
 };
 
 export type VideoCorrection = {
@@ -471,6 +480,32 @@ export function createSpatialReport(jobId: string, values: Omit<SpatialReport, "
 export function fetchSpatialHistory(penId: string, cameraId: string, kind: SpatialReport["kind"]): Promise<SpatialReport[]> {
   const query = new URLSearchParams({ pen_id: penId, camera_id: cameraId, kind });
   return request(`/api/spatial-reports/history?${query}`);
+}
+
+const auditPath = (jobId: string, kind: SpatialReport["kind"]) =>
+  `/api/jobs/${encodeURIComponent(jobId)}/spatial-reports/${kind}/audit`;
+
+export function fetchSpatialAudit(jobId: string, kind: SpatialReport["kind"]): Promise<SpatialAudit> {
+  return request(auditPath(jobId, kind));
+}
+
+export function saveSpatialVerdict(jobId: string, kind: SpatialReport["kind"], values: {
+  event_index: number; verdict: "correct" | "false_positive" | "wrong_direction"; reviewer: string; note: string;
+}): Promise<SpatialAudit> {
+  return request(`${auditPath(jobId, kind)}/verdicts`, { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify(values) });
+}
+
+export function addSpatialMissed(jobId: string, kind: SpatialReport["kind"], values: {
+  time_seconds: number; direction?: "enter" | "leave"; reviewer: string; note: string;
+}): Promise<SpatialAudit> {
+  return request(`${auditPath(jobId, kind)}/missed`, { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify(values) });
+}
+
+export function completeSpatialAudit(jobId: string, kind: SpatialReport["kind"], reviewer: string): Promise<SpatialAudit> {
+  return request(`${auditPath(jobId, kind)}/complete`, { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewer }) });
 }
 
 export function fetchVideoCorrections(jobId: string): Promise<VideoCorrection[]> {
