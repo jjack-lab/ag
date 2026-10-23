@@ -110,3 +110,10 @@ def test_spatial_report_is_saved_and_found_for_same_camera(tmp_path):
     refreshed = client.get(audit_url).json()
     assert refreshed["summary"]["reviewed"] == 0
     assert refreshed["summary"]["missed"] == 0
+    (job_dir / "tracks.csv").write_text(
+        "frame_index,time_seconds,track_id,center_x,center_y\n", encoding="utf-8")
+    empty = client.post("/api/jobs/job-1/spatial-report", json={
+        "pen_id": "A-01", "camera_id": "C-01", "observed_at": "2026-10-22T09:00:00+08:00",
+        "kind": "feeding", "geometry": [0.3, 0.3, 0.7, 0.7],
+    })
+    assert empty.json()["tracking_status"] == "no_tracks"

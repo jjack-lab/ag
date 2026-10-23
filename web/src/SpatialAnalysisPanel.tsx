@@ -155,6 +155,7 @@ export default function SpatialAnalysisPanel({ jobId, videoPath, onReportSaved }
     {current && <div className="spatial-results">
       <strong>{names[kind]} · {current.pen_id} · {current.camera_id}</strong>
       <small>拍摄开始：{new Date(current.observed_at).toLocaleString("zh-CN")}</small>
+      {current.tracking_status === "no_tracks" && <p role="alert">整段视频没有检测轨迹；0 次进入或穿线不能解释为空栏、未采食或无人出入。请先回看原视频并核查模型漏检。</p>}
       {current.alerts?.map((hint) => <p key={hint.label} role="status">待核查：{hint.label}（视频 {hint.time_seconds} 秒）。{hint.detail} 可在上方事件时间轴查看截图和片段。</p>)}
       {kind === "gate" ? <><p>本段视频辅助计数：进入 {current.metrics.enter} 次，离开 {current.metrics.leave} 次。请结合出入栏台账复核。</p>
         <ul>{current.metrics.events?.map((row, index) => <li key={`${row.track_id}-${index}`}>
@@ -187,6 +188,8 @@ export default function SpatialAnalysisPanel({ jobId, videoPath, onReportSaved }
           <button type="submit" disabled={!reviewer.trim()}>补录漏计</button>
         </form>
         <button type="button" disabled={!reviewer.trim() || audit.summary.reviewed !== audit.summary.automatic} onClick={confirmCoverage}>确认已回看完整视频</button>
+        {kind === "gate" && audit.summary.verified_counts &&
+          <p>人工核对计数：进入 {audit.summary.verified_counts.enter} 次，离开 {audit.summary.verified_counts.leave} 次。仍需与出入栏台账逐次核对。</p>}
         <p>{audit.summary.complete ? `事件级 Precision ${(audit.summary.precision! * 100).toFixed(1)}%，Recall ${(audit.summary.recall! * 100).toFixed(1)}%（本视频人工核对）` : "尚未完成全段核对，不显示完整精度。"}</p>
       </div>}
       <button type="button" onClick={showHistory}>{kind === "gate" ? "查看同日栏门汇总" : "与过去 7 天相同机位比较"}</button>

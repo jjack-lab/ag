@@ -184,6 +184,7 @@ export type VideoEvent = {
 export type SpatialReport = {
   job_id: string; pen_id: string; camera_id: string; observed_at: string;
   kind: "feeding" | "water" | "gate"; geometry: number[]; reverse: boolean;
+  tracking_status?: "has_tracks" | "no_tracks";
   duration_seconds: number;
   alerts: { time_seconds: number; label: string; detail: string }[];
   metrics: { entries?: number; dwell_seconds?: number;
@@ -198,7 +199,8 @@ export type SpatialAudit = {
     missed: { time_seconds: number; direction?: "enter" | "leave"; reviewer: string; note: string }[];
     coverage_confirmed: boolean };
   summary: { automatic: number; reviewed: number; correct: number; false_positive: number;
-    wrong_direction: number; missed: number; complete: boolean; precision: number | null; recall: number | null };
+    wrong_direction: number; missed: number; complete: boolean; precision: number | null; recall: number | null;
+    verified_counts: { enter: number; leave: number } | null };
 };
 
 export type VideoCorrection = {

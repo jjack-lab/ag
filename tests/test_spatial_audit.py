@@ -16,13 +16,14 @@ def test_event_audit_reports_partial_then_full_directional_error():
     assert audit_summary(audit, report) == {
         "automatic": 3, "reviewed": 3, "correct": 1, "false_positive": 1,
         "wrong_direction": 1, "missed": 1, "complete": False,
-        "precision": None, "recall": None,
+        "precision": None, "recall": None, "verified_counts": None,
     }
     audit["coverage_confirmed"] = True
     assert audit_summary(audit, report) == {
         "automatic": 3, "reviewed": 3, "correct": 1, "false_positive": 1,
         "wrong_direction": 1, "missed": 1, "complete": True,
         "precision": 1 / 3, "recall": 1 / 3,
+        "verified_counts": {"enter": 2, "leave": 1},
     }
 
 

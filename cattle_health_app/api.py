@@ -676,6 +676,7 @@ def create_app(
         report = {"job_id": job_id, "pen_id": request.pen_id.strip(),
                   "camera_id": request.camera_id.strip(), "observed_at": observed_at,
                   "kind": request.kind, "geometry": geometry, "reverse": request.reverse,
+                  "tracking_status": "has_tracks" if tracks else "no_tracks",
                   "duration_seconds": round(duration_seconds, 2), "metrics": metrics,
                   "alerts": [hint] if hint else []}
         target = result_dir / job_id / f"spatial_{request.kind}.json"

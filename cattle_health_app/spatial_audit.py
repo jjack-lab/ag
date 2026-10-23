@@ -40,9 +40,23 @@ def audit_summary(audit, report):
     wrong_direction = verdicts.count("wrong_direction")
     missed = len(audit["missed"])
     complete = len(verdicts) == automatic and audit["coverage_confirmed"]
+    verified_counts = None
+    if complete and report["kind"] == "gate":
+        verified_counts = {"enter": 0, "leave": 0}
+        for index, event in enumerate(report["metrics"]["events"]):
+            verdict = audit["verdicts"][str(index)]["verdict"]
+            if verdict == "false_positive":
+                continue
+            direction = event["direction"]
+            if verdict == "wrong_direction":
+                direction = "leave" if direction == "enter" else "enter"
+            verified_counts[direction] += 1
+        for event in audit["missed"]:
+            verified_counts[event["direction"]] += 1
     return {"automatic": automatic, "reviewed": len(verdicts), "correct": correct,
             "false_positive": false_positive, "wrong_direction": wrong_direction,
             "missed": missed, "complete": complete,
             "precision": correct / automatic if complete and automatic else None,
             "recall": correct / (correct + wrong_direction + missed)
-            if complete and correct + wrong_direction + missed else None}
+            if complete and correct + wrong_direction + missed else None,
+            "verified_counts": verified_counts}

@@ -41,15 +41,19 @@ it("reviews a gate crossing and adds a missed event from the video panel", async
     metrics: { enter: 1, leave: 0, events: [{ track_id: 7, time_seconds: 3, direction: "enter" }] } };
   let reviewed = false;
   let missed = false;
+  let complete = false;
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     if (url.endsWith("/spatial-reports")) return { ok: true, json: async () => [report] } as Response;
     if (url.includes("/audit/verdicts") && init?.method === "POST") reviewed = true;
     if (url.includes("/audit/missed") && init?.method === "POST") missed = true;
+    if (url.includes("/audit/complete") && init?.method === "POST") complete = true;
     if (url.includes("/audit")) return { ok: true, json: async () => ({
       events: report.metrics.events, audit: { verdicts: reviewed ? { "0": { verdict: "correct" } } : {}, missed: missed ? [{ time_seconds: 5 }] : [], coverage_confirmed: false },
       summary: { automatic: 1, reviewed: reviewed ? 1 : 0, correct: reviewed ? 1 : 0,
-        false_positive: 0, wrong_direction: 0, missed: missed ? 1 : 0, complete: false, precision: null, recall: null },
+        false_positive: 0, wrong_direction: 0, missed: missed ? 1 : 0, complete,
+        precision: complete ? 1 : null, recall: complete ? 0.5 : null,
+        verified_counts: complete ? { enter: 2, leave: 0 } : null },
     }) } as Response;
     return { ok: true, json: async () => [] } as Response;
   });
@@ -65,4 +69,22 @@ it("reviews a gate crossing and adds a missed event from the video panel", async
   await user.type(screen.getByLabelText("漏计备注"), "遮挡后进入");
   await user.click(screen.getByRole("button", { name: "补录漏计" }));
   expect(await screen.findByText(/漏计 1/)).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "确认已回看完整视频" }));
+  expect(await screen.findByText(/人工核对计数：进入 2 次，离开 0 次/)).toBeInTheDocument();
+});
+
+it("warns that an empty track result cannot establish an empty feeding area", async () => {
+  const report = { job_id: "job-2", pen_id: "A-01", camera_id: "C-01",
+    observed_at: "2026-10-22T09:00:00+08:00", kind: "feeding", reverse: false,
+    geometry: [0.1, 0.2, 0.9, 0.6], duration_seconds: 10, alerts: [],
+    tracking_status: "no_tracks", metrics: { entries: 0, dwell_seconds: 0, events: [], hourly: [] } };
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => ({ ok: true,
+    json: async () => String(input).endsWith("/spatial-reports") ? [report] : {
+      events: [], audit: { verdicts: {}, missed: [], coverage_confirmed: false },
+      summary: { automatic: 0, reviewed: 0, correct: 0, false_positive: 0,
+        wrong_direction: 0, missed: 0, complete: false, precision: null, recall: null, verified_counts: null },
+    },
+  }) as Response);
+  render(<SpatialAnalysisPanel jobId="job-2" videoPath="job-2/tracked.mp4" />);
+  expect(await screen.findByText(/整段视频没有检测轨迹/)).toBeInTheDocument();
 });
