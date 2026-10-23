@@ -24,6 +24,7 @@ import "./workspace-interactions.css";
 import "./site-refresh.css";
 import "./immersive-home.css";
 import "./module-navigation.css";
+import "./cosmic-palette.css";
 
 type WorkspaceView = ModuleName;
 

@@ -1,0 +1,101 @@
+:root {
+  color: #f2f6ff;
+  background: #081326;
+  --line: rgba(173, 195, 244, .19);
+  --muted: #b8c6da;
+  --green: #82e2be;
+  --cosmic-blue: #55c8ff;
+  --cosmic-violet: #9b83ff;
+  --cosmic-orange: #ffb36b;
+}
+body, .app-shell { background: #081326; }
+.liquid-glass { background: rgba(13, 26, 48, .72); border-color: rgba(160, 190, 255, .22); box-shadow: inset 0 1px rgba(255,255,255,.08),0 24px 80px rgba(2,7,26,.3); }
+
+/* Landing scene: keep the cattle image visible while adding a colored sky. */
+.immersive-hero { background: #09182b; }
+.immersive-scene { background: linear-gradient(125deg,rgba(8,19,38,.64),rgba(42,38,88,.28) 48%,rgba(8,19,38,.61)),linear-gradient(180deg,transparent 22%,rgba(8,19,38,.78) 100%),url('/hero-cattle.jpg') center 49% / cover; filter: saturate(1.13) blur(2px); }
+.immersive-hero::before { background: radial-gradient(ellipse at 78% 22%,rgba(99,99,231,.34),transparent 43%),radial-gradient(ellipse at 16% 64%,rgba(42,166,235,.19),transparent 46%),linear-gradient(180deg,transparent 20%,rgba(4,11,28,.62)); }
+.immersive-hero .particle-field-glow { background: radial-gradient(circle,rgba(127,93,255,.23),rgba(66,158,255,.1) 40%,transparent 70%); }
+.immersive-hero .particle-field-grid { background-image: linear-gradient(rgba(157,194,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(157,194,255,.12) 1px,transparent 1px); }
+.immersive-hero .particle-field > i { background: #b6dfff; box-shadow: 0 0 10px rgba(85,200,255,.65); }
+.immersive-hero .particle-field > i:nth-of-type(5n) { background: #b7a7ff; box-shadow: 0 0 11px rgba(155,131,255,.8); }
+.immersive-hero .floating-nav { background: rgba(11,22,44,.57); border-color: rgba(206,218,255,.31); }
+.immersive-hero .brand-mark { background: #dceaff; color: #122143; }
+.immersive-hero .nav-links a:hover { color: #fff; background: rgba(114,153,255,.22); }
+.immersive-scene-label { color: #cee5ff; text-shadow: 0 2px 14px #091326; }
+.immersive-portal { border-color: rgba(255,213,165,.88); box-shadow: 0 38px 110px rgba(2,7,25,.55),0 0 55px rgba(255,179,107,.2),inset 0 0 0 8px rgba(255,255,255,.08); }
+.immersive-portal:hover,.immersive-portal:focus-visible { box-shadow: 0 44px 130px rgba(2,7,25,.6),0 0 65px rgba(255,179,107,.46); }
+.immersive-portal:focus-visible { outline-color: #ffcb94; }
+.immersive-portal-image { background: linear-gradient(180deg,rgba(25,35,73,.04),rgba(8,20,43,.72)),url('/hero-cattle.jpg') center / cover; }
+.immersive-portal-ring { color: #111b31; border-color: #ffd6a9; background: #ffbf7d; box-shadow: 0 0 35px rgba(255,179,107,.45); }
+.immersive-portal-ring::after { border-color: rgba(255,212,164,.75); }
+.immersive-headline > span { color: #a9ccff; }
+.immersive-hero h1 { color: #f7f8ff; text-shadow: 0 8px 46px rgba(5,10,31,.56); }
+.immersive-info { border-top-color: rgba(190,211,255,.42); }
+.immersive-info .hero-copy,.immersive-reading small,.immersive-reading span { color: #d0dbee; }
+.immersive-links .hero-report-link:first-child { color: #ffc38a; }
+.immersive-links .hero-report-link:hover { color: #ffd7af; }
+.immersive-foot { color: #b8c8e2; border-top-color: rgba(190,211,255,.32); }
+
+/* The percentage measures only the visual entrance animation. */
+.intro-loader { background: radial-gradient(circle at 76% 18%,#292f71,#101e3d 43%,#081326 79%); color: #f2f6ff; }
+.intro-loader-brand span,.intro-loader-bottom strong { color: #ffbd83; }
+.intro-loader-track { background: rgba(174,199,255,.22); }
+.intro-loader-track i { background: linear-gradient(90deg,#55c8ff,#9b83ff,#ffb36b); }
+
+/* Eight distinct module accents, with one common card language. */
+.module-hub { background: radial-gradient(ellipse at 72% 13%,rgba(119,91,238,.4),transparent 35%),radial-gradient(ellipse at 12% 74%,rgba(38,153,224,.28),transparent 42%),radial-gradient(ellipse at 90% 88%,rgba(255,153,96,.14),transparent 33%),#081326; color:#f2f6ff; }
+.module-hub::before { background: linear-gradient(120deg,transparent 30%,rgba(125,118,255,.11) 56%,transparent 81%); }
+.module-hub .particle-field { background: transparent; }
+.module-hub .particle-field-glow { background: radial-gradient(circle,rgba(110,99,255,.22),rgba(64,160,255,.05) 45%,transparent 70%); }
+.module-hub .particle-field > i { background: #9fcfff; box-shadow: 0 0 10px rgba(85,200,255,.55); }
+.module-hub-nav>span,.module-hub-heading>span { color: #a8c5ff; }
+.module-hub-heading h1 { color: #fff; text-shadow: 0 8px 42px rgba(4,10,32,.4); }
+.module-hub-heading p { color: #c5d1e7; }
+.module-card { --card-accent:#55c8ff; position:relative; overflow:hidden; background: linear-gradient(145deg,rgba(22,42,75,.82),rgba(13,26,52,.78)); border-color: rgba(160,190,255,.23); box-shadow: inset 0 1px rgba(255,255,255,.06),0 18px 50px rgba(3,8,25,.17); color:#f2f6ff; }
+.module-card::before { content:""; position:absolute; width:190px; height:190px; right:-100px; top:-105px; border-radius:50%; background:var(--card-accent); opacity:.14; filter:blur(30px); pointer-events:none; }
+.module-card:nth-child(2) { --card-accent:#72b9ff; }
+.module-card:nth-child(3) { --card-accent:#82e2be; }
+.module-card:nth-child(4) { --card-accent:#ff937e; }
+.module-card:nth-child(5) { --card-accent:#ffb36b; }
+.module-card:nth-child(6) { --card-accent:#b998ff; }
+.module-card:nth-child(7) { --card-accent:#73dcf2; }
+.module-card:nth-child(8) { --card-accent:#e2c47e; }
+.module-card:hover,.module-card:focus-visible { background:linear-gradient(145deg,rgba(36,58,100,.91),rgba(17,32,64,.95)); border-color:var(--card-accent); box-shadow:0 20px 60px rgba(4,9,27,.35),0 0 25px color-mix(in srgb,var(--card-accent) 25%,transparent); }
+.module-card-top,.module-card>svg { color:var(--card-accent); }
+.module-card span:last-child small { color:#b9c7df; }
+
+/* Data screens stay calmer than the entrance and preserve semantic risks. */
+.module-workspace { background: radial-gradient(circle at 92% 2%,rgba(117,88,224,.2),transparent 33%),radial-gradient(circle at 7% 81%,rgba(44,157,220,.14),transparent 36%),#081326; box-shadow:inset 0 0 0 1px rgba(166,189,245,.14); }
+.module-workspace .workspace-nav { background:rgba(14,28,53,.83); border-color:rgba(172,196,246,.22); }
+.module-workspace .workspace-nav button { color:#c0cbe1; }
+.module-workspace .workspace-nav button:hover { background:rgba(114,143,226,.14); color:#fff; }
+.module-workspace .workspace-nav button.active { color:#fff; background:linear-gradient(90deg,rgba(91,165,255,.28),rgba(146,111,255,.16)); box-shadow:inset 3px 0 #ffb36b; }
+.module-workspace .module-back-link { color:#a8caff; }
+.module-workspace .system-card { background:rgba(113,154,227,.09); border:1px solid rgba(160,190,255,.14); }
+.module-workspace .workspace-header h2 { color:#f2f6ff; }
+.module-workspace .metric-grid article { background:rgba(18,38,72,.75); border-color:rgba(175,199,247,.17); }
+.module-workspace .metric-grid .risk { background:rgba(255,107,101,.09); border-color:rgba(255,107,101,.34); }
+.module-workspace .metric-grid .online { color:#82e2be; }
+.module-workspace .plain-button { background:#ffb36b; color:#152139; box-shadow:0 8px 28px rgba(255,179,107,.22); }
+.module-workspace .plain-button:hover { background:#ffc796; }
+.module-workspace .alert-panel,.module-workspace .focused-view { border-color:rgba(175,199,247,.16); }
+.module-workspace .alert-panel { background:rgba(18,35,65,.68); }
+.module-workspace .recognition-studio { color:#f2f6ff; }
+.module-workspace .view-intro { background:linear-gradient(110deg,rgba(31,55,99,.75),rgba(26,38,74,.52)); border-color:rgba(158,187,250,.22); }
+.module-workspace .view-intro>svg { color:#78c9ff; }
+.module-workspace .recognition-control,.module-workspace .recognition-result { background:rgba(17,32,59,.8); border-color:rgba(171,196,247,.19); }
+.module-workspace .recognition-tabs { background:rgba(5,14,32,.6); }
+.module-workspace .recognition-tabs button.active { background:#84c9ff; color:#12233f; }
+.module-workspace .upload-zone { background:rgba(78,141,233,.065); border-color:rgba(127,178,255,.38); }
+.module-workspace .upload-zone:hover { background:rgba(78,141,233,.12); border-color:#83c6ff; }
+.module-workspace .upload-icon { background:rgba(94,165,255,.16); color:#8bd4ff; }
+.module-workspace .recognition-submit { background:#ffb36b; color:#152139; }
+.module-workspace .result-stage { background:radial-gradient(circle at 50% 45%,rgba(91,91,182,.17),transparent 58%),#0a1830; }
+.module-workspace .result-header strong,.module-workspace .result-artifacts a { color:#91d5ff; }
+.module-workspace .cattle-demo-card { background:rgba(255,179,107,.1); border-color:rgba(255,179,107,.32); }
+.module-workspace .cattle-demo-card button { background:#ffb36b; color:#17243a; }
+.module-workspace .health-insights { background:#0d1e34; border-color:rgba(130,226,190,.23); }
+.module-workspace .health-insights::before { background:radial-gradient(circle at 82% 8%,rgba(93,119,222,.22),transparent 32%),radial-gradient(circle at 17% 58%,rgba(68,172,164,.13),transparent 30%); }
+.module-workspace .local-status i,.module-workspace .system-card i { background:#82e2be; box-shadow:0 0 10px #82e2be; }
+@media (prefers-reduced-motion:reduce) { .module-card:hover,.module-card:focus-visible { transition:none; } }
