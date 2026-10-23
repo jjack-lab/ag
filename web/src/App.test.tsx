@@ -107,6 +107,12 @@ describe("AgriNebula application", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /进入健康控制中心/ }));
     expect(screen.getByRole("region", { name: "星牧智控欢迎页" })).toHaveClass("hero-entering");
+    const flight = screen.getByTestId("portal-flight");
+    expect(flight).toHaveAttribute("aria-hidden", "true");
+    expect(flight.querySelector(".portal-flight-scene")).toBeInTheDocument();
+    expect(flight.querySelector(".portal-flight-destination")).toBeInTheDocument();
+    expect(flight.querySelector(".portal-flight-rim")).toBeInTheDocument();
+    expect(flight).not.toHaveTextContent("进入健康控制中心");
     await waitFor(() => expect(screen.getByRole("heading", { name: "选择工作模块" })).toBeInTheDocument(), { timeout: 1500 });
   });
 

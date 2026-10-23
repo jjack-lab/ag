@@ -11,7 +11,7 @@ import {
   ScanSearch,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { AlertRecord, Dashboard, fetchAlerts, fetchDashboard, fetchVideoJob, type VideoJob } from "./api";
 import RecognitionStudio from "./RecognitionStudio";
 import DatasetEvaluationCenter from "./DatasetEvaluationCenter";
@@ -80,6 +80,9 @@ export default function App() {
   const [introPercent, setIntroPercent] = useState(0);
   const [introVisible, setIntroVisible] = useState(() => parseSiteRoute(window.location.hash).kind === "home");
   const [heroEntering, setHeroEntering] = useState(false);
+  const [portalFlightPhase, setPortalFlightPhase] = useState<"idle" | "primed" | "opening" | "arriving">("idle");
+  const [portalBounds, setPortalBounds] = useState({ left: 0, top: 0, width: 240, height: 240 });
+  const portalRef = useRef<HTMLButtonElement>(null);
   const activeView = route.kind === "module" ? route.name : "overview";
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
@@ -183,11 +186,19 @@ export default function App() {
       navigate("#/modules");
       return;
     }
+    if (portalFlightPhase !== "idle") return;
+    const bounds = portalRef.current?.getBoundingClientRect();
+    if (bounds) setPortalBounds({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
+    setIntroVisible(false);
     setHeroEntering(true);
+    setPortalFlightPhase("primed");
+    window.setTimeout(() => setPortalFlightPhase("opening"), 25);
     window.setTimeout(() => {
       setHeroEntering(false);
+      setPortalFlightPhase("arriving");
       navigate("#/modules");
-    }, 850);
+      window.setTimeout(() => setPortalFlightPhase("idle"), 450);
+    }, 1000);
   }
 
   async function openInventoryVideo(jobId: string) {
@@ -297,6 +308,17 @@ export default function App() {
 
   return (
     <main className="app-shell" id="top">
+      {portalFlightPhase !== "idle" && <div
+        className={`portal-flight is-${portalFlightPhase}`}
+        data-testid="portal-flight"
+        aria-hidden="true"
+        style={{
+          "--portal-left": `${portalBounds.left}px`,
+          "--portal-top": `${portalBounds.top}px`,
+          "--portal-width": `${portalBounds.width}px`,
+          "--portal-height": `${portalBounds.height}px`,
+        } as CSSProperties}
+      ><span className="portal-flight-scene" /><span className="portal-flight-destination" /><span className="portal-flight-rim" /><span className="portal-flight-rim rim-two" /></div>}
       {route.kind === "home" && <>
       {introVisible && <div className="intro-loader" aria-label="场景加载动画"><div className="intro-loader-brand">AGRI <span>/</span> NEBULA</div><div className="intro-loader-bottom"><span>牧场视觉健康系统</span><strong>{introPercent}%</strong></div><div className="intro-loader-track"><i style={{ width: `${introPercent}%` }} /></div></div>}
       <section className={`hero immersive-hero ${heroEntering ? "hero-entering" : ""}`} aria-label="星牧智控欢迎页">
@@ -320,7 +342,7 @@ export default function App() {
 
         <motion.div className="hero-content immersive-content" {...entrance} transition={{ duration: 0.8, ease: "easeOut" }}>
           <div className="immersive-scene-label"><Eye size={14} /> FIELD 01 / CATTLE VISION <span>开发视频演示素材</span></div>
-          <button type="button" className="immersive-portal" onClick={enterWorkspace} aria-label="进入健康控制中心">
+          <button ref={portalRef} type="button" className="immersive-portal" onClick={enterWorkspace} aria-label="进入健康控制中心">
             <span className="immersive-portal-image" />
             <span className="immersive-portal-ring"><ArrowUpRight size={25} /></span>
             <span className="immersive-portal-caption">进入健康控制中心</span>
@@ -337,7 +359,7 @@ export default function App() {
       </section>
       </>}
 
-      {route.kind === "modules" && <section className="module-hub" aria-label="工作模块入口">
+      {route.kind === "modules" && <section className={`module-hub ${portalFlightPhase === "arriving" ? "is-arriving" : ""}`} aria-label="工作模块入口">
         <ParticleField />
         <div className="module-hub-inner">
           <nav className="module-hub-nav"><a className="brand" href="#/" aria-label="星牧智控首页"><span className="brand-mark"><CircleDot size={20} /></span><span>星牧智控 <small>AgriNebula</small></span></a><span>FIELD SYSTEM / 08 MODULES</span></nav>
