@@ -23,9 +23,11 @@ def zone_activity(tracks, rectangle, fps, observed_at):
     hourly = defaultdict(lambda: {"entries": 0, "dwell_seconds": 0.0})
     total_entries = 0
     total_frames = 0
+    events = []
     started = datetime.fromisoformat(observed_at)
-    for samples in tracks.values():
+    for track_id, samples in tracks.items():
         inside_before = False
+        current_event = None
         for _frame, seconds, x, y in samples:
             inside = x1 <= x <= x2 and y1 <= y <= y2
             hour = (started + timedelta(seconds=seconds)).strftime("%Y-%m-%d %H:00")
@@ -35,10 +37,15 @@ def zone_activity(tracks, rectangle, fps, observed_at):
                 if not inside_before:
                     total_entries += 1
                     hourly[hour]["entries"] += 1
+                    current_event = {"track_id": track_id, "time_seconds": round(seconds, 2),
+                                     "dwell_seconds": 0.0}
+                    events.append(current_event)
+                current_event["dwell_seconds"] = round(current_event["dwell_seconds"] + 1 / fps, 2)
             inside_before = inside
     return {
         "entries": total_entries,
         "dwell_seconds": round(total_frames / fps, 2),
+        "events": sorted(events, key=lambda event: event["time_seconds"]),
         "hourly": [{"hour": hour, "entries": row["entries"],
                     "dwell_seconds": round(row["dwell_seconds"], 2)}
                    for hour, row in sorted(hourly.items())],

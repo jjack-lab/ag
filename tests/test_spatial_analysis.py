@@ -18,6 +18,18 @@ def test_zone_counts_entry_dwell_and_hours():
     assert result["hourly"][0]["entries"] == 2
 
 
+def test_zone_entry_events_include_dwell():
+    tracks = {7: [(0, 0.0, 0.1, 0.2), (1, 0.5, 0.5, 0.5),
+                  (2, 1.0, 0.6, 0.5), (3, 1.5, 0.9, 0.5),
+                  (4, 2.0, 0.5, 0.5)]}
+    result = zone_activity(tracks, [0.3, 0.3, 0.7, 0.7], 2,
+                           "2026-10-22T10:00:00+08:00")
+    assert result["events"] == [
+        {"track_id": 7, "time_seconds": 0.5, "dwell_seconds": 1.0},
+        {"track_id": 7, "time_seconds": 2.0, "dwell_seconds": 0.5},
+    ]
+
+
 def test_gate_counts_both_directions_only_on_finite_line():
     tracks = {
         7: [(0, 0, 0.5, 0.2), (1, 1, 0.5, 0.8), (2, 2, 0.5, 0.2)],
