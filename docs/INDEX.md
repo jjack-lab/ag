@@ -49,12 +49,12 @@
 
 ## 研究实验与复现
 
-- [`experiments/2026-08-24-cbvd4-domain-adaptation-results.md`](experiments/2026-08-24-cbvd4-domain-adaptation-results.md)：CBVD-4 冻结三臂结果。
-- [`experiments/2026-10-03-cbvd4-validation-calibration-coverage.md`](experiments/2026-10-03-cbvd4-validation-calibration-coverage.md)：校准、AURC 与覆盖。
-- [`experiments/2026-10-03-prospective-confirmation-set-protocol.md`](experiments/2026-10-03-prospective-confirmation-set-protocol.md)：前瞻性确认集协议。
+- [`experiments/2026-08-23-cross-domain-behavior-results.md`](experiments/2026-08-23-cross-domain-behavior-results.md)：跨域行为实验记录（主仓库快照）。
+- [`experiments/2026-08-23-trustworthy-behavior-results.md`](experiments/2026-08-23-trustworthy-behavior-results.md)：可信行为实验记录（主仓库快照）。
 - [`2026-10-04-prospective-data-request.md`](2026-10-04-prospective-data-request.md)：外部数据需求说明。
 - [`2026-08-24-new-dachuang-complete-project-assessment.md`](2026-08-24-new-dachuang-complete-project-assessment.md)：项目完整评估。
 - [`申报-项目概述.txt`](申报-项目概述.txt)、[`星牧智控-项目计划书.docx`](星牧智控-项目计划书.docx)：申报材料。
+- CBVD-4 多 seed 汇总、校准与前瞻性确认集的完整协议存放在 `.worktrees/cross-domain-behavior` 分支，不在主仓库树上；接手前先读该分支 `docs/experiments/`。
 
 ## 数据台账
 
