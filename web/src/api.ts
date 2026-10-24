@@ -17,6 +17,8 @@ export type AlertRecord = {
   confidence: number;
   evidence_path?: string | null;
   status: string;
+  resolution?: string | null;
+  resolved_at?: string | null;
 };
 
 export type BehaviorSummaryRow = {
@@ -343,8 +345,39 @@ export function fetchDashboard(): Promise<Dashboard> {
   return request("/api/dashboard");
 }
 
-export function fetchAlerts(): Promise<AlertRecord[]> {
-  return request("/api/alerts?status=open");
+export function fetchAlerts(status = "open"): Promise<AlertRecord[]> {
+  return request(`/api/alerts${status ? `?status=${encodeURIComponent(status)}` : ""}`);
+}
+
+export function resolveAlert(id: string, note: string): Promise<AlertRecord> {
+  return request(`/api/alerts/${encodeURIComponent(id)}/resolve`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note }),
+  });
+}
+
+export type AnimalDirectoryRow = {
+  animal_id: string; species: "cattle" | "sheep"; video_count: number;
+  last_seen: string; followup_count: number;
+};
+export function fetchAnimals(q = "", species = ""): Promise<AnimalDirectoryRow[]> {
+  const query = new URLSearchParams({ q });
+  if (species) query.set("species", species);
+  return request(`/api/animals?${query}`);
+}
+
+export type DailyStatistics = { date: string; videos: number; completed_videos: number;
+  failed_videos: number; cattle_videos: number; sheep_videos: number; alerts: number;
+  high_alerts: number; resolved_alerts: number; tasks_created: number; tasks_closed: number };
+export type WorkspaceStatistics = { timezone: string; start: string | null; end: string | null;
+  totals: Omit<DailyStatistics, "date">; daily: DailyStatistics[] };
+export function statisticsQuery(start: string, end: string): string {
+  const query = new URLSearchParams();
+  if (start) query.set("start", start);
+  if (end) query.set("end", end);
+  return query.size ? `?${query}` : "";
+}
+export function fetchAnalytics(start = "", end = ""): Promise<WorkspaceStatistics> {
+  return request(`/api/analytics${statisticsQuery(start, end)}`);
 }
 
 export type RecognitionParameters = {

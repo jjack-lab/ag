@@ -1,0 +1,31 @@
+.workspace-feature { color: #e5eafd; margin: 1.5rem 0; padding: clamp(18px, 3vw, 32px); border: 1px solid #8290dc30; border-radius: 24px; background: linear-gradient(140deg, #17213de8, #182242c9 55%, #25213bc9); }
+.workspace-feature > header h3 { font-size: clamp(24px, 3vw, 35px); margin: 12px 0; letter-spacing: -.03em; }
+.workspace-feature p, .workspace-feature small { color: #b5c1dc; line-height: 1.65; }
+.feature-eyebrow { color: #a8a2fb; font-size: 11px; letter-spacing: .15em; }
+.feature-toolbar, .feature-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 20px 0; }
+.workspace-feature label, .camera-capture label { display: grid; gap: 7px; font-size: 13px; color: #bac5e3; }
+.workspace-feature input, .workspace-feature select, .workspace-feature textarea { background: #0c1530; color: #eef0ff; border: 1px solid #6f80b750; border-radius: 10px; padding: 11px 12px; min-width: 0; max-width: 100%; }
+.workspace-feature textarea { min-height: 85px; resize: vertical; }
+.workspace-feature form:not(.feature-toolbar) { display: grid; gap: 12px; margin-top: 18px; max-width: 640px; }
+.workspace-feature button, .feature-link, .camera-capture button { border: 1px solid #9b9def50; background: #313d68; color: #f0f2ff; border-radius: 10px; padding: 11px 16px; cursor: pointer; }
+.workspace-feature button:hover, .camera-capture button:hover { border-color: #f7ad7d; background: #3b486f; }
+.workspace-feature button:disabled, .camera-capture button:disabled { opacity: .5; cursor: wait; }
+.workspace-feature a { color: #b6b9ff; }
+.feature-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 20px 0; }
+.feature-card-grid .record-card { display: grid; gap: 10px; text-align: left; padding: 22px; background: linear-gradient(135deg, #343766, #182a40); }
+.feature-card-grid .record-card strong { font-size: 25px; color: #b8f4d9; }
+.record-card.selected { outline: 2px solid #ffae7d; }
+.kpi-cards article { display: grid; gap: 10px; background: #0c173175; border: 1px solid #8494db25; border-radius: 16px; padding: 20px; }
+.kpi-cards article strong { font-size: 30px; color: #a4eed4; }
+.feature-record { border-top: 1px solid #748acb35; padding: 18px 0; }
+.feature-record header { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+.feature-record small { display: block; margin: 8px 0; overflow-wrap: anywhere; }
+.risk-chip { border-radius: 20px; padding: 5px 12px; font-size: 12px; background: #365346; color: #b6efcd; }
+.risk-high { background: #652e40; color: #ffc4ce; }.risk-medium { background: #5b4630; color: #ffd1a0; }
+.workspace-feature [role=alert] { color: #ffb7c6; }.workspace-feature [role=status] { color: #a8efcf; }
+.feature-table-scroll { overflow-x: auto; margin: 24px 0; }.workspace-feature table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
+.workspace-feature th, .workspace-feature td { padding: 13px; text-align: left; border-bottom: 1px solid #7585bd30; }.workspace-feature caption { text-align: left; padding: 12px; color: #bbc5e4; }
+.history-chart { display: grid; gap: 10px; padding: 20px; background: #101a34; border-radius: 16px; margin-top: 20px; }.history-chart > div { display: grid; grid-template-columns: 90px 1fr 55px; align-items: center; gap: 12px; font-size: 12px; }.history-chart i { display: block; height: 13px; border-radius: 10px; background: linear-gradient(90deg, #7d70ef, #7bdec9); }.history-chart b { color: #ffc69b; }
+.workspace-feature .animal-profile { padding: 24px 0 0; }.workspace-feature .animal-profile > article { display: grid; gap: 9px; border-top: 1px solid #7585bd35; padding: 16px 0; }
+.camera-capture { background: #13213a; border: 1px solid #9b9def40; border-radius: 16px; margin: 18px 0; padding: 18px; }.camera-capture video { width: 100%; max-height: 280px; background: #070e1d; border-radius: 10px; }.camera-capture .feature-actions { margin-bottom: 8px; }
+@media(max-width: 640px) { .feature-toolbar > label { flex: 1 1 150px; }.workspace-feature { padding: 18px; }.feature-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.feature-card-grid .record-card { padding: 16px; }.workspace-feature .feature-actions button { flex: 1 1 130px; } }

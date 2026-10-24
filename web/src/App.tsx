@@ -11,7 +11,7 @@ import {
   ScanSearch,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AlertRecord, Dashboard, fetchAlerts, fetchDashboard, fetchVideoJob, type VideoJob } from "./api";
 import RecognitionStudio from "./RecognitionStudio";
 import DatasetEvaluationCenter from "./DatasetEvaluationCenter";
@@ -19,6 +19,11 @@ import InventoryPanel from "./InventoryPanel";
 import ActionTaskInbox from "./ActionTaskInbox";
 import HealthInsights from "./HealthInsights";
 import ParticleField from "./ParticleField";
+import AnimalDirectory from "./AnimalDirectory";
+import AlertCenter from "./AlertCenter";
+import WorkspaceAnalytics from "./WorkspaceAnalytics";
+import RecentWork from "./RecentWork";
+import "./workspace-features.css";
 import { moduleHref, moduleNames, parseSiteRoute, type ModuleName } from "./moduleRoutes";
 import "./workspace-interactions.css";
 import "./site-refresh.css";
@@ -88,6 +93,7 @@ export default function App() {
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [dataError, setDataError] = useState(false);
+  const [dataRevision, setDataRevision] = useState(0);
   const [requestedVideoJob, setRequestedVideoJob] = useState<VideoJob | null>(null);
   const [openingInventoryJobId, setOpeningInventoryJobId] = useState<string | null>(null);
   const [inventoryVideoError, setInventoryVideoError] = useState("");
@@ -142,16 +148,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, []);
-
-  const alertDistribution = useMemo(
-    () => ({
-      high: alerts.filter((alert) => alert.level === "high").length,
-      medium: alerts.filter((alert) => alert.level === "medium").length,
-      low: alerts.filter((alert) => alert.level === "low").length,
-    }),
-    [alerts],
-  );
+  }, [dataRevision]);
 
   function scrollToElement(id: string) {
     window.setTimeout(() => {
@@ -404,6 +401,7 @@ export default function App() {
         <div className="workspace-main">
           <header className="workspace-header">
             <div><p>{dateLabel}</p><h2>{viewTitle[activeView]}</h2></div>
+            {activeView === "overview" && <button type="button" className="plain-button" onClick={() => setDataRevision((n) => n + 1)}>刷新工作数据</button>}
             {activeView === "overview" && (
               <button type="button" className="plain-button" onClick={() => openView("monitor", "recognition-studio")}>
                 开始视频识别 <ArrowUpRight size={17} />
@@ -414,6 +412,7 @@ export default function App() {
           {activeView === "overview" && (
             <>
               {metrics}
+              <RecentWork onOpenVideo={openInventoryVideo} revision={dataRevision} />
               <div className="workspace-grid">
                 <article id="alerts" className="alert-panel">
                   <div className="panel-title"><div><p>需要关注</p><h3>最新健康告警</h3></div><button type="button" onClick={() => openView("alerts")}>查看全部</button></div>
@@ -425,19 +424,14 @@ export default function App() {
 
           {activeView === "monitor" && (
             <section className="focused-view" aria-label="实时监控功能区">
-              <div className="view-intro"><ScanSearch /><div><h3>识别与追踪工作区</h3><p>上传图片或视频进行识别；摄像头硬件接入将在后续配置。</p></div></div>
-              <RecognitionStudio requestedJob={requestedVideoJob} />
+              <div className="view-intro"><ScanSearch /><div><h3>识别与追踪工作区</h3><p>上传图片或视频，也可切换到视频识别后使用摄像头录制片段进行识别。</p></div></div>
+              <RecognitionStudio requestedJob={requestedVideoJob} onCompleted={() => setDataRevision((n) => n + 1)} />
             </section>
           )}
 
           {activeView === "health" && <HealthInsights onOpenVideo={openInventoryVideo} />}
 
-          {activeView === "alerts" && (
-            <section className="focused-view alert-panel" id="alerts">
-              <div className="panel-title"><div><p>风险筛查结果</p><h3>告警记录</h3></div><span>{alerts.length} 条</span></div>
-              {renderAlertList("当前没有健康告警。")}
-            </section>
-          )}
+          {activeView === "alerts" && <AlertCenter onOpenVideo={openInventoryVideo} onChanged={() => setDataRevision((n) => n + 1)} />}
 
           {activeView === "tasks" && <ActionTaskInbox
             onOpenVideo={openInventoryVideo}
@@ -445,22 +439,11 @@ export default function App() {
             videoOpenError={inventoryVideoError}
           />}
 
-          {activeView === "cattle" && (
-            <section className="focused-view">
-              <div className="view-intro"><ShieldCheck /><div><h3>个体记录</h3><p>跨视频个体需由现场人员核对耳标后人工关联。视频内 Track ID 不能直接作为牛只档案编号。</p></div></div>
-              <p className="view-empty">请在视频识别结果中核对耳标并建立个体关联，再查看跨视频记录。</p>
-            </section>
-          )}
+          {activeView === "cattle" && <AnimalDirectory onOpenVideo={openInventoryVideo} />}
 
           {activeView === "analytics" && (
             <section className="focused-view">
-              <div className="view-intro"><ChartNoAxesCombined /><div><h3>统计概览</h3><p>以下统计来自当前仪表盘和健康告警，不生成虚构趋势。</p></div></div>
-              {metrics}
-              <div className="distribution-grid" aria-label="告警风险分布">
-                <article><span>高风险告警</span><strong>{alertDistribution.high}</strong></article>
-                <article><span>中风险告警</span><strong>{alertDistribution.medium}</strong></article>
-                <article><span>低风险告警</span><strong>{alertDistribution.low}</strong></article>
-              </div>
+              <WorkspaceAnalytics onOpenVideo={openInventoryVideo} />
               <DatasetEvaluationCenter />
             </section>
           )}
@@ -470,6 +453,7 @@ export default function App() {
             videoOpenError={inventoryVideoError}
           />}
         </div>
+        {inventoryVideoError && activeView !== "inventory" && activeView !== "tasks" && <p className="workspace-video-error" role="alert">{inventoryVideoError}</p>}
       </section>}
     </main>
   );
