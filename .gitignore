@@ -7,6 +7,13 @@ htmlcov/
 .venv/
 venv/
 
+# 本地测试临时目录（本机沙盒会把 tempfile 的 0700 目录判为不可访问，
+# 聚焦测试改用仓库内 .test-tmp/，不进入版本库）
+.test-tmp/
+.tmp-test/
+tmp-test/
+web/.tmp-test/
+
 web/node_modules/
 web/dist/
 web/.vite/

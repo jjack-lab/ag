@@ -33,6 +33,26 @@
 
 如果启动失败，窗口会保留并显示原因。下面的 PowerShell 方式可用于进一步诊断。
 
+## 服务监听范围与运行参数
+
+- API 默认只监听 `127.0.0.1:8000`，Web 开发服务器绑定 `127.0.0.1:5173`，默认不向局域网开放。
+- 局域网演示需要显式放开，并自行确认网络环境（当前没有登录/鉴权，`/media` 会直接提供上传视频与结果文件）：
+
+```powershell
+$env:AGRINEBULA_HOST = '0.0.0.0'
+$env:AGRINEBULA_PORT = '8000'   # 可选，默认 8000
+```
+
+- 进程重启时，内存任务队列里未完成的任务会被标记为 `failed`，错误信息为“服务重启：任务已中断，请重新提交”，避免前端一直显示处理中。
+- 上传大小上限由 `AGRINEBULA_MAX_UPLOAD_MB` 控制，默认 512。
+- 媒体文件只增不减时，可先预览再清理未被任务引用、且超过保留期的文件：
+
+```powershell
+$env:AGRINEBULA_PYTHON = 'F:\deepl\anaconda1\envs\pytorch\python.exe'
+& $env:AGRINEBULA_PYTHON scripts\prune_media.py              # 仅报告
+& $env:AGRINEBULA_PYTHON scripts\prune_media.py --apply      # 真正删除
+```
+
 ## PowerShell 启动与诊断
 
 打开 PowerShell：
