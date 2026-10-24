@@ -38,41 +38,57 @@ class MediaRetentionTests(unittest.TestCase):
         os.utime(path, (stamp, stamp))
         return path
 
-    def test_collects_only_old_unreferenced_files(self):
+    def _prepare(self):
         media_root = self.directory / "media"
-        kept_upload = self._write(media_root / "uploads" / "keep.mp4", age_days=40)
+        keep_upload = self._write(media_root / "uploads" / "keep.mp4", age_days=40)
+        self._write(media_root / "uploads" / ".gitkeep", age_days=400)
+        self._write(media_root / "uploads" / "orphan.mp4", age_days=40)
+        self._write(media_root / "results" / ".gitkeep", age_days=400)
+        self._write(media_root / "results" / "loose.jpg", age_days=40)
         kept_result = self._write(
             media_root / "results" / "job1" / "out.mp4", age_days=40
-        )
-        old_upload_orphan = self._write(
-            media_root / "uploads" / "orphan.mp4", age_days=40
         )
         old_result_orphan = self._write(
             media_root / "results" / "orphan2" / "clip.mp4", age_days=40
         )
-        fresh_orphan = self._write(media_root / "uploads" / "fresh.mp4", age_days=0.1)
+        self._write(media_root / "results" / "newdir" / "fresh.mp4", age_days=0.1)
         jobs = [
             SimpleNamespace(
-                source_path=str(kept_upload),
+                id="job1",
+                source_path=str(keep_upload),
                 result={"video_path": "job1/out.mp4"},
             )
         ]
+        return media_root, jobs, kept_result, old_result_orphan
+
+    def test_only_prunes_orphaned_job_directories(self):
+        media_root, jobs, kept_result, old_result_orphan = self._prepare()
 
         plan = collect_orphans(media_root, jobs, older_than_days=14)
 
         names = {path.name for path in plan["files"]}
-        self.assertEqual({"orphan.mp4", "clip.mp4"}, names)
-        self.assertEqual(32, plan["total_bytes"])
-        self.assertTrue(kept_result.exists())
-        self.assertTrue(fresh_orphan.exists())
+        self.assertEqual({"clip.mp4"}, names)
+        self.assertEqual(16, plan["total_bytes"])
 
         result = prune(plan["files"])
-        self.assertEqual(2, result["deleted"])
-        self.assertFalse(old_upload_orphan.exists())
+
+        self.assertEqual(1, result["deleted"])
         self.assertFalse(old_result_orphan.exists())
-        self.assertTrue(kept_upload.exists())
+        self.assertFalse(old_result_orphan.parent.exists())
         self.assertTrue(kept_result.exists())
-        self.assertTrue(fresh_orphan.exists())
+        self.assertTrue((media_root / "uploads" / "orphan.mp4").exists())
+        self.assertTrue((media_root / "results" / "loose.jpg").exists())
+        self.assertTrue((media_root / "results" / ".gitkeep").exists())
+
+    def test_uploads_are_opt_in(self):
+        media_root, jobs, _, _ = self._prepare()
+
+        plan = collect_orphans(
+            media_root, jobs, older_than_days=14, include_uploads=True
+        )
+
+        names = {path.name for path in plan["files"]}
+        self.assertEqual({"clip.mp4", "orphan.mp4"}, names)
 
     def test_missing_media_root_returns_empty_plan(self):
         plan = collect_orphans(self.directory / "missing", [])

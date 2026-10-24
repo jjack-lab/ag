@@ -52,6 +52,11 @@ def main(argv=None) -> int:
         help="只清理超过该天数的文件，默认 14",
     )
     parser.add_argument("--apply", action="store_true", help="真正删除；默认仅报告")
+    parser.add_argument(
+        "--include-uploads",
+        action="store_true",
+        help="同时清理 uploads 下无引用且超期的文件（默认不动，避免删掉用户原片）",
+    )
     args = parser.parse_args(argv)
 
     media_root = Path(args.root)
@@ -69,7 +74,10 @@ def main(argv=None) -> int:
         print(f"[db] 数据库不存在，按无引用处理: {database}")
 
     plan = collect_orphans(
-        media_root, jobs, older_than_days=args.older_than_days
+        media_root,
+        jobs,
+        older_than_days=args.older_than_days,
+        include_uploads=args.include_uploads,
     )
     print(
         f"[plan] 可清理 {plan['count']} 个文件，"
