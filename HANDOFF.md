@@ -67,7 +67,7 @@
 
 ## 已完成
 
-- 2026-10-24 运行加固（`9b066e7`、`e5b930b`、`f2118de`）：`run_api` 默认只监听 `127.0.0.1`（`AGRINEBULA_HOST/PORT` 显式开局域网）；启动时把遗留 `queued/running` 任务标为中断并提示重提；进度写库按推进 ≥1% 或 ≥1 秒节流；SQLite 开 WAL + busy_timeout；新增 `scripts/prune_media.py` 只清未被任务引用且超过 14 天的媒体文件；`web/package.json` 与锁文件锁定 12 个 `latest` 依赖版本（`scripts/pin_web_versions.py --check` 可复检）。新增聚焦测试 8 项通过；前端全量与后端全量未在本沙盒重跑（Node 子进程 EPERM、tempfile 目录权限），复验步骤见 `docs/2026-10-24-user-todo.md`。文档索引见 `docs/INDEX.md`。
+- 2026-10-24 运行加固（`9b066e7`、`e5b930b`、`a2c65f2`、`f2118de`）：`run_api` 默认只监听 `127.0.0.1`（`AGRINEBULA_HOST/PORT` 显式开局域网）；启动时把遗留 `queued/running` 任务标为中断并提示重提；进度写库按推进 ≥1% 或 ≥1 秒节流；SQLite 开 WAL + busy_timeout；新增 `scripts/prune_media.py` 只清无任务引用的结果目录（默认不动上传原片与零散文件，`--apply` 才删除）；`web/package.json` 与锁文件锁定 12 个 `latest` 依赖版本（`scripts/pin_web_versions.py --check` 可复检）。新增聚焦测试 9 项通过；前端全量与后端全量未在本沙盒重跑（Node 子进程 EPERM、tempfile 目录权限），复验步骤见 `docs/2026-10-24-user-todo.md`。文档索引见 `docs/INDEX.md`。
 
 - 2026-10-24 官网数据页修复：用户截图暴露整屏留白与四张卡片停留 0。原因是全屏居中布局、牛群下移及滚动 pin/scrub 驱动计数。现压缩数据区，完整数值直接展示，牛群正常排版可见；移除 pin 计数依赖。新增带动画库场景回归先红后绿，官网三项测试与构建通过，浏览器实际显示 4/26/210/26。截图 `data/verification/evidence-spacing-fixed-20261024.jpg`。
 
