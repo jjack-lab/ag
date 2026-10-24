@@ -299,6 +299,12 @@ body.intro #app{transform:scale(.9);border-radius:28px}
 @media(max-width:760px){.nav{gap:8px}.brand-caption{font-size:7px}.brand{gap:5px}.nav-links a{padding:7px 6px}.hero{min-height:620px}.hero-copy{top:19%;gap:12px;padding:0 14px}.hero-title{font-size:clamp(30px,8.6vw,40px);line-height:1.2}.hero-sub{font-size:12.5px;max-width:330px}.hero-actions{gap:8px}.hero-media{height:60%;mask-image:linear-gradient(to bottom,transparent,#000 14%)}.det{display:none}.cloud-l{width:70vw;top:6%}.cloud-r{width:66vw;top:10%}.hero-glass .glass:nth-child(odd){display:none}.flow-row{flex-direction:column;align-items:flex-start}.cta{padding:80px 16px;min-height:720px}.night-scene{height:100%}.cta-card{padding:32px 20px}.lead-form{flex-direction:column}.lead-form input,.lead-form button{width:100%;min-height:42px}.floating-workbench{bottom:12px;right:12px;height:32px;font-size:11px;padding:0 12px}.stats-inner{padding-bottom:160px}.view-head{padding-top:115px}.herd-wrap{width:250px;bottom:0}.sources{gap:20px}.stats{padding-bottom:50px}.hero-glass .glass{max-width:55px}.f-links{gap:17px}}
 @media(max-width:760px){.hud-rec,.hud-count{top:42%;font-size:9px}.hud-rec{left:12px}.hud-count{right:12px}.brand{font-size:15px}.brand svg{width:19px}.nav-links a{font-size:11px;padding:7px 5px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.w{opacity:1!important;transform:none!important;filter:none!important}body.intro #app{transform:none;border-radius:0}.backdrop{display:none}}
+#view-evidence .view-head{padding-bottom:28px}
+#view-evidence .stats{min-height:0;padding:22px 16px 36px}
+#view-evidence .stats-inner{min-height:0;padding-bottom:0;gap:18px}
+#view-evidence .herd-wrap{position:relative;left:auto;bottom:auto;transform:none;width:min(340px,80vw);height:170px;margin-top:-18px}
+#view-evidence .herd{height:170px;filter:none}
+#view-evidence .stat-card{padding-left:30px;padding-right:30px}
 </style></head><body class="intro"><div class="backdrop" aria-hidden="true"></div><div id="app">
 <header class="nav" id="siteNav"><a class="brand" href="#/home" data-route="home" aria-label="星牧智控首页"><svg viewBox="0 0 30 22" aria-hidden="true"><circle cx="4" cy="17" r="3.6" fill="currentColor"/><path d="M10.5 18.5 16.8 5.2 25.5 18.5" fill="none" stroke="currentColor" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>星牧智控<small class="brand-caption">AGRINEBULA</small></span></a><nav class="nav-links" aria-label="主导航"><a href="#/home" data-route="home">首页</a><a href="#/capabilities" data-route="capabilities">能力</a><a href="#/evidence" data-route="evidence">数据与边界</a><a href="#/about" data-route="about">关于</a></nav><a class="btn nav-cta" href="#/home" data-route="home" data-anchor="#cta">预约演示</a></header>
 <main id="views"><section class="view is-active" id="view-home" data-view="home" aria-labelledby="homeTitle">
@@ -415,7 +421,7 @@ body.intro #app{transform:scale(.9);border-radius:28px}
   });
   function setCounters(progress){document.querySelectorAll('.stat-card').forEach(card=>{card.querySelector('b').textContent=(Number(card.dataset.to)*progress).toFixed(Number(card.dataset.dec)||0)+(card.dataset.suf||'');});}
   function setupView(root, skipHero=false){
-    activate(panels[0]);setCounters(scrollMotion?0:1);
+    activate(panels[0]);setCounters(1);
     if (!motion) return;
     viewCtx=gs.context(()=>{
       const reveals=[...root.querySelectorAll('.reveal')].filter(el=>!skipHero||!el.closest('[data-intro]'));
@@ -435,9 +441,7 @@ body.intro #app{transform:scale(.9);border-radius:28px}
       }
       if(root.dataset.view==='capabilities') gs.from('.panel-in',{y:120,opacity:0,duration:1,stagger:.12,...(scrollMotion?{scrollTrigger:{trigger:'#loop',start:'top 70%',once:true}}:{})});
       if(root.dataset.view==='evidence'&&scrollMotion){
-        const media=gs.matchMedia();
-        media.add('(min-width:901px)',()=>{const proxy={p:0};gs.timeline({scrollTrigger:{trigger:'#statsPin',start:'top top',end:'+=120%',pin:true,scrub:1}}).to(proxy,{p:1,ease:'none',onUpdate:()=>setCounters(proxy.p)},0).fromTo('#herd',{yPercent:75},{yPercent:6,ease:'none',duration:1},0);});
-        media.add('(max-width:900px)',()=>{const proxy={p:0};gs.to(proxy,{p:1,duration:2,ease:'power2.out',onUpdate:()=>setCounters(proxy.p),scrollTrigger:{trigger:root.querySelector('.cards'),start:'top 85%',once:true}});gs.fromTo('#herd',{yPercent:40},{yPercent:0,scrollTrigger:{trigger:'#statsPin',start:'top bottom',end:'bottom bottom',scrub:true}});});
+        gs.to('#herd',{x:8,duration:5,yoyo:true,repeat:-1,ease:'sine.inOut'});
         root.querySelectorAll('.grid-sq').forEach(el=>gs.to(el,{opacity:1,duration:1.2,yoyo:true,repeat:-1,delay:Math.random()*4,repeatDelay:Math.random()*3}));
       }
       if(root.dataset.view==='about') gs.from('.timeline li',{y:20,opacity:0,duration:.8,stagger:.1,...(scrollMotion?{scrollTrigger:{trigger:'.timeline',start:'top 85%',once:true}}:{})});
