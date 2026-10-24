@@ -31,6 +31,7 @@ from cattle_health_app.model_registry import (
     resolve_detector_model,
 )
 from cattle_health_app.repository import SQLiteRepository
+from cattle_health_app.workspace_api import register_workspace_routes
 from cattle_health_app.spatial_analysis import count_drop_alert, line_crossings, read_tracks, zone_activity, zone_detection_gap
 from cattle_health_app.spatial_audit import add_missed, audit_summary, new_audit, report_hash, set_verdict
 from cattle_health_app.video_events import create_event_clip, create_event_snapshot, result_file, video_events
@@ -298,6 +299,7 @@ def create_app(
         description="牛只识别、健康预警与本地数据接口",
     )
     app.mount("/media", StaticFiles(directory=media_root), name="media")
+    register_workspace_routes(app, repository)
 
     @app.get("/api/health")
     def health():
@@ -428,7 +430,7 @@ def create_app(
         if tracker not in {"bytetrack.yaml", "botsort.yaml"}:
             raise HTTPException(status_code=422, detail="Unsupported tracker")
         suffix = _validated_suffix(
-            file.filename, {".mp4", ".avi", ".mov", ".mkv"}
+            file.filename, {".mp4", ".avi", ".mov", ".mkv", ".webm"}
         )
         source_path = upload_dir / f"{uuid4().hex}{suffix}"
         _save_upload(file, source_path)
