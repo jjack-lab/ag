@@ -7,6 +7,7 @@ from cattle_health_app.jobs import VideoJobService
 from cattle_health_app.media_processor import LocalMediaProcessor
 from cattle_health_app.model_registry import resolve_detector_model
 from cattle_health_app.repository import SQLiteRepository
+from cattle_health_app.runtime import server_host, server_port
 
 
 def build_app():
@@ -21,6 +22,9 @@ def build_app():
         processor,
         media_root / "results",
     )
+    # 进程重启后，内存队列里的任务不会自动恢复：把遗留的 queued/running
+    # 标记为中断，避免前端永远停在“处理中”。
+    jobs.recover_interrupted()
     return create_app(
         repository,
         media_processor=processor,
@@ -34,4 +38,4 @@ app = build_app()
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=server_host(), port=server_port())

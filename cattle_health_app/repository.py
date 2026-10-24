@@ -405,6 +405,32 @@ class SQLiteRepository:
             ).fetchall()
         return [self._to_video_job(row) for row in rows]
 
+    def list_all_video_jobs(self):
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM video_jobs ORDER BY created_at DESC, id DESC"
+            ).fetchall()
+        return [self._to_video_job(row) for row in rows]
+
+    def mark_interrupted_video_jobs(self, now: str, message: str):
+        """把遗留的 queued/running 任务改为 failed，返回受影响的任务 ID。"""
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT id FROM video_jobs WHERE status IN ('queued', 'running')"
+            ).fetchall()
+            job_ids = [row["id"] for row in rows]
+            if job_ids:
+                placeholders = ",".join("?" for _ in job_ids)
+                connection.execute(
+                    f"""
+                    UPDATE video_jobs
+                    SET status = 'failed', error = ?, updated_at = ?
+                    WHERE id IN ({placeholders})
+                    """,
+                    (message, now, *job_ids),
+                )
+        return job_ids
+
     def save_video_review(self, review: dict):
         with self._connection() as connection:
             connection.execute(
@@ -678,6 +704,9 @@ class SQLiteRepository:
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
         try:
+            # WAL 让 API 读与后台任务写并发时不互相阻塞；busy_timeout 吸收短时争用。
+            connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("PRAGMA busy_timeout=5000")
             with connection:
                 yield connection
         finally:

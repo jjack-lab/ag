@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import inspect
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime, timedelta
@@ -9,6 +10,8 @@ from pathlib import Path
 from uuid import uuid4
 
 from cattle_health_app.domain import AlertLevel, AlertRecord, VideoJobRecord
+
+INTERRUPTED_MESSAGE = "服务重启：任务已中断，请重新提交"
 
 
 def now_iso() -> str:
@@ -36,6 +39,12 @@ class VideoJobService:
         self.executor.submit(self._run, job, conf, iou, class_id, tracker)
         return job
 
+    def recover_interrupted(self):
+        """把上个进程遗留的 queued/running 任务标记为中断，返回受影响的任务 ID。"""
+        return self.repository.mark_interrupted_video_jobs(
+            now_iso(), INTERRUPTED_MESSAGE
+        )
+
     def _run(self, job, conf, iou, class_id, tracker):
         running = replace(
             job,
@@ -47,8 +56,18 @@ class VideoJobService:
         try:
             track_video = self.processor.track_video
 
+            last_progress = 0.05
+            last_saved = time.monotonic()
+
             def update_progress(value):
+                nonlocal last_progress, last_saved
                 progress = max(0.05, min(0.99, float(value)))
+                now = time.monotonic()
+                # 不逐帧写库：进度推进 >=1% 或距上次写入 >=1 秒才落盘。
+                if progress - last_progress < 0.01 and now - last_saved < 1.0:
+                    return
+                last_progress = progress
+                last_saved = now
                 self.repository.save_video_job(
                     replace(running, progress=progress, updated_at=now_iso())
                 )
