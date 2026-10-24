@@ -1,13 +1,488 @@
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#07100d" />
-    <title>星牧智控 AgriNebula</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#f3f7ea"/><title>星牧智控 — 让每一段牧场视频都变成可追溯的证据</title><meta name="description" content="从一段牧场视频，到一份可核查的行为与健康风险证据。牛只识别、人工复核与圈舍核对，一个可运行的科研原型。"/><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23e7efcf'/%3E%3Cpath d='M9 29L20 9l11 20' fill='none' stroke='%234d6a10' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet"/><style>:root{
+  --ink:#121410; --olive:#4d6a10; --green:#6f9a0c; --lime:#b4cd52;
+  --pill:#e7efcf; --line:#eef0ea; --bg:#fff; --radius:22px;
+  --mist:#f3f7ea; --sky:#dceac2; --sun:#f5e3ad;
+  --night:#0a1424; --night-2:#123245; --star:#f4e7c3;
+  --soft:0 18px 40px rgba(40,60,10,.08);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#e9eee0}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+body{font-family:"Inter Tight","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  color:var(--ink);background:transparent;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+::selection{background:var(--lime);color:#1b2410}
+:focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:10px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;
+  padding:5px 10px;border-radius:999px;background:var(--pill);color:#2c3a10;letter-spacing:.01em}
+.h2{font-size:clamp(26px,3.1vw,44px);font-weight:400;letter-spacing:-.03em;line-height:1.18;text-align:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border-radius:999px;
+  background:var(--olive);color:#f3f8e4;font-size:13px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(60,80,10,.25);
+  transition:transform .3s,background .3s}
+.btn:hover{transform:translateY(-1px);background:#5a7c14}
+.btn-ghost{background:rgba(255,255,255,.7);color:#2b3a10;border:1px solid #d8e3bd;box-shadow:none}
+.btn-ghost:hover{background:#fff}
+.w{display:inline-block;will-change:transform,filter,opacity}
+.glass{position:absolute;border-radius:12px;background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.55);
+  -webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.grid-sq{position:absolute;border:1px solid #edf0e8;border-radius:10px;pointer-events:none}
+@keyframes driftA{to{transform:translateX(26px) translateY(4px)}}
+@keyframes driftB{to{transform:translateX(-30px) translateY(6px)}}
+.drift-a{animation:driftA 14s ease-in-out infinite alternate}
+.drift-b{animation:driftB 17s ease-in-out infinite alternate}
+@keyframes twinkle{0%,100%{opacity:.9;transform:scale(1)}50%{opacity:.25;transform:scale(.72)}}
+@keyframes fall{to{transform:translate(var(--dx),110vh) rotate(540deg)}}
+
+.backdrop{position:fixed;inset:-40px;z-index:0;transform:scale(1.3);filter:blur(18px) saturate(1.1);
+  background:
+    radial-gradient(60% 45% at 72% 16%,#fff9e6 0%,rgba(255,249,230,0) 60%),
+    radial-gradient(55% 40% at 18% 26%,#eaf3d3 0%,rgba(234,243,211,0) 70%),
+    linear-gradient(#f8fbf0 0%,#e2eec8 48%,#a9c56c 100%)}
+#app{position:relative;z-index:1;background:#fff;transform-origin:50% 50vh;overflow:clip}
+body.intro #app{transform:scale(.9);border-radius:28px}
+
+.nav{position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:60;
+  display:flex;align-items:center;gap:38px;padding:5px 5px 5px 16px;border-radius:999px;
+  background:rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(0,0,0,.05),0 6px 18px rgba(0,0,0,.06);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.brand{display:flex;align-items:center;gap:7px;font-size:20px;font-weight:500;letter-spacing:-.03em}
+.brand svg{width:26px;height:19px}
+.nav-links{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:500;color:#2b3026}
+.nav-links a{padding:7px 12px;border-radius:999px;transition:background .25s,color .25s}
+.nav-links a:hover{background:rgba(231,239,207,.65)}
+.nav-links a[aria-current="page"]{background:var(--pill);color:#2c3a10}
+@media (max-width:760px){
+  .nav{top:14px;gap:10px;padding:4px 4px 4px 12px;max-width:calc(100% - 16px)}
+  .brand{font-size:17px}.brand svg{width:22px;height:16px}
+  .nav-links{font-size:12px;gap:0}.nav-links a{padding:6px 8px}
+  .nav-cta{display:none}
+}
+@media (max-width:380px){
+  .brand{font-size:15px}.brand svg{width:20px;height:14px}
+  .nav-links a{padding:6px 6px;font-size:11.5px}
+}
+
+.view{position:relative}
+.view[hidden]{display:none}
+
+.hero{position:relative;height:100svh;min-height:640px;overflow:hidden;background:#fff}
+.hero-copy{position:absolute;z-index:6;top:23%;width:100%;display:flex;flex-direction:column;
+  align-items:center;gap:14px;padding:0 16px;text-align:center}
+.hero-title{font-size:clamp(36px,5.4vw,76px);font-weight:400;letter-spacing:-.045em;line-height:1.06}
+.hero-title em{font-style:normal;font-weight:600;color:var(--olive)}
+/* 中文不用假斜体；下划线画在每个词上，拆词后不会被撕成碎块 */
+.hero-title em .w{box-shadow:inset 0 -.28em 0 rgba(180,205,82,.42)}
+.hero-sub{max-width:520px;font-size:14px;line-height:1.6;color:#3a402f}
+.hero-actions{display:flex;gap:10px;margin-top:4px}
+.hero-media{position:absolute;left:0;right:0;bottom:0;height:66%;z-index:2;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 22%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 22%)}
+.hero-media .scene{width:100%;height:100%}
+
+.hud{position:absolute;inset:0;z-index:3;pointer-events:none;font-size:11px;color:#eff5e0}
+.hud-rec{position:absolute;left:20px;top:20px;display:inline-flex;align-items:center;gap:6px;
+  padding:4px 9px;border-radius:999px;background:rgba(18,28,10,.55);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);letter-spacing:.04em}
+.hud-rec i{width:6px;height:6px;border-radius:50%;background:#e4604f;animation:twinkle 1.6s infinite}
+.hud-count{position:absolute;right:20px;top:20px;padding:4px 9px;border-radius:999px;
+  background:rgba(18,28,10,.45)}
+.det{position:absolute;border:1px solid #8fbf2a;border-radius:4px;opacity:.9}
+.det::after{content:var(--t);position:absolute;left:-1px;top:-22px;
+  font-size:10.5px;white-space:nowrap;background:#3f5510;color:#f0f6e2;padding:2px 6px;border-radius:5px}
+
+.section{position:relative;padding:clamp(64px,10vh,120px) 16px;display:flex;flex-direction:column;
+  align-items:center;gap:clamp(18px,3vh,30px)}
+.scene-strip{gap:16px;background:var(--mist)}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;list-style:none}
+.chips li{font-size:13px;padding:7px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);
+  color:#39422a}
+.note{font-size:12.5px;color:#6b7358;text-align:center}
+
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;width:min(1080px,100%)}
+.value-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;
+  display:flex;flex-direction:column;gap:9px;box-shadow:var(--soft)}
+.value-card h3{font-size:16px;font-weight:600;letter-spacing:-.02em}
+.value-card p{font-size:13px;line-height:1.6;color:#4a5140}
+.v-ico{width:34px;height:34px;border-radius:11px;background:var(--pill);display:grid;place-items:center;color:var(--olive)}
+
+.cta{position:relative;min-height:720px;overflow:hidden;background:var(--night);
+  display:flex;align-items:center;justify-content:center;padding:14vh 16px 12vh}
+.night-scene{position:absolute;inset:0;z-index:1}
+.night-scene svg{width:100%;height:118%;object-fit:cover}
+.fireflies{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.firefly{position:absolute;top:-20px;border-radius:50%;
+  background:radial-gradient(circle,#fff8dd 0%,#f3d98a 45%,rgba(243,217,138,0) 72%);
+  box-shadow:0 0 12px rgba(245,227,173,.85);opacity:.9;
+  animation:fall var(--dur) linear infinite}
+.cta-card{position:relative;z-index:4;width:min(600px,calc(100% - 8px));padding:40px 28px 34px;
+  text-align:center;border-radius:26px;border:1px solid rgba(255,255,255,.16);
+  background:linear-gradient(to bottom,rgba(255,255,255,.14),rgba(255,255,255,.05));
+  -webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);
+  box-shadow:0 30px 60px rgba(0,0,0,.35);color:#eaf2df;display:flex;flex-direction:column;
+  align-items:center;gap:12px}
+.cta-card .h2{font-size:clamp(24px,2.8vw,38px);margin:6px 0 2px;color:#f6faee}
+.cta-copy{font-size:13.5px;line-height:1.6;color:#c9d6c3;max-width:420px}
+.cta-note{font-size:11px;color:#8fa48f;margin-top:2px}
+.lead-form{display:flex;gap:8px;width:min(420px,100%);margin-top:4px}
+.lead-form input{flex:1;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.3);
+  background:rgba(255,255,255,.1);color:#f4f8ee;font-size:13px;outline:none;min-width:0}
+.lead-form input::placeholder{color:#9fb09c}
+.lead-form input:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(180,205,82,.25)}
+.lead-form input[aria-invalid="true"]{border-color:#e88b7a}
+.form-msg{font-size:12px;min-height:16px;color:#d9e6cc}
+.form-msg.is-error{color:#ffb3a4}
+
+.view-head{display:flex;flex-direction:column;align-items:center;gap:14px;
+  padding:clamp(110px,14vh,150px) 16px clamp(20px,4vh,40px);text-align:center}
+.view-sub{font-size:14px;line-height:1.6;color:#4d5443;max-width:520px}
+
+.loop{position:relative;height:100vh;min-height:680px;overflow:hidden;background:#fff}
+.loop-head{position:absolute;z-index:4;top:12vh;left:0;right:0;display:flex;flex-direction:column;
+  align-items:center;gap:14px;padding:0 16px;text-align:center}
+.track{position:absolute;inset:0;display:flex}
+.panel{position:relative;flex:0 0 clamp(96px,11vw,170px);height:100%;overflow:hidden;
+  border-right:1px solid var(--line);cursor:pointer;outline:none;
+  transition:flex-grow .9s cubic-bezier(.77,0,.18,1),background .4s}
+.panel:last-child{border-right:0}
+.panel:hover{background:rgba(243,247,234,.6)}
+.panel.is-active{flex-grow:1;cursor:default;background:#fff}
+.panel-in{position:absolute;left:clamp(14px,1.8vw,28px);bottom:10vh;display:flex;align-items:flex-end;
+  gap:clamp(16px,2vw,30px);width:max-content}
+.num{font-size:clamp(170px,36vh,380px);font-weight:600;line-height:.74;letter-spacing:-.07em}
+.panel:nth-child(1) .num{color:var(--olive)}
+.panel:nth-child(2) .num{color:var(--green)}
+.panel:nth-child(3) .num{color:var(--lime)}
+.step{position:relative;width:min(400px,30vw);padding-bottom:4px;opacity:0;transform:translateX(-24px);
+  filter:blur(6px);transition:opacity .4s,transform .5s,filter .4s}
+.panel.is-active .step{opacity:1;transform:none;filter:none;
+  transition:opacity .7s .4s,transform .9s .35s cubic-bezier(.2,.8,.2,1),filter .7s .4s}
+.step h3{font-size:clamp(20px,1.7vw,26px);font-weight:400;letter-spacing:-.03em;margin-bottom:10px}
+.step p{font-size:14px;line-height:1.55;color:#2b2e27}
+.mini-evidence{position:relative;margin-top:18px;width:min(240px,22vw);padding:10px 12px;border-radius:12px;
+  background:rgba(255,255,255,.7);border:1px solid #e3ebd2;color:#3f4a2c;font-size:11.5px;
+  display:flex;flex-direction:column;gap:4px;animation:driftA 9s ease-in-out infinite alternate}
+
+@media(max-width:760px){.loop{height:auto;min-height:0;padding:12vh 0 40px}
+.loop-head{position:static;top:auto;margin-bottom:24px}
+.track{position:static;inset:auto;flex-direction:column;margin-top:20px}
+.panel{flex:none;height:auto;overflow:visible;border-right:0;border-top:1px solid var(--line);
+  cursor:auto;padding:0}
+.panel-in{position:static;left:auto;bottom:auto;width:auto;padding:26px 16px;
+  display:flex;align-items:center;gap:16px}
+.num{font-size:64px;line-height:1;letter-spacing:-.05em}
+.step{opacity:1;transform:none;filter:none;width:auto;flex:1}
+.mini-evidence{display:none}
+}
+.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:min(1080px,100%)}
+.cap-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;
+  display:flex;flex-direction:column;gap:8px;transition:transform .3s,box-shadow .3s}
+.cap-card:hover{transform:translateY(-3px);box-shadow:var(--soft)}
+.cap-card h3{font-size:15.5px;font-weight:600;letter-spacing:-.02em}
+.cap-card p{font-size:13px;line-height:1.6;color:#4a5140}
+@media (max-width:900px){.cap-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.cap-grid{grid-template-columns:1fr}}
+
+.boundary{width:min(1080px,100%);border-radius:20px;background:var(--mist);border:1px solid #e4ecd4;
+  padding:24px;display:flex;flex-direction:column;gap:12px}
+.boundary h3{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.boundary ul{list-style:none;display:grid;gap:8px}
+.boundary li{position:relative;padding-left:16px;font-size:13px;line-height:1.6;color:#4a5140}
+.boundary li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;
+  background:var(--green)}
+
+#view-evidence{background:var(--night);color:#e9f0e2}
+#view-evidence .h2{color:#f7fae9}
+#view-evidence .pill{background:rgba(180,205,82,.16);color:#d8e8a8}
+#view-evidence .view-sub{color:#b9c6b6}
+.evidence-stars{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.star{position:absolute;border-radius:50%;background:#f6eccd;animation:twinkle 4s ease-in-out infinite}
+
+.stats{position:relative;min-height:100vh;overflow:hidden;padding:8vh 16px}
+.sq-field{position:absolute;inset:0 0 auto 0;height:42%;z-index:1;pointer-events:none;
+  -webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+.stats-inner{position:relative;z-index:3;min-height:calc(100vh - 16vh);display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center}
+.cards{position:relative;z-index:4;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+  width:min(880px,100%)}
+.card{height:150px;padding:18px 22px;border-radius:22px;background:var(--lime);
+  display:flex;flex-direction:column;justify-content:space-between;text-align:left;
+  -webkit-mask:
+    radial-gradient(circle 17px at 0 55%,#0000 97%,#000) left/51% 100% no-repeat,
+    radial-gradient(circle 17px at 100% 55%,#0000 97%,#000) right/51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 17px at 0 55%,#0000 97%,#000) left/51% 100% no-repeat,
+    radial-gradient(circle 17px at 100% 55%,#0000 97%,#000) right/51% 100% no-repeat}
+.card span{font-size:10.5px;font-weight:500;color:#2a3410;letter-spacing:.01em}
+.card b{font-size:clamp(30px,3.4vw,44px);font-weight:600;letter-spacing:-.04em;color:#151a08;
+  font-variant-numeric:tabular-nums}
+.cards-shadow{width:min(820px,94%);height:10px;margin-top:-14px;border-radius:50%;z-index:3;
+  background:radial-gradient(closest-side,rgba(0,0,0,.3),transparent)}
+.sources-wrap{position:relative;z-index:6;width:100%;display:flex;justify-content:center}
+.sources{position:relative;z-index:6;display:flex;gap:26px;list-style:none;margin-top:4px;padding:10px 12px}
+.sources li{display:flex;flex-direction:column;gap:2px;font-size:11px;color:#a9bba4}
+.sources b{font-size:13px;font-weight:600;color:#e6f0d6;letter-spacing:.01em}
+@media (max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.card{height:120px}
+  .stats{min-height:0;padding:10vh 16px 12vh}}
+@media (max-width:560px){.cards{grid-template-columns:1fr}.sources{flex-wrap:wrap;justify-content:center}}
+
+#view-evidence .section{gap:18px}
+.table-wrap{width:min(920px,100%);border-radius:16px;background:rgba(255,255,255,.04);overflow-x:auto}
+.data-table{width:100%;min-width:520px;border-collapse:collapse;font-size:13px;color:#cfdcc6;
+  background:rgba(255,255,255,.04);border-radius:16px}
+.data-table th{font-size:11px;font-weight:500;color:#9fb394;text-align:left;padding:12px 16px;
+  border-bottom:1px solid rgba(255,255,255,.1);white-space:nowrap}
+.data-table td{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.06);line-height:1.5;
+  vertical-align:top}
+.data-table tr:last-child td{border-bottom:0}
+.data-table td:first-child{color:#eef5e0;font-weight:500}
+.table-note{font-size:11.5px;color:#93a58c;text-align:center;max-width:560px}
+@media (max-width:760px){.data-table{font-size:12px}.data-table th,.data-table td{padding:10px 10px}}
+
+.about-block{width:min(880px,100%);display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.about-block p{font-size:14px;line-height:1.75;color:#414a37}
+@media (max-width:760px){.about-block{grid-template-columns:1fr;gap:14px}}
+.timeline{list-style:none;width:min(880px,100%);display:grid;gap:18px;position:relative}
+.timeline::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:1px;background:#dce6c8}
+.timeline li{position:relative;padding-left:30px}
+.timeline li::before{content:"";position:absolute;left:0;top:6px;width:15px;height:15px;border-radius:50%;
+  background:#fff;border:2px solid var(--green)}
+.timeline li.is-now::before{background:var(--lime);border-color:var(--olive)}
+.timeline time{font-size:11.5px;letter-spacing:.06em;color:#7b8666}
+.timeline span{display:block;font-size:14px;line-height:1.6;color:#2f3726;margin-top:3px}
+.stack-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.stack-chips li{list-style:none;font-size:12.5px;padding:6px 12px;border-radius:999px;
+  background:#fff;border:1px solid var(--line);color:#39422a}
+
+#footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;row-gap:22px;
+  padding:34px 4vw 22px;background:var(--lime)}
+.f-logo{width:72px;height:72px;justify-self:start}
+.f-logo svg{width:100%;height:100%}
+.f-links{display:flex;gap:24px;font-size:13px;color:#1d240c;justify-content:center}
+.f-links a:hover{text-decoration:underline;text-underline-offset:3px}
+.f-social{display:flex;gap:16px;justify-self:end;color:#1d240c}
+.f-social svg{width:18px;height:18px}
+.f-copy{grid-column:1 / -1;text-align:center;font-size:11px;color:#2a330f}
+@media (max-width:760px){
+  #footer{grid-template-columns:1fr;justify-items:center;text-align:center;padding:30px 16px 20px}
+  .f-logo,.f-links,.f-social{justify-self:center}
+  .f-links{flex-wrap:wrap;gap:16px}
+}
+
+.brand{flex-shrink:0;white-space:nowrap}.brand-caption{display:block;font-size:8px;letter-spacing:.18em;color:var(--olive);margin-top:2px}.view h1:focus{outline:none}
+.hero-copy{top:21%}.hero-title{max-width:1100px}.hero-sub{max-width:540px}
+.cloud{position:absolute;z-index:3;pointer-events:none}.cloud-l{top:-4%;left:-6%;width:min(44vw,640px)}.cloud-r{top:3%;right:-7%;width:min(42vw,620px);transform:scaleX(-1)}
+.cloud-shape{height:240px;filter:blur(18px);opacity:.85;background:radial-gradient(ellipse at 30% 70%,white 0 26%,transparent 60%),radial-gradient(ellipse at 65% 45%,white 0 30%,transparent 60%),radial-gradient(ellipse at 90% 70%,white 0 18%,transparent 52%)}
+.hero-glass{position:absolute;inset:0;z-index:5;pointer-events:none}.hero-glass .glass{width:clamp(36px,5.4vw,74px);aspect-ratio:1;opacity:.55}.hero-glass .glass.center{width:clamp(28px,3.4vw,44px)}
+.scan{position:absolute;left:0;right:0;top:20%;height:1px;background:#c2e88c;opacity:.35;animation:scan 6s ease-in-out infinite alternate}@keyframes scan{to{top:90%}}
+.scroll-hint{position:absolute;z-index:8;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;font-size:10px;letter-spacing:.1em;color:#f3f7df}.scroll-hint span{height:25px;width:1px;background:#dceabb}
+.flow-row{display:flex;gap:5vw;list-style:none}.flow-row li{display:flex;gap:14px;align-items:center;font-size:14px}.flow-row b{font-size:32px;font-weight:400;color:var(--green)}
+.boundary-section{padding-top:24px}.cap-card .v-ico{margin-bottom:8px}.cap-card a{color:var(--olive);margin-top:auto;padding-top:10px;font-size:12px}
+.dark-section{background:var(--night)}.herd-wrap{position:absolute;left:50%;bottom:-4%;transform:translateX(-50%);width:min(360px,70vw);z-index:2;pointer-events:none}.herd{width:100%;height:auto;filter:blur(.6px)}
+.band{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:min(340px,58vw);height:64px;z-index:5;pointer-events:none;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:rgba(255,255,255,.06);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+.evidence-stars{height:1600px}.stats-inner{padding-bottom:100px}.stat-card small{font-size:9px;color:#45531d}.stats .h2{font-size:clamp(26px,3.1vw,44px)}
+.about-contact{border-radius:26px;background:var(--mist);padding:45px 24px;width:min(700px,100%);display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}.about-contact .lead-form input{color:var(--ink);border-color:#cbd6b7;background:white}.about-contact .form-msg{color:#4d6a10}.about-contact .form-msg.is-error{color:#a23b2c}
+.contact-note{max-width:430px;font-size:12px;line-height:1.6;color:#69765a}.workbench-link{display:inline-flex;align-items:center;gap:8px;margin-top:6px;color:var(--olive);font-size:12px;border-bottom:1px solid #9eb368;padding-bottom:3px}
+.floating-workbench{position:fixed;z-index:70;bottom:22px;right:22px;box-shadow:0 6px 24px #233a1730;background:#e7efcf;color:#34491a;border:1px solid #a1b57080;gap:8px}
+.f-copy small{display:block;margin-top:6px}.f-logo{overflow:visible}.scene-caption{position:absolute;left:20px;bottom:18px;z-index:8;color:#f0f7df;font-size:10px;background:#263d2680;border-radius:20px;padding:4px 10px}
+.v-ico svg{width:21px;height:21px}.cta .pill{background:#dce9c1;color:#344b15}.night-scene .night-cow{opacity:.8}.view{min-height:70vh}.view[hidden]{display:none!important}.nav-links{white-space:nowrap}.f-social a{padding:6px}
+.no-anim .w,.no-anim .reveal,.no-anim .panel-in{opacity:1!important;transform:none!important;filter:none!important}.no-anim #fRing,.no-anim #fMark{stroke-dashoffset:0}
+@media(max-width:900px){.nav{gap:18px}.band{display:none}.flow-row{gap:22px}.herd-wrap{bottom:0}}
+@media(max-width:760px){.nav{gap:8px}.brand-caption{font-size:7px}.brand{gap:5px}.nav-links a{padding:7px 6px}.hero{min-height:620px}.hero-copy{top:19%;gap:12px;padding:0 14px}.hero-title{font-size:clamp(30px,8.6vw,40px);line-height:1.2}.hero-sub{font-size:12.5px;max-width:330px}.hero-actions{gap:8px}.hero-media{height:60%;mask-image:linear-gradient(to bottom,transparent,#000 14%)}.det{display:none}.cloud-l{width:70vw;top:6%}.cloud-r{width:66vw;top:10%}.hero-glass .glass:nth-child(odd){display:none}.flow-row{flex-direction:column;align-items:flex-start}.cta{padding:80px 16px;min-height:720px}.night-scene{height:100%}.cta-card{padding:32px 20px}.lead-form{flex-direction:column}.lead-form input,.lead-form button{width:100%;min-height:42px}.floating-workbench{bottom:12px;right:12px;height:32px;font-size:11px;padding:0 12px}.stats-inner{padding-bottom:160px}.view-head{padding-top:115px}.herd-wrap{width:250px;bottom:0}.sources{gap:20px}.stats{padding-bottom:50px}.hero-glass .glass{max-width:55px}.f-links{gap:17px}}
+@media(max-width:760px){.hud-rec,.hud-count{top:42%;font-size:9px}.hud-rec{left:12px}.hud-count{right:12px}.brand{font-size:15px}.brand svg{width:19px}.nav-links a{font-size:11px;padding:7px 5px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.w{opacity:1!important;transform:none!important;filter:none!important}body.intro #app{transform:none;border-radius:0}.backdrop{display:none}}
+</style></head><body class="intro"><div class="backdrop" aria-hidden="true"></div><div id="app">
+<header class="nav" id="siteNav"><a class="brand" href="#/home" data-route="home" aria-label="星牧智控首页"><svg viewBox="0 0 30 22" aria-hidden="true"><circle cx="4" cy="17" r="3.6" fill="currentColor"/><path d="M10.5 18.5 16.8 5.2 25.5 18.5" fill="none" stroke="currentColor" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>星牧智控<small class="brand-caption">AGRINEBULA</small></span></a><nav class="nav-links" aria-label="主导航"><a href="#/home" data-route="home">首页</a><a href="#/capabilities" data-route="capabilities">能力</a><a href="#/evidence" data-route="evidence">数据与边界</a><a href="#/about" data-route="about">关于</a></nav><a class="btn nav-cta" href="#/home" data-route="home" data-anchor="#cta">预约演示</a></header>
+<main id="views"><section class="view is-active" id="view-home" data-view="home" aria-labelledby="homeTitle">
+<div class="hero"><div class="cloud cloud-l"><div class="cloud-shape drift-a"></div></div><div class="cloud cloud-r"><div class="cloud-shape drift-b"></div></div><div class="hero-copy" data-intro><span class="pill reveal">牧场视频 · 行为识别 · 风险辅助筛查</span><h1 class="split hero-title" id="homeTitle" tabindex="-1">让每一段牧场视频<br/>都变成<em>可追溯的证据。</em></h1><p class="hero-sub reveal">识别牛只、观察行为、留痕每一次复核。<br/>让牧场里的判断有画面、有秒数、有人负责。</p><div class="hero-actions reveal"><a class="btn" href="#/home" data-route="home" data-anchor="#cta">预约演示</a><a class="btn btn-ghost" href="#/capabilities" data-route="capabilities">看看它能做什么 →</a></div><a class="workbench-link reveal" href="./workbench.html#/modules">已有视频？直接进入工作台 ↗</a></div><div class="hero-media"><svg class="scene" id="heroScene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#fbfdf4"/><stop offset=".55" stop-color="#e9f3d6"/><stop offset="1" stop-color="#d3e6b0"/></linearGradient><radialGradient id="sun"><stop stop-color="#f8edc8"/><stop offset="1" stop-color="#f8edc8" stop-opacity="0"/></radialGradient><filter id="watercolor"><feTurbulence baseFrequency=".8" numOctaves="3" seed="7"/><feColorMatrix type="saturate" values="0"/></filter><g id="cow">
+  <path d="M14 44c0-16 12-26 30-26h40c22 0 36 10 36 26v8c0 12-10 20-26 20H38c-16 0-24-8-24-20z" fill="#3d4b23"/>
+  <path d="M118 20h26c10 0 16 7 16 17v6c0 11-7 17-17 17h-21c-8 0-14-6-14-14V34c0-8 4-14 10-14z" fill="#323f1c"/>
+  <path d="M158 26c6-2 10 1 10 6s-4 8-9 8" fill="none" stroke="#323f1c" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="140" cy="34" r="2.2" fill="#0f1508"/>
+  <path d="M118 20l-10-12M132 18l4-12" stroke="#2b3617" stroke-width="5" stroke-linecap="round"/>
+  <path d="M40 70v6M62 70v6M112 70v6M136 70v6" stroke="#2b3617" stroke-width="7" stroke-linecap="round"/>
+  <path d="M18 38c-8 4-10 14-4 18" fill="none" stroke="#3d4b23" stroke-width="4" stroke-linecap="round"/>
+  <path d="M60 30c8-4 18-4 26 0" fill="none" stroke="#5a6b34" stroke-width="4" stroke-linecap="round" opacity=".65"/>
+</g></defs><rect width="1600" height="900" fill="url(#sky)"/><circle cx="1150" cy="180" r="200" fill="url(#sun)" opacity=".9"/><path d="M0 560Q200 280 450 460T850 400Q1100 210 1350 420T1700 380V900H0Z" fill="#c8dca4" opacity=".85"/><path d="M0 610Q270 420 600 550T1100 510Q1400 430 1600 540V900H0Z" fill="#a8c271"/><path d="M0 710Q350 520 740 660T1600 640V900H0Z" fill="#7fa144"/><g stroke="#5c6d3a" stroke-width="8" opacity=".45"><path d="M0 565v105"/><path d="M130 565v105"/><path d="M260 565v105"/><path d="M390 565v105"/><path d="M520 565v105"/><path d="M650 565v105"/><path d="M780 565v105"/><path d="M910 565v105"/><path d="M1040 565v105"/><path d="M1170 565v105"/><path d="M1300 565v105"/><path d="M1430 565v105"/><path d="M1560 565v105"/><path d="M1690 565v105"/><path d="M0 600H1600M0 640H1600" stroke-width="5"/></g><path d="M0 790Q300 700 640 770T1200 760Q1400 700 1600 770V900H0Z" fill="#6b8f39"/><path d="M20 790q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="30" cy="765" r="2" fill="#f4f7e8"/><path d="M87 812q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="97" cy="787" r="2" fill="#f4f7e8"/><path d="M154 834q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="164" cy="809" r="2" fill="#f4f7e8"/><path d="M221 856q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="231" cy="831" r="2" fill="#f4f7e8"/><path d="M288 790q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="298" cy="765" r="2" fill="#f4f7e8"/><path d="M355 812q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="365" cy="787" r="2" fill="#f4f7e8"/><path d="M422 834q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="432" cy="809" r="2" fill="#f4f7e8"/><path d="M489 856q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="499" cy="831" r="2" fill="#f4f7e8"/><path d="M556 790q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="566" cy="765" r="2" fill="#f4f7e8"/><path d="M623 812q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="633" cy="787" r="2" fill="#f4f7e8"/><path d="M690 834q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="700" cy="809" r="2" fill="#f4f7e8"/><path d="M757 856q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="767" cy="831" r="2" fill="#f4f7e8"/><path d="M824 790q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="834" cy="765" r="2" fill="#f4f7e8"/><path d="M891 812q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="901" cy="787" r="2" fill="#f4f7e8"/><path d="M958 834q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="968" cy="809" r="2" fill="#f4f7e8"/><path d="M1025 856q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1035" cy="831" r="2" fill="#f4f7e8"/><path d="M1092 790q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1102" cy="765" r="2" fill="#f4f7e8"/><path d="M1159 812q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1169" cy="787" r="2" fill="#f4f7e8"/><path d="M1226 834q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1236" cy="809" r="2" fill="#f4f7e8"/><path d="M1293 856q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1303" cy="831" r="2" fill="#f4f7e8"/><path d="M1360 790q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1370" cy="765" r="2" fill="#f4f7e8"/><path d="M1427 812q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1437" cy="787" r="2" fill="#f4f7e8"/><path d="M1494 834q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1504" cy="809" r="2" fill="#f4f7e8"/><path d="M1561 856q-7-17-5-28m5 28q7-18 13-20" stroke="#5f8430" stroke-width="2" fill="none"/><circle cx="1571" cy="831" r="2" fill="#f4f7e8"/><g transform="translate(330 615) scale(.85)"><g class="cow cow-1"><use href="#cow"/></g></g><g transform="translate(700 615)"><g class="cow cow-2"><use href="#cow"/></g></g><g transform="translate(1030 600) scale(1.1)"><g class="cow cow-3"><use href="#cow"/></g></g><rect width="1600" height="900" filter="url(#watercolor)" opacity=".04"/></svg><div class="hud" aria-hidden="true"><span class="hud-rec"><i></i>开发样例 · 界面示意</span><span class="hud-count">视频内 ID · 仅本段有效</span><span class="det det-1" style="left:20%;top:66%;width:10%;height:13%;--t:'ID 12 · 行为示意'"></span><span class="det det-2" style="left:44%;top:66%;width:11%;height:15%;--t:'ID 15 · 采食示意'"></span><span class="det det-3" style="left:64%;top:65%;width:13%;height:16%;--t:'ID 18 · 轨迹示意'"></span><span class="scan"></span></div><span class="scene-caption">自绘牧场场景 · 非摄像头直播</span></div><div class="hero-glass" id="heroGlass" aria-hidden="true"></div><div class="scroll-hint" aria-hidden="true"><span></span>向下滚动</div></div>
+<div class="section scene-strip"><span class="pill reveal">适配场景</span><ul class="chips reveal"><li>育肥牛舍</li><li>奶牛场</li><li>繁育场</li><li>家庭牧场</li><li>合作社</li><li>教学演示</li></ul><p class="note reveal">固定机位、一段完整视频即可开始。结果需结合现场核查。</p></div>
+<div class="section value-grid"><span class="pill reveal">它解决什么</span><h2 class="h2 split">让每一句结论，<br/>都有可查的出处。</h2><div class="cards4"><article class="value-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span><h3>行为看得见</h3><p>采食、饮水、站立反刍、卧姿休息四类标签，按视频内个体汇总时长。</p></article><article class="value-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M8 12h8 M12 8v8"/></svg></span><h3>证据拿得出</h3><p>每条规则提示带秒数、截图与前后片段，一键回到原视频核对。</p></article><article class="value-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L20 5"/></svg></span><h3>复核对得上</h3><p>漏检、误报、ID 切换与现场关注都能人工留痕，结论只写人确认的部分。</p></article><article class="value-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5h16v15 M4 10h16 M10 5v15"/></svg></span><h3>存栏说得清</h3><p>登记数、清点数与拍摄覆盖分栏记录，差额只进复点，不自动判定丢失。</p></article></div></div>
+<div class="section flow"><ol class="flow-row"><li><b>01</b><span>上传或录制视频</span></li><li><b>02</b><span>识别 · 跟踪 · 行为摘要</span></li><li><b>03</b><span>人工复核与处置闭环</span></li></ol><a class="btn btn-ghost reveal" href="#/capabilities" data-route="capabilities">了解完整流程 →</a></div>
+<section class="cta" id="cta" aria-labelledby="ctaTitle"><div class="night-scene" id="nightScene" aria-hidden="true"><svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="nSky" x2="0" y2="1"><stop stop-color="#07101f"/><stop offset=".55" stop-color="#0e2438"/><stop offset="1" stop-color="#12354a"/></linearGradient><linearGradient id="nLake" x2="0" y2="1"><stop stop-color="#1b4a5f"/><stop offset="1" stop-color="#081726"/></linearGradient></defs><rect width="1600" height="900" fill="url(#nSky)"/><circle cx="1220" cy="180" r="150" fill="#f4ead0" opacity=".08"/><circle cx="1220" cy="180" r="86" fill="#f4ead0" opacity=".92"/><path d="M0 560 260 430 520 545 760 415 1040 555 1280 470 1600 560V900H0Z" fill="#0a1b2c"/><path d="M0 700 300 620 620 690 900 615 1200 700 1600 640V900H0Z" fill="#081525"/><path d="M0 760H1600V900H0Z" fill="url(#nLake)"/><g opacity=".4" stroke="#cfe3d6" stroke-width="2"><path d="M1080 790h180M1040 812h240M1100 834h150"/></g><use href="#cow" transform="translate(200 710) scale(.65)"/><use href="#cow" transform="translate(400 722) scale(.5)"/></svg></div><div class="fireflies" id="fireflies" aria-hidden="true"></div><div class="cta-card" id="ctaCard"><span class="pill">开始</span><h2 class="h2 split" id="ctaTitle">先看一段真实视频，<br/>再决定要不要用。</h2><p class="cta-copy reveal">先进入本地工作台查看开发视频，或在此保存联系意向。</p><a class="btn" href="./workbench.html#/module/monitor">打开识别工作台 ↗</a><form class="lead-form" novalidate><label class="sr-only" for="ctaEmail">邮箱</label><input id="ctaEmail" type="email" name="email" placeholder="name@farm.cn" autocomplete="email" required/><button class="btn" type="submit">保存联系意向</button></form><p class="form-msg" role="status" aria-live="polite"></p><p class="contact-note">仅保存在当前浏览器，尚未连接邮件服务。可下载联系请求后自行发送；请勿填写敏感信息。</p><button class="btn btn-ghost export-lead" type="button">下载联系请求</button><p class="cta-note">科研原型 · 大学生创新创业训练计划项目</p></div></section></section>
+<section class="view" id="view-capabilities" data-view="capabilities" hidden aria-labelledby="capTitle"><header class="view-head"><span class="pill reveal">能力矩阵</span><h1 class="h2 split" id="capTitle" tabindex="-1">从画面到结论，<br/>每一步都留痕。</h1><p class="view-sub reveal">识别、证据、复核与核对互相衔接；每个需要关注的变化，都能回到原视频。</p></header><section class="loop" id="loop" aria-label="工作流程"><div class="loop-head"><span class="pill reveal">工作流程</span><h2 class="h2 split">一段视频，<br/>三步交到你手里。</h2></div><div class="track" id="track" role="tablist" aria-label="三步流程"><div class="panel is-active" role="tab" tabindex="0" aria-selected="true" aria-label="第 1 步：接入与拍摄检查"><div class="panel-in"><span class="num" aria-hidden="true">01</span><div class="step"><h3>接入与拍摄检查</h3><p>固定机位、一段完整视频就能开始。读取时长与分辨率，过短或分辨率不足时提示补拍；拍摄覆盖由人员核对。</p><div class="mini-evidence glass"><strong>拍摄检查</strong><span>21 秒 · 640×640</span><span>开发样例 · 拍摄信息</span></div></div></div></div><div class="panel " role="tab" tabindex="-1" aria-selected="false" aria-label="第 2 步：识别、跟踪与行为摘要"><div class="panel-in"><span class="num" aria-hidden="true">02</span><div class="step"><h3>识别、跟踪与行为摘要</h3><p>YOLO11 检测 + ByteTrack 跟踪，按视频内 Track ID 汇总行为时长；规则提示附秒数、截图与片段，随时回看。</p><div class="mini-evidence glass"><strong>开发样例 ID 2</strong><span>卧姿休息 19.5 s</span><span>规则线索 · 待人工复核</span></div></div></div></div><div class="panel " role="tab" tabindex="-1" aria-selected="false" aria-label="第 3 步：人工复核与处置闭环"><div class="panel-in"><span class="num" aria-hidden="true">03</span><div class="step"><h3>人工复核与处置闭环</h3><p>漏检、误报、ID 切换与现场关注由人记录；核查事项可指派、复查、关闭，最后生成一页巡检摘要。</p><div class="mini-evidence glass"><strong>处置流程示意</strong><span>现场复核视频内 ID</span><span>记录处理 · 安排复查</span></div></div></div></div></div></section><div class="section"><span class="pill reveal">能力矩阵</span><h2 class="h2 split">围绕一次核查，<br/>把工具放在一起。</h2><div class="cap-grid"><article class="cap-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span><h3>视频识别与跟踪</h3><p>YOLO11 检测 + ByteTrack 跟踪，输出带框视频、轨迹 CSV 与视频内 Track ID。</p><a href="./workbench.html#/module/monitor">在工作台中查看 ↗</a></article><article class="cap-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M8 12h8 M12 8v8"/></svg></span><h3>行为时长摘要</h3><p>四类行为逐个体汇总；判不准的片段单列，不硬猜。</p><a href="./workbench.html#/module/monitor">在工作台中查看 ↗</a></article><article class="cap-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L20 5"/></svg></span><h3>健康风险辅助筛查</h3><p>静止、离群、活动量下降等规则评分，只作为核查线索。</p><a href="./workbench.html#/module/health">在工作台中查看 ↗</a></article><article class="cap-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5h16v15 M4 10h16 M10 5v15"/></svg></span><h3>圈舍存栏核对</h3><p>登记数、清点数、拍摄覆盖分栏记录；差额先进「待复点」。</p><a href="./workbench.html#/module/inventory">在工作台中查看 ↗</a></article><article class="cap-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span><h3>区域与栏门事件</h3><p>在固定机位上画采食区、饮水区与栏门线，统计进入次数与穿线方向。</p><a href="./workbench.html#/module/monitor">在工作台中查看 ↗</a></article><article class="cap-card reveal"><span class="v-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M8 12h8 M12 8v8"/></svg></span><h3>处置闭环与巡检摘要</h3><p>从视频提示生成核查事项，记录处理、复查、关闭，并生成摘要。</p><a href="./workbench.html#/module/tasks">在工作台中查看 ↗</a></article></div></div><div class="section boundary-section"><aside class="boundary reveal" aria-label="能力边界"><h3>边界写清楚，结论才可信。</h3><ul><li>只输出核查线索，疾病结论与发病时间需专门证据。</li><li>视频内 Track ID 只在本段有效，跨视频个体需人工核对耳标关联。</li><li>存栏差额需人工复点和出入栏台账核对。</li><li>结果用于辅助筛查，需由兽医与现场人员判断。</li></ul></aside></div></section>
+<section class="view" id="view-evidence" data-view="evidence" hidden aria-labelledby="evTitle"><div class="evidence-stars" aria-hidden="true"></div><header class="view-head"><span class="pill reveal">数据与边界</span><h1 class="h2 split" id="evTitle" tabindex="-1">先把能力摆出来，<br/>再说清它的边界。</h1><p class="view-sub reveal">数字来自开发样例；口径写在页面上，方便你核对。</p></header><section class="stats" id="statsPin" aria-label="开发样例指标"><div class="sq-field" data-count="22" aria-hidden="true"></div><div class="stats-inner"><span class="pill reveal">开发样例</span><h2 class="h2 split">从一段视频里，<br/>能读出这些东西。</h2><div class="cards"><article class="card stat-card" data-to="4" data-dec="0" data-suf=" 类"><span>行为标签</span><b>4 类</b><small>开发样例 · 非现场验收指标</small></article><article class="card stat-card" data-to="26" data-dec="0" data-suf=" 个"><span>视频内 Track ID</span><b>26 个</b><small>开发样例 · 非现场验收指标</small></article><article class="card stat-card" data-to="210" data-dec="0" data-suf=" 帧"><span>已处理视频帧</span><b>210 帧</b><small>开发样例 · 非现场验收指标</small></article><article class="card stat-card" data-to="26" data-dec="0" data-suf=" 条"><span>轨迹规则提示</span><b>26 条</b><small>开发样例 · 非现场验收指标</small></article></div><div class="cards-shadow" aria-hidden="true"></div><div class="herd-wrap" aria-hidden="true"><svg class="herd" id="herd" viewBox="0 0 520 300"><path d="M0 262h520M20 205h480M20 230h480M30 190v75M150 190v75M300 190v75M470 190v75" stroke="#8fb14f" stroke-width="2" opacity=".5"/><use href="#cow" transform="translate(35 190) scale(.7)"/><use href="#cow" transform="translate(205 178) scale(.85)"/><use href="#cow" transform="translate(370 200) scale(.6)"/></svg></div><div class="sources-wrap"><div class="band" id="band" aria-hidden="true"></div><ul class="sources"><li><b>WAID4500</b><span>检测基线</span></li><li><b>CBVD-4</b><span>行为实验</span></li><li><b>ICAERUS</b><span>跨物种样本</span></li></ul></div></div></section>
+<div class="section dark-section"><span class="pill reveal">数据来源</span><h2 class="h2 split">每一段数据，<br/>都能说清来路。</h2><div class="table-wrap reveal"><table class="data-table"><thead><tr><th>数据集</th><th>用途</th><th>边界</th></tr></thead><tbody><tr><td>WAID4500</td><td>目标检测基线</td><td>公开图像集，现场视频效果需另行验收</td></tr><tr><td>CBVD-4</td><td>行为四分类实验</td><td>站立反刍为弱类，冻结候选未通过晋级门槛</td></tr><tr><td>ICAERUS 羊视频</td><td>跨物种开发样本</td><td>已用于研发对比，不能再称独立验收集</td></tr></tbody></table></div><p class="table-note reveal">开发样例：210 帧、26 个视频内 ID、26 条轨迹规则提示。用于演示链路，现场结果需独立核对。</p><div class="table-wrap reveal"><table class="data-table"><thead><tr><th>维度</th><th>系统能给出</th><th>仍需核验</th></tr></thead><tbody><tr><td>个体跟踪</td><td>视频内 Track ID 与轨迹</td><td>跨视频身份需人工关联耳标</td></tr><tr><td>行为</td><td>行为时长与不确定片段</td><td>独立机位与遮挡场景效果</td></tr><tr><td>健康</td><td>规则型提示与可回看的证据</td><td>兽医判断、病例与现场复查</td></tr><tr><td>存栏</td><td>辅助计数与差额提醒</td><td>人工复点、台账与现场查找</td></tr></tbody></table></div><a class="btn" href="./workbench.html#/module/analytics">查看实际评测与统计 ↗</a></div></section>
+<section class="view" id="view-about" data-view="about" hidden aria-labelledby="aboutTitle"><header class="view-head"><span class="pill reveal">关于项目</span><h1 class="h2 split" id="aboutTitle" tabindex="-1">让牧场里的问题，<br/>有可核查的答案。</h1><p class="view-sub reveal">星牧智控是大学生创新创业训练计划项目，一个可运行、可纠错、可追溯的科研原型。</p></header><div class="section"><div class="about-block reveal"><p>当系统提示某头牛需要关注时，我们希望工作人员能查到依据：是哪段视频、哪个时间点、哪些行为线索。</p><p>因此整条链路围绕证据组织：提示有秒数、截图和片段，工作人员记录核查、处理与复查；现场结论由人确认。</p></div><h2 class="h2 split">一步一步，走向现场。</h2><ol class="timeline"><li class="reveal"><time>2026.09</time><span>整合本机检测、跟踪与健康规则演示链路</span></li><li class="reveal"><time>2026.10</time><span>视频证据回看、个体关联与人工处置</span></li><li class="reveal"><time>2026.10</time><span>圈舍核对、区域与栏门事件、巡检摘要</span></li><li class="is-now reveal"><time>下一步 · 进行中</time><span>独立牧场视频、真实台账与现场人员验收</span></li></ol><ul class="stack-chips reveal"><li>YOLO11</li><li>ByteTrack</li><li>FastAPI</li><li>React + Vite 工作台</li><li>SQLite</li><li>规则引擎</li><li>Isolation Forest</li></ul><p class="note reveal">检测与行为模型分开演进；行为模型缺失时，检测与规则分析仍可运行。</p><div class="about-contact" id="contact"><span class="pill">项目联系</span><h2 class="h2 split">想看看它怎么跑？</h2><p class="view-sub">先体验本地工作台，也可以保存一份联系意向。</p><form class="lead-form" novalidate><label class="sr-only" for="aboutEmail">邮箱</label><input id="aboutEmail" type="email" name="email" placeholder="name@farm.cn" autocomplete="email" required/><button class="btn" type="submit">保存联系意向</button></form><p class="form-msg" role="status" aria-live="polite"></p><p class="contact-note">仅保存在当前浏览器，尚未连接邮件服务。可下载联系请求后自行发送；请勿填写敏感信息。</p><button class="btn btn-ghost export-lead" type="button">下载联系请求</button></div></div></section></main>
+<footer id="footer"><a class="f-logo" href="#/home" data-route="home" aria-label="星牧智控首页"><svg viewBox="0 0 80 80" aria-hidden="true"><circle id="fRing" cx="40" cy="40" r="37" fill="none" stroke="#111" stroke-width="2.4" stroke-dasharray="233" stroke-dashoffset="233" transform="rotate(-90 40 40)"/><circle class="fdot" cx="22" cy="40" r="4.5"/><circle class="fdot" cx="40" cy="40" r="4.5"/><circle class="fdot" cx="58" cy="40" r="4.5"/><path id="fMark" d="M30 54 40 30 50 54" fill="none" stroke="#111" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="60" stroke-dashoffset="60"/></svg></a><nav class="f-links" aria-label="页脚导航"><a href="#/capabilities" data-route="capabilities">能力</a><a href="#/evidence" data-route="evidence">数据与边界</a><a href="#/about" data-route="about">关于</a><a href="#/about" data-route="about" data-anchor="#contact">联系</a></nav><div class="f-social"><a href="#/about" data-route="about" aria-label="项目介绍"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></a><a href="#/about" data-route="about" data-anchor="#contact" aria-label="项目联系"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M8 12h8 M12 8v8"/></svg></a><a href="#/home" data-top aria-label="回到顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 7-7 7 7M12 5v15"/></svg></a></div><p class="f-copy">© 2026 星牧智控 · 大学生创新创业训练计划项目<small>公开演示 · 数据可追溯 · 结论需复核</small></p></footer></div><p id="routeAnnouncer" class="sr-only" role="status" aria-live="polite"></p><a class="btn floating-workbench" href="./workbench.html#/modules">进入工作台 ↗</a>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script><script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script><script>(function () {
+  'use strict';
+  const legacy = /^#\/(?:modules|module\/)/.test(location.hash);
+  if (legacy) { location.replace('./workbench.html' + location.hash); return; }
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const gs = window.gsap;
+  const st = window.ScrollTrigger;
+  const motion = !!gs && !reduce;
+  const scrollMotion = motion && !!st;
+  if (gs && st) gs.registerPlugin(st);
+  if (!motion) document.body.classList.add('no-anim');
+  const routes = {
+    home: { title: '星牧智控 — 让每一段牧场视频都变成可追溯的证据', label: '首页' },
+    capabilities: { title: '能力 · 星牧智控', label: '能力' },
+    evidence: { title: '数据与边界 · 星牧智控', label: '数据与边界' },
+    about: { title: '关于 · 星牧智控', label: '关于' }
+  };
+  const view = key => document.getElementById('view-' + key);
+  const validKey = key => Object.hasOwn(routes, key) ? key : 'home';
+  let current = validKey(location.hash.replace(/^#\//, ''));
+  if (location.hash !== '#/' + current) history.replaceState({view:current}, '', '#/' + current);
+  let lastHash = location.hash;
+  history.scrollRestoration = 'manual';
+  let busy = false, pending = null, viewCtx = null, intro = null;
+  const lenis = scrollMotion && window.Lenis ? new window.Lenis({duration:1.25, easing:t=>Math.min(1,1.001-Math.pow(2,-10*t)), smoothWheel:true}) : null;
+  if (lenis) { lenis.on('scroll',st.update); gs.ticker.add(t=>lenis.raf(t*1000)); gs.ticker.lagSmoothing(0); }
+  function top() { if (lenis) lenis.scrollTo(0,{immediate:true}); else window.scrollTo(0,0); }
+  function scrollToTarget(selector) {
+    const target = document.querySelector(selector);
+    if (!target) return;
+    if (lenis) lenis.scrollTo(target,{duration:1.2});
+    else target.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+  }
+
+  document.querySelectorAll('.split').forEach(el=>{
+    if (el.dataset.split) return;
+    const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter('zh',{granularity:'word'}) : null;
+    function wrap(parent) {
+      [...parent.childNodes].forEach(node=>{
+        if (node.nodeType === 3 && node.textContent.trim()) {
+          const words = segmenter ? [...segmenter.segment(node.textContent)].map(x=>x.segment) : node.textContent.match(/\s+|[^\s]{1,2}/gu);
+          const fragment = document.createDocumentFragment();
+          words.forEach(word=>{ if (!word.trim()) fragment.append(document.createTextNode(word)); else { const span=document.createElement('span');span.className='w';span.textContent=word;fragment.append(span); } });
+          node.replaceWith(fragment);
+        } else if (node.nodeType === 1 && node.tagName !== 'BR') wrap(node);
+      });
+    }
+    wrap(el); el.dataset.split='1';
+  });
+  const coordinates=[[4,54],[4,61],[8,61],[12,61],[4,68],[0,60],[46,66],[49,70],[49,66],[52,66],[86,48],[86,57],[82,66],[89,66],[86,74]];
+  coordinates.forEach(([x,y],i)=>{const el=document.createElement('span');el.className='glass'+(i>=6&&i<=9?' center':'');el.style.left=x+'%';el.style.top=y+'%';document.getElementById('heroGlass').append(el);});
+  const small=window.innerWidth<760;
+  if (!reduce) {
+    const stars=document.querySelector('.evidence-stars');
+    for (let i=0;i<(small?32:64);i++){const star=document.createElement('i');star.className='star';star.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${1+Math.random()*1.5}px;height:2px;animation-delay:${-Math.random()*4}s`;stars.append(star);}
+    for(let i=0;i<18;i++){const el=document.createElement('i');el.className='firefly';const size=6+Math.random()*6;el.style.cssText=`left:${Math.random()*100}%;width:${size}px;height:${size}px;--dx:${Math.random()*160-80}px;--dur:${9+Math.random()*9}s;animation-delay:${-Math.random()*15}s`;document.getElementById('fireflies').append(el);}
+  }
+  document.querySelectorAll('.sq-field').forEach(field=>{for(let i=0;i<Number(field.dataset.count);i++){const el=document.createElement('i');el.className='grid-sq';el.style.cssText=`width:46px;height:46px;left:${Math.floor(Math.random()*30)*48-10}px;top:${Math.floor(Math.random()*6)*48+6}px;opacity:.35`;field.append(el);}});
+
+  function message(form, text, error=false) { const el=form.parentElement.querySelector('.form-msg');el.textContent=text;el.classList.toggle('is-error',error); }
+  document.querySelectorAll('.lead-form').forEach(form=>{
+    form.addEventListener('submit',event=>{
+      event.preventDefault();const input=form.querySelector('input');const button=form.querySelector('button');const email=input.value.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        input.setAttribute('aria-invalid','true');message(form,email?'邮箱格式看起来不对':'请先填写邮箱',true);input.focus();return;
+      }
+      input.removeAttribute('aria-invalid');button.disabled=true;button.textContent='保存中…';message(form,'正在保存到本机…');
+      window.setTimeout(()=>{
+        try {localStorage.setItem('xingmu-lead',JSON.stringify({email,ts:new Date().toISOString()}));message(form,'邮箱已保存到本机，尚未发送给项目团队。');input.value='';}
+        catch {message(form,'浏览器无法保存，请下载联系请求并自行发送。',true);}
+        finally {button.disabled=false;button.textContent='保存联系意向';}
+      },600);
+    });
+    form.parentElement.querySelector('.export-lead').addEventListener('click',()=>{
+      const entered=form.querySelector('input').value.trim();let saved=null;
+      try { saved=JSON.parse(localStorage.getItem('xingmu-lead')||'null'); } catch {}
+      const email=entered || saved?.email;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {message(form,'请先填写有效邮箱，再下载联系请求。',true);return;}
+      const blob=new Blob(['星牧智控 · 联系意向\n邮箱：'+email+'\n时间：'+new Date().toLocaleString('zh-CN')+'\n我希望了解项目演示及合作方式。\n此文件尚未发送，请自行交给项目团队。'],{type:'text/plain;charset=utf-8'});
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='星牧智控-联系意向.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);message(form,'联系请求已生成，请自行发送给项目团队。');
+    });
+  });
+  const track=document.getElementById('track');const panels=[...track.querySelectorAll('.panel')];
+  function activate(panel){panels.forEach(el=>{const on=el===panel;el.classList.toggle('is-active',on);el.setAttribute('aria-selected',String(on));el.tabIndex=on?0:-1;});}
+  panels.forEach((panel,i)=>{
+    panel.addEventListener('click',()=>activate(panel));panel.addEventListener('focus',()=>activate(panel));
+    panel.addEventListener('mouseenter',()=>{if(matchMedia('(pointer:fine) and (min-width:761px)').matches)activate(panel);});
+    panel.addEventListener('keydown',event=>{
+      if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const index=event.key==='Home'?0:event.key==='End'?2:(i+(event.key==='ArrowRight'?1:-1)+3)%3;panels[index].focus();activate(panels[index]);}
+      else if(['Enter',' '].includes(event.key)){event.preventDefault();activate(panel);}
+    });
+  });
+  function setCounters(progress){document.querySelectorAll('.stat-card').forEach(card=>{card.querySelector('b').textContent=(Number(card.dataset.to)*progress).toFixed(Number(card.dataset.dec)||0)+(card.dataset.suf||'');});}
+  function setupView(root, skipHero=false){
+    activate(panels[0]);setCounters(scrollMotion?0:1);
+    if (!motion) return;
+    viewCtx=gs.context(()=>{
+      const reveals=[...root.querySelectorAll('.reveal')].filter(el=>!skipHero||!el.closest('[data-intro]'));
+      const words=[...root.querySelectorAll('.split')].filter(el=>!skipHero||!el.closest('[data-intro]'));
+      reveals.forEach(el=>gs.from(el,{opacity:0,y:16,duration:.8,ease:'power3.out',...(scrollMotion?{scrollTrigger:{trigger:el,start:'top 90%',once:true}}:{})}));
+      words.forEach(el=>gs.from(el.querySelectorAll('.w'),{opacity:0,y:22,filter:'blur(8px)',duration:.9,stagger:.045,ease:'power3.out',...(scrollMotion?{scrollTrigger:{trigger:el,start:'top 92%',once:true}}:{})}));
+      if(root.dataset.view==='home'){
+        [1,2,3].forEach((i)=>{const duration=7+i*1.5;gs.to('.cow-'+i,{x:i===2?-30:30,duration,yoyo:true,repeat:-1,ease:'sine.inOut'});gs.to('.det-'+i,{x:i===2?-15:15,duration,yoyo:true,repeat:-1,ease:'sine.inOut'});});
+        root.querySelectorAll('#heroGlass .glass').forEach(el=>gs.to(el,{opacity:.15,duration:.9,yoyo:true,repeat:-1,delay:Math.random()*3,repeatDelay:1+Math.random()*3}));
+        if(scrollMotion){
+          gs.to('.hero-copy',{yPercent:-60,ease:'none',scrollTrigger:{trigger:root.querySelector('.hero'),start:'top top',end:'bottom top',scrub:true}});
+          gs.to('.hero-media',{yPercent:8,ease:'none',scrollTrigger:{trigger:root.querySelector('.hero'),start:'top top',end:'bottom top',scrub:true}});
+          root.querySelectorAll('.cloud').forEach((cloud,i)=>gs.to(cloud,{y:i?-90:-60,ease:'none',scrollTrigger:{trigger:root.querySelector('.hero'),start:'top top',end:'bottom top',scrub:true}}));
+          gs.fromTo('#nightScene',{yPercent:-12},{yPercent:0,ease:'none',scrollTrigger:{trigger:'#cta',start:'top bottom',end:'bottom bottom',scrub:true}});
+          gs.from('#ctaCard',{y:80,scale:.94,opacity:0,filter:'blur(10px)',duration:1.2,ease:'power3.out',scrollTrigger:{trigger:'#cta',start:'top 70%',once:true}});
+        }
+      }
+      if(root.dataset.view==='capabilities') gs.from('.panel-in',{y:120,opacity:0,duration:1,stagger:.12,...(scrollMotion?{scrollTrigger:{trigger:'#loop',start:'top 70%',once:true}}:{})});
+      if(root.dataset.view==='evidence'&&scrollMotion){
+        const media=gs.matchMedia();
+        media.add('(min-width:901px)',()=>{const proxy={p:0};gs.timeline({scrollTrigger:{trigger:'#statsPin',start:'top top',end:'+=120%',pin:true,scrub:1}}).to(proxy,{p:1,ease:'none',onUpdate:()=>setCounters(proxy.p)},0).fromTo('#herd',{yPercent:75},{yPercent:6,ease:'none',duration:1},0);});
+        media.add('(max-width:900px)',()=>{const proxy={p:0};gs.to(proxy,{p:1,duration:2,ease:'power2.out',onUpdate:()=>setCounters(proxy.p),scrollTrigger:{trigger:root.querySelector('.cards'),start:'top 85%',once:true}});gs.fromTo('#herd',{yPercent:40},{yPercent:0,scrollTrigger:{trigger:'#statsPin',start:'top bottom',end:'bottom bottom',scrub:true}});});
+        root.querySelectorAll('.grid-sq').forEach(el=>gs.to(el,{opacity:1,duration:1.2,yoyo:true,repeat:-1,delay:Math.random()*4,repeatDelay:Math.random()*3}));
+      }
+      if(root.dataset.view==='about') gs.from('.timeline li',{y:20,opacity:0,duration:.8,stagger:.1,...(scrollMotion?{scrollTrigger:{trigger:'.timeline',start:'top 85%',once:true}}:{})});
+    },root);
+  }
+  function announce(){const el=document.getElementById('routeAnnouncer');el.textContent='';setTimeout(()=>{el.textContent='已切换到 '+routes[current].label+' 页';},30);}
+  function syncNav(){document.title=routes[current].title;document.querySelectorAll('.nav-links [data-route]').forEach(a=>{if(a.dataset.route===current)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});}
+  function finishIntro(){document.body.classList.remove('intro');document.querySelector('.backdrop')?.remove();if(gs){gs.set('#app',{clearProps:'transform,borderRadius'});gs.set('#siteNav',{clearProps:'opacity,transform'});}lenis?.start();}
+  function go(raw,{push=true,animate=true,anchor=null}={}){
+    let key=validKey(raw);
+    if(location.hash!=='#/'+key){if(push)history.pushState({view:key},'','#/'+key);else history.replaceState({view:key},'','#/'+key);}
+    lastHash=location.hash;
+    if(busy){pending={key,options:{push:false,animate,anchor}};return;}
+    if(key===current){if(anchor)scrollToTarget(anchor);return;}
+    if(intro){intro.kill();intro=null;finishIntro();gs.set('.hero-copy .w,.hero-copy .reveal',{clearProps:'opacity,transform,filter'});}
+    busy=true;const old=view(current);
+    function show(){
+      if(pending){key=pending.key;anchor=pending.options.anchor;pending=null;}
+      if(viewCtx){viewCtx.revert();viewCtx=null;}
+      old.hidden=true;old.classList.remove('is-active');if(gs)gs.set(old,{clearProps:'opacity,transform'});
+      current=key;const next=view(key);next.hidden=false;next.classList.add('is-active');
+      top();syncNav();announce();next.querySelector('h1').focus({preventScroll:true});setupView(next,false);
+      function complete(){if(gs)gs.set(next,{clearProps:'opacity,transform'});st?.refresh();if(anchor)scrollToTarget(anchor);busy=false;if(pending){const request=pending;pending=null;go(request.key,request.options);}}
+      if(motion&&animate)gs.fromTo(next,{opacity:0,y:16},{opacity:1,y:0,duration:.42,ease:'power3.out',onComplete:complete});else complete();
+    }
+    if(motion&&animate)gs.to(old,{opacity:0,y:-12,duration:.18,onComplete:show});else show();
+  }
+  function syncFromUrl(){if(location.hash===lastHash)return;lastHash=location.hash;go(location.hash.replace(/^#\//,''),{push:false});}
+  addEventListener('popstate',syncFromUrl);addEventListener('hashchange',syncFromUrl);
+  document.addEventListener('click',event=>{
+    const a=event.target.closest('a');if(!a)return;
+    if(a.hasAttribute('data-top')){event.preventDefault();if(lenis)lenis.scrollTo(0);else window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});return;}
+    if(a.dataset.route){event.preventDefault();go(a.dataset.route,{anchor:a.dataset.anchor||null});return;}
+    if(a.getAttribute('href')?.startsWith('#')&&!a.getAttribute('href').startsWith('#/')){event.preventDefault();scrollToTarget(a.getAttribute('href'));}
+  });
+  Object.keys(routes).forEach(key=>{view(key).hidden=key!==current;view(key).classList.toggle('is-active',key===current);});syncNav();top();
+  if(motion){
+    lenis?.stop();gs.set('#siteNav',{opacity:0,y:-16});
+    intro=gs.timeline({delay:.25,onComplete:()=>{intro=null;finishIntro();setupView(view(current),current==='home');st?.refresh();}});
+    intro.fromTo('#app',{scale:.9,borderRadius:28},{scale:1,borderRadius:0,duration:1.4,ease:'expo.inOut'}).to('#siteNav',{opacity:1,y:0,duration:.8,ease:'power3.out'},'-=.5');
+    if(current==='home')intro.fromTo('.hero-copy .w',{opacity:0,y:24,filter:'blur(10px)'},{opacity:1,y:0,filter:'blur(0px)',duration:1,stagger:.045,ease:'power3.out'},'-=.7').from('.hero-copy .reveal',{opacity:0,y:12,duration:.8,stagger:.08},'-=.75').from('.cloud-l',{x:-120,opacity:0,duration:1.6},.4).from('.cloud-r',{x:120,opacity:0,duration:1.6},.4).from('#heroGlass .glass',{opacity:0,scale:.6,duration:.6,stagger:.05},'-=1');
+  }else{finishIntro();setupView(view(current));}
+  if(scrollMotion){
+    const footerTimeline=gs.timeline({scrollTrigger:{trigger:'#footer',start:'top 92%',once:true}});
+    footerTimeline.to('.fdot',{y:-8,duration:.25,stagger:.08,yoyo:true,repeat:3,ease:'sine.inOut'}).to('.fdot',{attr:{cx:27,cy:50},duration:.45,ease:'power3.inOut'}).to([...document.querySelectorAll('.fdot')].slice(1),{opacity:0,duration:.1}).to('#fMark',{strokeDashoffset:0,duration:.6,ease:'power3.out'}).to(document.querySelector('.fdot'),{attr:{r:5.5},duration:.3},'<').to('#fRing',{strokeDashoffset:0,duration:.9,ease:'power2.inOut'},'-=.3');
+  }else{document.getElementById('fMark').style.strokeDashoffset='0';document.getElementById('fRing').style.strokeDashoffset='0';}
+})();
+</script></body></html>

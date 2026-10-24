@@ -18,6 +18,13 @@
 
 ## 最简单的启动方式（推荐）
 
+官网现按 `docs/prompts/2026-10-23-xingmu-landing-page-prompt.md` 实现：
+
+- 项目官网：<http://127.0.0.1:5173/#/home>（首页、能力、数据与边界、关于四个页面）。
+- 业务工作台：<http://127.0.0.1:5173/workbench.html#/modules>（原有八个模块）。
+- `web/index.html` 是 CSS/JS 内联的独立官网文件；直接打开也可浏览，动画 CDN 不可用时保留静态内容与导航。业务工作台需要启动项目服务。
+- 联系意向仅保存在当前浏览器，未接通邮件发送；不能视为团队已收到预约。
+
 在资源管理器中打开 `F:\new大创`：
 
 1. 双击 `启动项目.bat`。
@@ -38,7 +45,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start_delivery.ps1
 
 启动后访问：
 
-- Web 控制台：<http://127.0.0.1:5173>
+- 项目官网：<http://127.0.0.1:5173>
+- Web 控制台：<http://127.0.0.1:5173/workbench.html#/modules>
 - API 文档：<http://127.0.0.1:8000/docs>
 - 服务状态：<http://127.0.0.1:8000/api/health>
 
