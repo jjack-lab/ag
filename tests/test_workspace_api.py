@@ -62,3 +62,18 @@ def test_analytics_counts_full_history_in_shanghai_days_and_exports_same_filter(
     assert rows[0]["date"] == "2026-10-24"
     assert int(rows[0]["videos"]) == data["daily"][0]["videos"]
     assert client.get("/api/analytics?start=2026-10-25&end=2026-10-24").status_code == 422
+
+
+def test_browser_webm_uses_existing_video_job_endpoint(tmp_path):
+    repo, _ = setup_client(tmp_path)
+    class Jobs:
+        def create(self, source, *parameters):
+            assert source.suffix == ".webm"
+            assert source.read_bytes() == b"webm-video"
+            return VideoJobRecord(id="camera-job", source_path=str(source), status="queued", progress=0,
+                                  created_at="2026-10-24T08:00:00+08:00", updated_at="2026-10-24T08:00:00+08:00")
+    client = TestClient(create_app(repo, media_root=tmp_path / "media", job_service=Jobs()))
+    result = client.post("/api/jobs/video", files={"file": ("camera.webm", b"webm-video", "video/webm")},
+                         data={"class_id": 1, "tracker": "bytetrack.yaml"})
+    assert result.status_code == 202
+    assert result.json()["id"] == "camera-job"

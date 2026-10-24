@@ -28,12 +28,13 @@ import ActionTaskPanel from "./ActionTaskPanel";
 import VideoCaptureGuidance from "./VideoCaptureGuidance";
 import InspectionSummary from "./InspectionSummary";
 import BehaviorZoomReview from "./BehaviorZoomReview";
+import CameraCapture from "./CameraCapture";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
   | { kind: "image"; data: ImageRecognitionResult; classId: number }
   | { kind: "video"; data: VideoJob };
-type Props = { requestedJob?: VideoJob | null };
+type Props = { requestedJob?: VideoJob | null; onCompleted?: () => void };
 
 const DEFAULT_MESSAGE = "选择文件后，系统会自动使用牧业专用模型识别。";
 const CATTLE_DEMO_JOB_ID = "202d89f9aaad433480d8570bd90c3d41";
@@ -42,7 +43,7 @@ function delay(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
-export default function RecognitionStudio({ requestedJob }: Props) {
+export default function RecognitionStudio({ requestedJob, onCompleted }: Props) {
   const [mode, setMode] = useState<RecognitionMode>("image");
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<StudioResult | null>(null);
@@ -156,6 +157,7 @@ export default function RecognitionStudio({ requestedJob }: Props) {
           setResult({ kind: "video", data: job });
           setStatus("idle");
           setMessage("追踪完成，视频、轨迹和健康证据已生成。");
+          onCompleted?.();
           return;
         }
         if (job.status === "failed") {
@@ -218,6 +220,10 @@ export default function RecognitionStudio({ requestedJob }: Props) {
           </button>
         </div>
 
+        {!isImage && <CameraCapture disabled={status === "running"} onRecorded={(recorded) => {
+          runToken.current += 1; setFile(recorded); setResult(null); setSelectedTaskEvent(null);
+          setStatus("idle"); setMessage("录像已就绪，点击开始视频识别。");
+        }} />}
         <form onSubmit={submit}>
           <label className="upload-zone">
             <input
@@ -246,7 +252,7 @@ export default function RecognitionStudio({ requestedJob }: Props) {
                   : classId === 0 ? "选择或拖入羊只视频" : "选择或拖入牛只视频"}
             </strong>
             <small>
-              {isImage ? "支持 JPG、PNG、BMP" : "支持 MP4、AVI、MOV、MKV"}
+              {isImage ? "支持 JPG、PNG、BMP" : "支持 MP4、AVI、MOV、MKV、WebM"}
             </small>
           </label>
 
