@@ -26,6 +26,7 @@ export default function AnimalProfileView({ profile, onUpdated, onOpenVideo }: {
   }
   return <section className="animal-profile" aria-label="个体档案详情">
     <h3>{profile.animal_id} · {profile.species === "sheep" ? "羊" : "牛"}</h3>
+    {profile.animal_id.startsWith("DEMO-") && <p>模拟数据，仅供界面演示；个体身份与现场情况未经核实。</p>}
     <AnimalTrend profile={profile} />
     <h4>视频与人工核查</h4>
     {profile.visits.map((visit) => <article key={`${visit.job_id}:${visit.track_id}`}>

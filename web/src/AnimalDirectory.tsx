@@ -32,7 +32,7 @@ export default function AnimalDirectory({ onOpenVideo }: { onOpenVideo: (id: str
     {loading ? <p>正在加载档案…</p> : <p>共 {rows.length} 份已关联档案</p>}
     {!loading && !rows.length && <p>暂无符合条件的档案。<a href="#/module/monitor">前往视频结果核对并关联个体</a></p>}
     <div className="feature-card-grid">{rows.map((row) => <button type="button" className={`record-card ${profile?.animal_id === row.animal_id ? "selected" : ""}`} key={row.animal_id} onClick={() => open(row.animal_id)}>
-      <small>{row.species === "sheep" ? "羊" : "牛"} · 稳定编号</small><strong>{row.animal_id}</strong><span>{row.video_count} 次视频 · {row.followup_count} 条回访</span><small>最近视频 {new Date(row.last_seen).toLocaleDateString("zh-CN")}</small>
+      <small>{row.animal_id.startsWith("DEMO-") ? "模拟数据 · 未经现场核实" : `${row.species === "sheep" ? "羊" : "牛"} · 稳定编号`}</small><strong>{row.animal_id}</strong><span>{row.video_count} 次视频 · {row.followup_count} 条回访</span><small>最近视频 {new Date(row.last_seen).toLocaleDateString("zh-CN")}</small>
     </button>)}</div>
     {profile && <AnimalProfileView key={profile.animal_id} profile={profile} onUpdated={(next) => { setProfile((current) => current?.animal_id === next.animal_id ? next : current); setRows((items) => items.map((row) => row.animal_id === next.animal_id ? { ...row, followup_count: next.followups.length } : row)); }} onOpenVideo={onOpenVideo} />}
   </section>;

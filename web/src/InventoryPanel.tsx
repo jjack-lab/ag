@@ -153,6 +153,7 @@ export default function InventoryPanel({
       {!loading && !error && selectedChecks.length === 0 && <p>暂无盘点记录。</p>}
       {selectedChecks.map((row) => <article key={row.id}>
         <h4>{row.pen_id} · {row.species === "sheep" ? "羊" : "牛"}</h4>
+        {row.pen_id.startsWith("DEMO-") && <p>模拟数据，仅供界面演示；登记数与现场数量未经核实。</p>}
         <p>登记 {row.expected_count}，人工清点 {row.current_count ?? "未填"}；视频内 Track ID {row.video_track_count ?? "未知"} 个（仅参考）。</p>
         <p>{row.status === "discrepancy_pending" && row.difference !== null
           ? `差额 ${Math.abs(row.difference)}，待复点` : statusLabel[row.status]}</p>
