@@ -57,6 +57,25 @@ it("opens an externally selected completed video job", async () => {
   );
 });
 
+it("tells the operator how to restore the demo when the recorded task is missing", async () => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const url = String(input);
+    if (url === "/api/jobs/202d89f9aaad433480d8570bd90c3d41") {
+      return { ok: false, status: 404, json: async () => ({ detail: "任务不存在" }) } as Response;
+    }
+    if (url === "/api/jobs/video") return { ok: true, json: async () => [] } as Response;
+    if (url === "/api/experiments/cross-domain-behavior") {
+      return { ok: true, json: async () => ({ status: "not_run" }) } as Response;
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  });
+
+  render(<RecognitionStudio />);
+  await userEvent.click(screen.getByRole("button", { name: "打开演示视频" }));
+  expect(await screen.findByText(/VITE_CATTLE_DEMO_JOB_ID/)).toBeInTheDocument();
+  expect(screen.getByText(/重新上传/)).toBeInTheDocument();
+});
+
 it("opens the filmed cattle development demo with clear provenance", async () => {
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);

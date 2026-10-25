@@ -29,6 +29,7 @@ import VideoCaptureGuidance from "./VideoCaptureGuidance";
 import InspectionSummary from "./InspectionSummary";
 import BehaviorZoomReview from "./BehaviorZoomReview";
 import CameraCapture from "./CameraCapture";
+import { cattleDemoJobId } from "./config";
 
 type RecognitionMode = "image" | "video";
 type StudioResult =
@@ -37,7 +38,6 @@ type StudioResult =
 type Props = { requestedJob?: VideoJob | null; onCompleted?: () => void };
 
 const DEFAULT_MESSAGE = "选择文件后，系统会自动使用牧业专用模型识别。";
-const CATTLE_DEMO_JOB_ID = "202d89f9aaad433480d8570bd90c3d41";
 
 function delay(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -98,7 +98,7 @@ export default function RecognitionStudio({ requestedJob, onCompleted }: Props) 
     setStatus("running");
     setMessage("正在打开牛只开发视频演示…");
     try {
-      const job = await fetchVideoJob(CATTLE_DEMO_JOB_ID);
+      const job = await fetchVideoJob(cattleDemoJobId);
       if (runToken.current !== token) return;
       if (job.status !== "completed") throw new Error("演示视频仍在处理，请稍后重试。");
       setMode("video");
@@ -109,8 +109,11 @@ export default function RecognitionStudio({ requestedJob, onCompleted }: Props) 
       setMessage("已打开真实拍摄的开发视频演示。视频内 ID 和规则提示仅供人工核查。");
     } catch (error) {
       if (runToken.current !== token) return;
+      const detail = error instanceof Error ? error.message : "演示视频暂不可用。";
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "演示视频暂不可用。");
+      setMessage(
+        `${detail} 本机没有这个演示任务时，可在 web/.env.local 设置 VITE_CATTLE_DEMO_JOB_ID，或在下方重新上传开发素材后再用。`,
+      );
     }
   }
 
