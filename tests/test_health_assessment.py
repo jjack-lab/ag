@@ -45,6 +45,40 @@ def test_health_assessment_joins_rules_behavior_and_human_review(tmp_path):
     assert data["tracks"][1]["risk_score"] == 0
 
 
+def test_health_assessment_reports_review_priority_instead_of_a_bare_score(tmp_path):
+    repository = SQLiteRepository(tmp_path / "app.db")
+    repository.initialize()
+    repository.save_video_job(VideoJobRecord(
+        id="priority-job", source_path="cow.mp4", status="completed", progress=1,
+        created_at="2026-10-22T10:00:00+08:00", updated_at="2026-10-22T10:00:02+08:00",
+        result={"species": "cattle", "track_ids": [3, 4, 5],
+                "health_evidence": [
+                    {"track_id": 3, "risk_score": 65, "risk_level": "high",
+                     "observations": [{"type": "lying", "label": "疑似长时间卧倒",
+                                       "time_seconds": 12.5, "confidence": 0.9,
+                                       "detail": "框宽高比 2.10", "suggestion": "尽快现场复核"}]},
+                    {"track_id": 4, "risk_score": 15, "risk_level": "low",
+                     "observations": [{"type": "still", "label": "持续低活动",
+                                       "time_seconds": None, "confidence": 0.7,
+                                       "detail": "全程低速", "suggestion": "结合现场观察"}]},
+                    {"track_id": 5, "risk_score": 0, "risk_level": "normal", "observations": []},
+                ]},
+    ))
+    client = TestClient(create_app(repository, media_root=tmp_path / "media"))
+
+    tracks = {row["track_id"]: row for row in client.get("/api/jobs/priority-job/health-assessment").json()["tracks"]}
+
+    assert tracks[3]["priority"] == "high"
+    assert tracks[4]["priority"] == "low"
+    assert tracks[5]["priority"] == "none"
+    assert tracks[3]["priority_reasons"][0]["label"] == "疑似长时间卧倒"
+    assert tracks[3]["priority_reasons"][0]["time_seconds"] == 12.5
+    assert tracks[5]["priority_reasons"] == []
+    assert "12.5 秒" in tracks[3]["review_hint"]
+    assert "全视频" in tracks[4]["review_hint"]
+    assert tracks[5]["review_hint"]
+
+
 def test_health_assessment_does_not_score_sheep(tmp_path):
     repository = SQLiteRepository(tmp_path / "app.db")
     repository.initialize()

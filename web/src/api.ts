@@ -64,6 +64,14 @@ export type HealthAssessment = {
   summary: { track_count: number; attention_count: number; review_count: number };
   tracks: Array<Omit<HealthEvidenceProfile, "risk_score"> & {
     risk_score: number | null;
+    priority: "high" | "medium" | "low" | "none" | "unavailable";
+    priority_reasons: Array<{
+      label: string | null;
+      time_seconds: number | null;
+      detail: string | null;
+      suggestion: string | null;
+    }>;
+    review_hint: string;
     behaviors: BehaviorSummaryRow[];
     uncertain_duration_seconds: number;
     analysis: string;

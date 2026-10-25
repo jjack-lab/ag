@@ -1,17 +1,14 @@
 import type { HealthEvidenceProfile } from "./api";
+import { priorityFromRiskLevel, priorityLabel } from "./priority";
 
 type Props = { species: "cattle" | "sheep"; profiles: HealthEvidenceProfile[] };
-
-const riskLabel: Record<string, string> = {
-  normal: "正常", low: "低风险", medium: "中风险", high: "高风险",
-};
 
 export default function HealthEvidence({ species, profiles }: Props) {
   return (
     <section className="health-evidence" aria-label="健康证据图谱">
       <header>
         <strong>健康证据图谱</strong>
-        <small>视频内追踪 ID → 观察证据 → 风险 → 人工复核</small>
+        <small>视频内追踪 ID → 观察证据 → 核查优先级 → 人工复核</small>
       </header>
       {species === "sheep" ? (
         <p>羊的健康规则尚未验证；当前仅展示检测、追踪与轨迹，不能给出羊的健康评分或疾病预测。</p>
@@ -34,8 +31,8 @@ export default function HealthEvidence({ species, profiles }: Props) {
                 )) : <span>未触发规则告警</span>}
               </div>
               <div className="health-evidence-node">
-                <small>规则评分</small>
-                <strong>{riskLabel[profile.risk_level] || profile.risk_level} · {profile.risk_score} 分</strong>
+                <small>核查优先级</small>
+                <strong>{priorityLabel[priorityFromRiskLevel(profile.risk_level)]}</strong>
               </div>
               <div className="health-evidence-node">
                 <small>下一步</small>
@@ -49,7 +46,7 @@ export default function HealthEvidence({ species, profiles }: Props) {
           ))}
         </div>
       )}
-      <p className="health-evidence-limit">图中风险来自视频规则与轨迹，不能判断具体疾病或预测发病时间。</p>
+      <p className="health-evidence-limit">图中优先级只表示本次视频内的核查顺序，不能判断具体疾病或预测发病时间。</p>
     </section>
   );
 }

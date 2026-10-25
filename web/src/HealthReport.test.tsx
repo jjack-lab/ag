@@ -15,7 +15,9 @@ it("renders a traceable health report and invokes browser PDF printing", async (
   const assessment = { job_id: "job-1",
     model: { type: "rule_based", name: "牛只轨迹规则型健康风险筛查", behavior_model_status: "ready", behavior_model_version: "v1", score_basis: "轨迹规则" },
     summary: { track_count: 1, attention_count: 1, review_count: 1 },
-    tracks: [{ track_id: 7, risk_score: 40, risk_level: "medium", analysis: "规则提示与行为需人工核查。",
+    tracks: [{ track_id: 7, risk_score: 40, risk_level: "medium", priority: "medium",
+      priority_reasons: [{ label: "持续低活动", time_seconds: 20, detail: "低速", suggestion: "人工查看" }],
+      review_hint: "先看 20.0 秒附近，再回看前后约 3 秒。", analysis: "规则提示与行为需人工核查。",
       observations: [{ type: "still", label: "持续低活动", time_seconds: 20, confidence: 0.8, detail: "低速", suggestion: "人工查看" }],
       behaviors: [{ track_id: 7, behavior_name: "walking", behavior_display_name: "行走", duration_seconds: 4, eligible_ratio: 1, uncertain_duration_seconds: 1, model_version: "v1" }],
       uncertain_duration_seconds: 1,
@@ -27,10 +29,14 @@ it("renders a traceable health report and invokes browser PDF printing", async (
   const report = screen.getByRole("dialog", { name: "牛只健康观察报告" });
   expect(within(report).getAllByText(/job-1/).length).toBeGreaterThan(0);
   expect(within(report).getByText(/规则提示与行为需人工核查/)).toBeInTheDocument();
-  expect(within(report).getByText(/持续低活动/)).toBeInTheDocument();
+  expect(within(report).getAllByText(/持续低活动/).length).toBeGreaterThan(0);
   expect(within(report).getAllByText(/行走 4.0 秒/).length).toBeGreaterThan(0);
   expect(within(report).getByText(/遮挡/)).toBeInTheDocument();
   expect(within(report).getByText(/不能用于疾病诊断/)).toBeInTheDocument();
+  expect(within(report).getByRole("columnheader", { name: "核查优先级" })).toBeInTheDocument();
+  expect(within(report).getAllByText("中 · 优先核查").length).toBeGreaterThan(0);
+  expect(within(report).queryByText("规则分数")).not.toBeInTheDocument();
+  expect(within(report).getByText(/先看 20.0 秒附近/)).toBeInTheDocument();
   await userEvent.click(within(report).getByRole("button", { name: "打印或保存 PDF" }));
   expect(print).toHaveBeenCalledOnce();
 });

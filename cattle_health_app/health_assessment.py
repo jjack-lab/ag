@@ -2,6 +2,24 @@
 
 from __future__ import annotations
 
+_PRIORITY_BY_LEVEL = {
+    "high": "high",
+    "medium": "medium",
+    "low": "low",
+    "normal": "none",
+}
+
+
+def _review_hint(observations: list[dict]) -> str:
+    """Turn rule evidence into a concrete "where to look" instruction."""
+    timed = [row for row in observations if row.get("time_seconds") is not None]
+    if timed:
+        first = min(float(row["time_seconds"]) for row in timed)
+        return f"先看 {first:.1f} 秒附近，再回看前后约 3 秒。"
+    if observations:
+        return "该轨迹的规则按全视频统计，没有精确时刻；先看全视频中这个 ID 的片段。"
+    return "该轨迹未触发规则提示，可按需抽看原视频，不必优先处理。"
+
 
 def build_health_assessment(job_id: str, result: dict, reviews: list[dict]) -> dict:
     profiles = {int(row["track_id"]): row for row in result.get("health_evidence", [])}
@@ -35,10 +53,22 @@ def build_health_assessment(job_id: str, result: dict, reviews: list[dict]) -> d
             analysis += f" 其中 {uncertain_seconds:.1f} 秒无法确定，建议查看原视频局部和前后动作。"
         if review_by_track.get(track_id):
             analysis += " 已有人工复核记录，具体判断以复核内容为准。"
+        risk_level = profile.get("risk_level", "unavailable")
         tracks.append({
             "track_id": track_id,
             "risk_score": profile.get("risk_score"),
-            "risk_level": profile.get("risk_level", "unavailable"),
+            "risk_level": risk_level,
+            "priority": _PRIORITY_BY_LEVEL.get(risk_level, "unavailable"),
+            "priority_reasons": [
+                {
+                    "label": row.get("label"),
+                    "time_seconds": row.get("time_seconds"),
+                    "detail": row.get("detail"),
+                    "suggestion": row.get("suggestion"),
+                }
+                for row in observations
+            ],
+            "review_hint": _review_hint(observations),
             "observations": observations,
             "behaviors": behaviors,
             "uncertain_duration_seconds": uncertain_seconds,
