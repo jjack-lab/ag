@@ -7,11 +7,13 @@ from cattle_health_app.jobs import VideoJobService
 from cattle_health_app.media_processor import LocalMediaProcessor
 from cattle_health_app.model_registry import resolve_detector_model
 from cattle_health_app.repository import SQLiteRepository
-from cattle_health_app.runtime import server_host, server_port
+from cattle_health_app.runtime import api_token_from_env, ensure_bind_is_safe, server_host, server_port
 
 
 def build_app():
     project_root = Path(__file__).resolve().parent
+    token = api_token_from_env()
+    ensure_bind_is_safe(server_host(), token)
     media_root = project_root / "data" / "media"
     repository = SQLiteRepository(project_root / "data" / "agrinebula.db")
     repository.initialize()
@@ -31,6 +33,7 @@ def build_app():
         media_root=media_root,
         job_service=jobs,
         detector_artifact=artifact,
+        api_token=token,
     )
 
 

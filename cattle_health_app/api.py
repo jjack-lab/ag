@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 import csv
 import hashlib
+import hmac
 import io
 import json
 import math
@@ -15,6 +16,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
+from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -267,6 +269,7 @@ def create_app(
     detector_artifact=None,
     behavior_artifact=None,
     cross_domain_result_root: str | Path | None = None,
+    api_token: str | None = None,
 ):
     media_processor = media_processor or LocalMediaProcessor()
     media_root = Path(media_root)
@@ -300,6 +303,37 @@ def create_app(
     )
     app.mount("/media", StaticFiles(directory=media_root), name="media")
     register_workspace_routes(app, repository)
+
+    if api_token:
+        expected = api_token.strip()
+        cookie_name = "agrinebula_token"
+
+        def _presented_token(request) -> str:
+            header = request.headers.get("x-api-token", "")
+            if header:
+                return header.strip()
+            authorization = request.headers.get("authorization", "")
+            if authorization.lower().startswith("bearer "):
+                return authorization[7:].strip()
+            query = (request.query_params.get("token") or "").strip()
+            if query:
+                return query
+            return (request.cookies.get(cookie_name) or "").strip()
+
+        @app.middleware("http")
+        async def require_api_token(request, call_next):
+            # 只留健康检查给启动脚本探测；其余接口与 /media 都要令牌。
+            if request.url.path == "/api/health":
+                return await call_next(request)
+            if not hmac.compare_digest(_presented_token(request), expected):
+                return JSONResponse({"detail": "缺少或错误的访问令牌"}, status_code=401)
+            response = await call_next(request)
+            # 首次用头部/查询参数验证通过后写 HttpOnly cookie，
+            # 这样 <img>/<video> 这类不能自定义头部的请求也能拿到媒体文件。
+            if not request.cookies.get(cookie_name):
+                response.set_cookie(cookie_name, expected, httponly=True, samesite="lax")
+            return response
+
 
     @app.get("/api/health")
     def health():

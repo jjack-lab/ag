@@ -331,8 +331,32 @@ export type CrossDomainExperimentResult = {
   >;
 };
 
+const API_TOKEN_STORAGE_KEY = "agrinebula.apiToken";
+
+/** 令牌来源：页面 URL 的 ?token= 优先（局域网演示直接发链接），其次本次会话缓存。 */
+function storedApiToken(): string {
+  try {
+    const fromQuery = new URLSearchParams(window.location.search).get("token");
+    if (fromQuery) {
+      window.sessionStorage.setItem(API_TOKEN_STORAGE_KEY, fromQuery);
+      return fromQuery;
+    }
+    return window.sessionStorage.getItem(API_TOKEN_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function withApiToken(init?: RequestInit): RequestInit {
+  const token = storedApiToken();
+  if (!token) return init ?? {};
+  const headers = new Headers(init?.headers);
+  if (!headers.has("X-API-Token")) headers.set("X-API-Token", token);
+  return { ...init, headers };
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+  const response = await fetch(url, withApiToken(init));
   let payload: unknown;
   try {
     payload = await response.json();
