@@ -8,6 +8,15 @@
 - [`AGENTS.md`](../AGENTS.md)：协作规则与常用命令。
 - [`README.md`](../README.md)：启动、监听范围、维护脚本与使用说明。
 
+## 现场验收
+
+- [`field-acceptance/README.md`](field-acceptance/README.md)：8 小时现场验收手册、三张 CSV 模板与报告模板。
+- [`../scripts/check_field_acceptance.py`](../scripts/check_field_acceptance.py)：验收包完整性校验脚本（表头、视频哈希、报告占位符）。
+
+## 待实现
+
+- [`pending/README.md`](pending/README.md)：写成测试但实现未做的规格（当前是羊模型路由），不参与 pytest 收集。
+
 ## 工程加固（2026-10-24）
 
 - [`2026-10-24-user-todo.md`](2026-10-24-user-todo.md)：本轮之后需要用户完成/决定的事项。
