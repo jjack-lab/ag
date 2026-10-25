@@ -1,0 +1,63 @@
+from hashlib import sha256
+from pathlib import Path
+
+from cattle_health_app.model_registry import resolve_sheep_research_model
+
+
+def test_sheep_research_weight_is_fixed_and_missing_is_visible(tmp_path):
+    missing = resolve_sheep_research_model(project_root=tmp_path)
+    assert missing.status == "unavailable"
+    weight = tmp_path / "sheep.pt"
+    weight.write_bytes(b"sheep-model")
+    ready = resolve_sheep_research_model(
+        explicit_path=weight, project_root=tmp_path,
+        expected_sha256=sha256(b"sheep-model").hexdigest(),
+    )
+    assert ready.status == "ready"
+    assert ready.sha256 == sha256(b"sheep-model").hexdigest()
+    failed = resolve_sheep_research_model(
+        explicit_path=weight, project_root=tmp_path,
+        expected_sha256="0" * 64,
+    )
+    assert failed.status == "failed"
+
+
+def test_sheep_video_routes_to_candidate_and_cattle_keeps_delivery(tmp_path, monkeypatch):
+    import cattle_health_app.media_processor as module
+    from cattle_health_app.model_registry import BehaviorModelArtifact
+
+    delivery = tmp_path / "delivery.pt"
+    delivery.write_bytes(b"delivery")
+    sheep = tmp_path / "sheep.pt"
+    sheep.write_bytes(b"sheep")
+    monkeypatch.setattr(module, "resolve_sheep_research_model", lambda **kwargs: BehaviorModelArtifact(
+        name="sheep-research", path=sheep, sha256=sha256(b"sheep").hexdigest(), status="ready",
+    ))
+    loads = []
+    monkeypatch.setattr(module, "YOLO", lambda path: loads.append(Path(path).name) or Path(path).name)
+    used = []
+    monkeypatch.setattr(module, "process_tracked_video", lambda model, *args, **kwargs: used.append(model) or "result")
+    processor = module.LocalMediaProcessor(model_path=delivery)
+    monkeypatch.setattr(processor, "_behavior_runtime_for_video", lambda: None)
+    processor.track_video("cattle.mp4", tmp_path, 0.25, 0.45, class_id=1)
+    processor.track_video("sheep.mp4", tmp_path, 0.25, 0.45, class_id=0)
+    assert loads == ["delivery.pt", "sheep.pt"]
+    assert used == ["delivery.pt", "sheep.pt"]
+
+
+def test_sheep_video_refuses_unavailable_candidate(tmp_path, monkeypatch):
+    import cattle_health_app.media_processor as module
+    from cattle_health_app.model_registry import BehaviorModelArtifact
+
+    delivery = tmp_path / "delivery.pt"
+    delivery.write_bytes(b"delivery")
+    monkeypatch.setattr(module, "resolve_sheep_research_model", lambda **kwargs: BehaviorModelArtifact(
+        name="sheep-research", path=tmp_path / "missing.pt", sha256=None, status="unavailable",
+    ))
+    processor = module.LocalMediaProcessor(model_path=delivery)
+    try:
+        processor.track_video("sheep.mp4", tmp_path, 0.25, 0.45, class_id=0)
+    except ValueError as error:
+        assert "sheep research model" in str(error)
+    else:
+        raise AssertionError("missing candidate must not silently fall back")
