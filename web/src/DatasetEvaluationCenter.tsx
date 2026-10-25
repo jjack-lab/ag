@@ -48,6 +48,18 @@ export default function DatasetEvaluationCenter() {
 
   return <section className="dataset-evaluation-center" aria-label="公开数据评测中心">
     <header><h3>公开数据评测中心</h3><span>逐帧真值 · 可复算指标</span></header>
+    <aside className="research-evidence" aria-label="羊检测独立来源研究评测">
+      <h4>研究候选：AUTH-Sheep 独立来源评测</h4>
+      <p>两段同源航拍视频，羊框 IoU ≥ 0.5。下表是离线研究结果；当前网站默认检测权重尚未更换。</p>
+      <div role="table" aria-label="AUTH-Sheep 羊检测模型比较">
+        <div role="row"><span>视频</span><span>模型</span><span>Recall</span><span>F1</span></div>
+        <div role="row"><span>video1</span><span>网站默认</span><span>50.74%</span><span>54.33%</span></div>
+        <div role="row"><span>video1</span><span>羊专用研究候选</span><span>63.64%</span><span>62.58%</span></div>
+        <div role="row"><span>video2（含山羊）</span><span>网站默认</span><span>38.20%</span><span>41.37%</span></div>
+        <div role="row"><span>video2（含山羊）</span><span>羊专用研究候选</span><span>55.24%</span><span>55.07%</span></div>
+      </div>
+      <p>研究候选的权重再分发许可及目标牧场适用性仍需核实。<a href="https://zenodo.org/records/13843376" target="_blank" rel="noreferrer">AUTH-Sheep 原始数据</a></p>
+    </aside>
     <p>先在识别工作台上传公开数据原视频并完成追踪，再导入同一视频的逐帧人工标注。来源、版本、许可与划分由使用者登记，系统保存原视频和标注的 SHA-256。</p>
     <p>标注 CSV 列：<code>frame_index,class_id,track_id,x,y,width,height</code>。帧号从 0 开始；坐标为左上角起点与宽高，均归一化到 0–1；仅评测有标注的帧。牛 class_id=1，羊 class_id=0。</p>
     <form onSubmit={submit}>

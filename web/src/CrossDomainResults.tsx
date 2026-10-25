@@ -121,6 +121,11 @@ export default function CrossDomainResults({ result: suppliedResult }: Props) {
           </ul>
         </>
       )}
+      <aside className="research-evidence" aria-label="CattleBehaviours6 三类适配研究">
+        <h4>新来源三类行为适配（研究结果）</h4>
+        <p>CattleBehaviours6 官方 test 的 194 段共有类别视频：旧冻结候选 Macro-F1 18.15%，仅用该数据集 train/val 适配的新三类候选为 95.93%。饮水、站立反刍、卧姿反刍 F1 分别为 97.09%、95.65%、95.05%。</p>
+        <p>这是同一数据集内训练后的探索性复测；新候选只有三类，不能替换当前网站的 12 类模型，也不改上方历史 CBVD-5 指标。<a href="https://zenodo.org/records/23064957" target="_blank" rel="noreferrer">CattleBehaviours6 原始数据</a></p>
+      </aside>
       <footer>仅用于公开数据条件下的研究评估与风险筛查，不替代兽医诊断。</footer>
     </section>
   );
