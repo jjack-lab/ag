@@ -42,13 +42,16 @@ def convert_annotations(hbb_path, cvat_path, output_path):
     if len(images) != len(hbb["images"]):
         raise ValueError("duplicate image ID")
     tracks = {int(item["id"]): item for item in cvat["annotations"]}
+    categories = {int(item["id"]): item["name"].lower() for item in hbb.get("categories", [])}
+    if not categories:
+        categories = {1: "sheep"}
     if len(tracks) != len(cvat["annotations"]):
         raise ValueError("duplicate annotation ID")
     if set(tracks) != {int(item["id"]) for item in hbb["annotations"]}:
         raise ValueError("HBB/CVAT annotation ID mismatch")
 
     rows = []
-    human_count = clipped_count = 0
+    human_count = goat_count = clipped_count = 0
     seen = set()
     for box in hbb["annotations"]:
         item = tracks[int(box["id"])]
@@ -56,10 +59,14 @@ def convert_annotations(hbb_path, cvat_path, output_path):
             int(item["image_id"]), int(item["category_id"])
         ):
             raise ValueError("HBB/CVAT annotation mismatch")
-        if int(box["category_id"]) == 2:
+        category = categories.get(int(box["category_id"]))
+        if category == "human":
             human_count += 1
             continue
-        if int(box["category_id"]) != 1:
+        if category == "goat":
+            goat_count += 1
+            continue
+        if category != "sheep":
             raise ValueError("unexpected AUTH-Sheep category")
         image_id = int(box["image_id"])
         if image_id not in images:
@@ -103,6 +110,7 @@ def convert_annotations(hbb_path, cvat_path, output_path):
         "labeled_frames": len({row["frame_index"] for row in rows}),
         "sheep_boxes": len(rows),
         "human_boxes_skipped": human_count,
+        "goat_boxes_skipped": goat_count,
         "clipped_boxes": clipped_count,
     }
 

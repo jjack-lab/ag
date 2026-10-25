@@ -26,14 +26,16 @@ def test_convert_auth_sheep_uses_hbb_and_cvat_track_ids(tmp_path):
         {"id": 12, "image_id": 2, "category_id": 1, "attributes": {"track_id": 7}},
     ]
     hbb, cvat, output = (tmp_path / name for name in ("hbb.json", "cvat.json", "truth.csv"))
-    _write_json(hbb, {"images": images, "categories": [{"id": 1, "name": "sheep"}], "annotations": boxes})
+    _write_json(hbb, {"images": images, "categories": [{"id": 1, "name": "sheep"},
+                                                       {"id": 2, "name": "human"}], "annotations": boxes})
     _write_json(cvat, {"annotations": tracks})
 
     result = convert_annotations(hbb, cvat, output)
 
     with output.open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
-    assert result == {"labeled_frames": 2, "sheep_boxes": 2, "human_boxes_skipped": 1, "clipped_boxes": 0}
+    assert result == {"labeled_frames": 2, "sheep_boxes": 2, "human_boxes_skipped": 1,
+                      "goat_boxes_skipped": 0, "clipped_boxes": 0}
     assert rows == [
         {"frame_index": "0", "class_id": "0", "track_id": "7", "x": "0.1", "y": "0.1", "width": "0.2", "height": "0.2"},
         {"frame_index": "1", "class_id": "0", "track_id": "7", "x": "0.2", "y": "0.2", "width": "0.1", "height": "0.1"},
@@ -82,3 +84,24 @@ def test_convert_auth_sheep_rounds_border_box_inside_unit_square(tmp_path):
     with output.open(encoding="utf-8", newline="") as stream:
         row = next(csv.DictReader(stream))
     assert float(row["y"]) + float(row["height"]) <= 1.0
+
+
+def test_convert_auth_sheep_skips_goats_and_humans_by_category_name(tmp_path):
+    hbb, cvat, output = (tmp_path / name for name in ("hbb.json", "cvat.json", "truth.csv"))
+    annotations = [
+        {"id": index, "image_id": 1, "category_id": index, "bbox": [index * 10, 5, 5, 5]}
+        for index in (1, 2, 3)
+    ]
+    _write_json(hbb, {"images": [{"id": 1, "width": 100, "height": 50}],
+                      "categories": [{"id": 1, "name": "sheep"}, {"id": 2, "name": "goat"},
+                                     {"id": 3, "name": "human"}], "annotations": annotations})
+    _write_json(cvat, {"annotations": [
+        {"id": row["id"], "image_id": 1, "category_id": row["category_id"],
+         "attributes": {"track_id": row["id"]}} for row in annotations
+    ]})
+    result = convert_annotations(hbb, cvat, output)
+    with output.open(encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert len(rows) == 1
+    assert result["goat_boxes_skipped"] == 1
+    assert result["human_boxes_skipped"] == 1
