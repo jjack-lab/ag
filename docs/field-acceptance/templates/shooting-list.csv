@@ -1,0 +1,2 @@
+clip_id,pen_id,camera_id,started_at,duration_seconds,resolution,file_path,sha256,operator,coverage_note
+clip-01,PEN-01,CAM-01,2026-10-27T08:30:00+08:00,600,1920x1080,videos/clip-01.mp4,0000000000000000000000000000000000000000000000000000000000000000,示例-请替换,示例行：固定机位覆盖完整圈舍；删除此行后填写真实数据

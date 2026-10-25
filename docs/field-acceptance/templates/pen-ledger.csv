@@ -1,0 +1,2 @@
+pen_id,recorded_at,expected_count,count_a,count_b,operator_a,operator_b,gate_log_checked,notes
+PEN-01,2026-10-27T08:00:00+08:00,12,12,12,示例A,示例B,yes,示例行：expected_count 来源=耳标台账；删除此行后填写真实数据

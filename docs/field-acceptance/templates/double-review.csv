@@ -1,0 +1,2 @@
+clip_id,pen_id,check_type,time_seconds,verdict_a,verdict_b,note
+clip-01,PEN-01,pen_count,0,match,match,示例行：check_type 取 pen_count/gate_crossing/zone_enter/behavior；删除此行后填写真实数据
