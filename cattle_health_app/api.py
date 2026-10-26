@@ -37,6 +37,7 @@ from cattle_health_app.workspace_api import register_workspace_routes
 from cattle_health_app.spatial_analysis import count_drop_alert, line_crossings, read_tracks, zone_activity, zone_detection_gap
 from cattle_health_app.spatial_audit import add_missed, audit_summary, new_audit, report_hash, set_verdict
 from cattle_health_app.video_events import create_event_clip, create_event_snapshot, result_file, video_events
+from cattle_health_app.version import PROJECT_VERSION
 
 
 MAX_UPLOAD_BYTES = int(os.environ.get("AGRINEBULA_MAX_UPLOAD_MB", "512")) * 1024 * 1024
@@ -298,7 +299,7 @@ def create_app(
 
     app = FastAPI(
         title="星牧智控本地服务",
-        version="0.3.0",
+        version=PROJECT_VERSION,
         description="牛只识别、健康预警与本地数据接口",
     )
     app.mount("/media", StaticFiles(directory=media_root), name="media")

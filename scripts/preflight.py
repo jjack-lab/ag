@@ -21,6 +21,7 @@ def main() -> None:
         resolve_detector_model,
     )
     from cattle_health_app.yolo_runtime import load_delivery_yolo_class
+    from cattle_health_app.version import PROJECT_VERSION
 
     artifact = resolve_detector_model(project_root=project_root)
     yolo_class = load_delivery_yolo_class()
@@ -33,6 +34,7 @@ def main() -> None:
         json.dumps(
             {
                 "status": "ok",
+                "project_version": PROJECT_VERSION,
                 "python": sys.version.split()[0],
                 "opencv": cv2.__version__,
                 "torch": torch.__version__,
